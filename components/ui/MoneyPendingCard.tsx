@@ -131,9 +131,9 @@ const styles = StyleSheet.create({
   },
   statCount: {
     color: colors.gold,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    lineHeight: 28,
+    lineHeight: 24,
   },
   statCountDanger: {
     color: colors.danger,
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
   statLabel: {
     color: colors.surface,
     opacity: 0.85,
-    fontSize: typography.sizes.bodySmall,
+    fontSize: 13,
     fontWeight: '600',
-    lineHeight: 18,
+    lineHeight: 16,
     marginTop: 2,
   },
 });
