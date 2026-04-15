@@ -3,11 +3,16 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
+import { useSessionBootstrap } from '@/lib/session-bootstrap';
+
 export default function RootLayout() {
+  useSessionBootstrap();
+
   return (
     <SafeAreaProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F5EF' } }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="paywall" />
         <Stack.Screen name="paywall-v2" />
