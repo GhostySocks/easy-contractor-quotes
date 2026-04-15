@@ -46,6 +46,9 @@ app-example
 /supabase/.branches
 /supabase/.temp
 
+# One-shot SQL bundle the agent generates for paste-into-dashboard setup
+/APPLY_MIGRATIONS.sql
+
 # Editor
 .idea/
 *.swp
