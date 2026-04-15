@@ -5,8 +5,8 @@ import { supabase } from './supabase';
  * The client NEVER touches the Anthropic API key — all calls go through
  * /supabase/functions/ai-quote and /ai-contract (CLAUDE.md §3).
  *
- * Each function first re-verifies that subscriptions.status = 'active' for the
- * caller's user_id before forwarding to Anthropic.
+ * Each function first re-verifies that subscriptions.status = 'active' for
+ * the caller's user_id before forwarding to Anthropic.
  */
 
 export type QuoteInput = {
@@ -30,19 +30,13 @@ export type LineItem = {
   total_cents: number;
 };
 
-export type QuoteResult = {
-  scope_of_work: string;
-  line_items: LineItem[];
-  subtotal_cents: number;
-  tax_cents: number;
-  total_cents: number;
-  total_low_cents: number;
-  total_high_cents: number;
-  state_notes: string | null;
+export type QuoteInsertResult = {
+  id: string;
+  ai_generation_ms: number;
 };
 
-export async function generateQuote(input: QuoteInput): Promise<QuoteResult> {
-  const { data, error } = await supabase.functions.invoke<QuoteResult>('ai-quote', {
+export async function generateQuote(input: QuoteInput): Promise<QuoteInsertResult> {
+  const { data, error } = await supabase.functions.invoke<QuoteInsertResult>('ai-quote', {
     body: input,
   });
   if (error) {
