@@ -21,7 +21,7 @@ const PREVIEW_MONEY = {
   unpaidInvoices: 6,
   pendingSignature: 2,
   overdueCount: 1,
-  overdueMaxDays: 70,
+  overdueMaxDays: 7,
 };
 
 // TODO(M2): replace with jobs where scheduled_at::date = today.

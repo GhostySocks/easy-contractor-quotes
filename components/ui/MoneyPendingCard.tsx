@@ -6,6 +6,7 @@ type Stat = {
   count: number;
   label: string;
   caption?: string;
+  danger?: boolean;
 };
 
 type Props = {
@@ -31,26 +32,30 @@ export function MoneyPendingCard({
     {
       count: overdueCount,
       label: 'Overdue',
-      caption: overdueCount > 0 ? `${overdueMaxDays}+` : undefined,
+      caption: overdueCount > 0 ? `${overdueMaxDays}d+` : undefined,
+      danger: overdueCount > 0,
     },
   ];
 
   return (
     <View style={styles.card}>
       <View style={styles.eyebrowRow}>
-        <View style={styles.diamond} />
+        <View style={styles.dot} />
         <Text style={styles.eyebrow}>MONEY PENDING</Text>
       </View>
 
       <View style={styles.amountRow}>
-        <Text style={styles.amountDollars}>${dollars}</Text>
+        <Text style={styles.amountSymbol}>$</Text>
+        <Text style={styles.amountDollars}>{dollars}</Text>
         <Text style={styles.amountCents}>.{cents}</Text>
       </View>
 
       <View style={styles.statsRow}>
-        {stats.map((stat, i) => (
-          <View key={stat.label} style={[styles.stat, i !== 0 && styles.statDivider]}>
-            <Text style={styles.statCount}>{stat.count}</Text>
+        {stats.map((stat) => (
+          <View key={stat.label} style={styles.stat}>
+            <Text style={[styles.statCount, stat.danger && styles.statCountDanger]}>
+              {stat.count}
+            </Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
             {stat.caption ? <Text style={styles.statCaption}>{stat.caption}</Text> : null}
           </View>
@@ -67,6 +72,9 @@ function splitCents(total: number): { dollars: string; cents: string } {
   return { dollars, cents };
 }
 
+const STAT_BG = 'rgba(255,255,255,0.05)';
+const STAT_BORDER = 'rgba(255,255,255,0.08)';
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.ink,
@@ -79,11 +87,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  diamond: {
+  dot: {
     width: 8,
     height: 8,
+    borderRadius: 4,
     backgroundColor: colors.gold,
-    transform: [{ rotate: '45deg' }],
   },
   eyebrow: {
     color: colors.gold,
@@ -95,41 +103,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  amountDollars: {
+  amountSymbol: {
     color: colors.gold,
+    fontSize: 40,
+    lineHeight: 48,
+    fontWeight: '800',
+    marginRight: 2,
+  },
+  amountDollars: {
+    color: colors.surface,
     fontSize: 44,
     lineHeight: 48,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   amountCents: {
-    color: colors.gold,
+    color: colors.ink3,
     fontSize: 22,
     lineHeight: 26,
-    fontWeight: '800',
-    marginTop: 4,
+    fontWeight: '700',
+    marginTop: 6,
   },
   statsRow: {
     flexDirection: 'row',
+    gap: spacing.sm,
     marginTop: spacing.sm,
   },
   stat: {
     flex: 1,
+    backgroundColor: STAT_BG,
+    borderWidth: 1,
+    borderColor: STAT_BORDER,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-  },
-  statDivider: {
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.08)',
   },
   statCount: {
     color: colors.gold,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 28,
+  },
+  statCountDanger: {
+    color: colors.danger,
   },
   statLabel: {
     color: colors.surface,
-    opacity: 0.75,
+    opacity: 0.85,
     fontSize: typography.sizes.bodySmall,
     fontWeight: '600',
     lineHeight: 18,
