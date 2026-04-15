@@ -19,9 +19,8 @@ import { colors, spacing, typography } from '@/lib/theme';
 const PREVIEW_MONEY = {
   totalCents: 428050,
   unpaidInvoices: 6,
-  pendingSignature: 2,
+  unsignedContracts: 2,
   overdueCount: 1,
-  overdueMaxDays: 7,
 };
 
 // TODO(M2): replace with jobs where scheduled_at::date = today.
@@ -105,9 +104,8 @@ export default function HomeScreen() {
         <MoneyPendingCard
           totalCents={PREVIEW_MONEY.totalCents}
           unpaidInvoices={PREVIEW_MONEY.unpaidInvoices}
-          pendingSignature={PREVIEW_MONEY.pendingSignature}
+          unsignedContracts={PREVIEW_MONEY.unsignedContracts}
           overdueCount={PREVIEW_MONEY.overdueCount}
-          overdueMaxDays={PREVIEW_MONEY.overdueMaxDays}
         />
 
         <SectionHeader

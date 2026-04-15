@@ -5,36 +5,28 @@ import { colors, radii, spacing, typography } from '@/lib/theme';
 type Stat = {
   count: number;
   label: string;
-  caption?: string;
   danger?: boolean;
 };
 
 type Props = {
   totalCents: number;
   unpaidInvoices: number;
-  pendingSignature: number;
+  unsignedContracts: number;
   overdueCount: number;
-  overdueMaxDays: number;
 };
 
 export function MoneyPendingCard({
   totalCents,
   unpaidInvoices,
-  pendingSignature,
+  unsignedContracts,
   overdueCount,
-  overdueMaxDays,
 }: Props) {
   const { dollars, cents } = splitCents(totalCents);
 
   const stats: Stat[] = [
-    { count: unpaidInvoices, label: 'Unpaid\ninvoices' },
-    { count: pendingSignature, label: 'Pending\nsignature' },
-    {
-      count: overdueCount,
-      label: 'Overdue',
-      caption: overdueCount > 0 ? `${overdueMaxDays}d+` : undefined,
-      danger: overdueCount > 0,
-    },
+    { count: unpaidInvoices, label: 'Unpaid' },
+    { count: unsignedContracts, label: 'Unsigned' },
+    { count: overdueCount, label: 'Overdue', danger: overdueCount > 0 },
   ];
 
   return (
@@ -57,7 +49,6 @@ export function MoneyPendingCard({
               {stat.count}
             </Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
-            {stat.caption ? <Text style={styles.statCaption}>{stat.caption}</Text> : null}
           </View>
         ))}
       </View>
@@ -153,13 +144,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.bodySmall,
     fontWeight: '600',
     lineHeight: 18,
-    marginTop: 2,
-  },
-  statCaption: {
-    color: colors.goldDark,
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.4,
     marginTop: 2,
   },
 });
