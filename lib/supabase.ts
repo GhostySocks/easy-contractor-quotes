@@ -4,12 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 /**
  * Supabase client.
  *
- * Auth session is persisted via AsyncStorage on native and localStorage on web
- * (handled automatically by supabase-js when a storage adapter is provided).
- * We deliberately do NOT use expo-secure-store for the *session token* because
- * Supabase refreshes tokens frequently and the keychain writes are slow; the
- * biometric unlock (CLAUDE.md §3) gates access to the app on launch, not the
- * bearer of the token in storage.
+ * Auth session persists via AsyncStorage on native and localStorage (via
+ * AsyncStorage's web shim) in the browser. During any server-render pass
+ * (Node.js, no `window`) the storage becomes a no-op so module evaluation
+ * doesn't throw; hydration picks up the real session once we're on the
+ * client.
  */
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -22,9 +21,24 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+type Storage = {
+  getItem: (key: string) => Promise<string | null>;
+  setItem: (key: string, value: string) => Promise<void>;
+  removeItem: (key: string) => Promise<void>;
+};
+
+const noopStorage: Storage = {
+  getItem: async () => null,
+  setItem: async () => {},
+  removeItem: async () => {},
+};
+
+const hasWindow = typeof window !== 'undefined';
+const storage: Storage = hasWindow ? AsyncStorage : noopStorage;
+
 export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
   auth: {
-    storage: AsyncStorage,
+    storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
