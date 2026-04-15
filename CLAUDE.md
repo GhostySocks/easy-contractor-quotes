@@ -118,10 +118,14 @@ Expo Router file convention. `(tabs)` is the authenticated tab group.
 app/
   _layout.tsx
   index.tsx                     -> Splash (redirects based on auth + subscription)
+  (auth)/
+    sign-in.tsx                 -> Returning user sign-in (added M1a)
+    sign-up.tsx                 -> New user account creation before paywall (added M1a)
   (onboarding)/
     welcome.tsx                 -> Hero / value prop
     goals.tsx                   -> Trade selection
     business-profile.tsx        -> Name, logo, state (drives contract templates)
+    walkthrough.tsx             -> FAB preview / coach mark (added M1a; was ON-04 in PRD)
     permissions.tsx             -> Location, notifications, calendar (MOBILE ONLY)
   paywall.tsx                   -> Hard paywall, no skip (single $9.99/mo tier)
   paywall-v2.tsx                -> A/B variant with monthly/annual toggle
