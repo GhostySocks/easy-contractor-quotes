@@ -1,30 +1,80 @@
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card } from '@/components/ui/Card';
+import { Avatar } from '@/components/ui/Avatar';
+import { MoneyPendingCard } from '@/components/ui/MoneyPendingCard';
+import { TodayJobRow, type TodayJob } from '@/components/ui/TodayJobRow';
 import { useAuth } from '@/lib/auth-store';
-import { formatCents } from '@/lib/pricing';
-import { fetchLatestDraftForUser, type QuoteRow } from '@/lib/quotes';
-import { strings } from '@/lib/strings';
+import {
+  fetchProfile,
+  firstNameFromProfile,
+  initialsFromProfile,
+  type ProfileRow,
+} from '@/lib/profile';
 import { colors, spacing, typography } from '@/lib/theme';
+
+// TODO(M2): replace with real aggregates from invoices + contracts tables.
+const PREVIEW_MONEY = {
+  totalCents: 428050,
+  unpaidInvoices: 6,
+  pendingSignature: 2,
+  overdueCount: 1,
+  overdueMaxDays: 70,
+};
+
+// TODO(M2): replace with jobs where scheduled_at::date = today.
+const PREVIEW_JOBS: TodayJob[] = [
+  {
+    id: 'p1',
+    time: '9:00',
+    meridiem: 'AM',
+    title: 'Kitchen faucet replace',
+    customerName: 'Sarah Moore',
+    meta: '2mi away',
+    status: 'in_progress',
+    amountCents: 48000,
+  },
+  {
+    id: 'p2',
+    time: '11:30',
+    meridiem: 'AM',
+    title: 'Fence panel repair',
+    customerName: 'Derek Hayes',
+    meta: 'Repeat',
+    status: 'scheduled',
+    amountCents: 34000,
+  },
+  {
+    id: 'p3',
+    time: '2:00',
+    meridiem: 'PM',
+    title: 'Outlet install ×3',
+    customerName: 'Angela Kim',
+    meta: 'New',
+    status: 'scheduled',
+    amountCents: 22000,
+  },
+];
 
 export default function HomeScreen() {
   const user = useAuth((s) => s.user);
-  const [latest, setLatest] = useState<QuoteRow | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const row = await fetchLatestDraftForUser(user.id);
-    setLatest(row);
+    const row = await fetchProfile(user.id);
+    setProfile(row);
   }, [user]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const firstName = firstNameFromProfile(profile);
+  const initials = initialsFromProfile(profile);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -42,38 +92,62 @@ export default function HomeScreen() {
           />
         }
       >
-        <View style={styles.greetingRow}>
-          <Text style={styles.eyebrow}>{greeting()}</Text>
-          <Text style={styles.date}>{formatDate(new Date())}</Text>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.date}>{formatDate(new Date())}</Text>
+            <Text style={styles.greeting}>
+              {greeting()}, {firstName}
+            </Text>
+          </View>
+          <Avatar initials={initials} />
         </View>
 
-        {latest ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/quote/[id]', params: { id: latest.id } })}
-          >
-            <Card>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardEyebrow}>Latest quote</Text>
-                <ChevronRight size={16} color={colors.ink3} strokeWidth={2} />
-              </View>
-              <Text style={styles.cardAmount}>{formatCents(latest.total_cents)}</Text>
-              <Text style={styles.cardSub} numberOfLines={2}>
-                {latest.scope_of_work ?? 'No scope yet'}
-              </Text>
-              <Text style={styles.cardMeta}>
-                {capitalize(latest.status)} · {formatAge(latest.created_at)}
-              </Text>
-            </Card>
-          </Pressable>
-        ) : (
-          <Card>
-            <Text style={styles.cardEyebrow}>No quotes yet</Text>
-            <Text style={styles.cardSub}>{strings.locked.emptyJobs}</Text>
-          </Card>
-        )}
+        <MoneyPendingCard
+          totalCents={PREVIEW_MONEY.totalCents}
+          unpaidInvoices={PREVIEW_MONEY.unpaidInvoices}
+          pendingSignature={PREVIEW_MONEY.pendingSignature}
+          overdueCount={PREVIEW_MONEY.overdueCount}
+          overdueMaxDays={PREVIEW_MONEY.overdueMaxDays}
+        />
+
+        <SectionHeader
+          title="Today's jobs"
+          rightText={`${PREVIEW_JOBS.length} scheduled →`}
+          onRightPress={() => router.push('/(tabs)/jobs')}
+        />
+
+        <View style={styles.jobsList}>
+          {PREVIEW_JOBS.map((job) => (
+            <TodayJobRow key={job.id} job={job} onPress={() => router.push('/(tabs)/jobs')} />
+          ))}
+        </View>
+
+        <SectionHeader
+          title="This week"
+          rightText="See calendar →"
+          onRightPress={() => router.push('/(tabs)/calendar')}
+        />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SectionHeader({
+  title,
+  rightText,
+  onRightPress,
+}: {
+  title: string;
+  rightText: string;
+  onRightPress?: () => void;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Pressable accessibilityRole="link" onPress={onRightPress} hitSlop={8}>
+        <Text style={styles.sectionLink}>{rightText}</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -85,24 +159,7 @@ function greeting(): string {
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-}
-
-function formatAge(iso: string): string {
-  const created = new Date(iso);
-  const diffMs = Date.now() - created.getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return created.toLocaleDateString();
-}
-
-function capitalize(str: string): string {
-  return str.length === 0 ? str : str[0].toUpperCase() + str.slice(1);
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -112,49 +169,44 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: spacing.xl,
-    gap: spacing.lg,
+    gap: spacing.xl,
     paddingBottom: spacing.huge + spacing.huge,
   },
-  greetingRow: {
-    gap: 2,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  eyebrow: {
-    fontSize: typography.sizes.h1,
-    fontWeight: '800',
-    color: colors.ink,
+  headerText: {
+    gap: 2,
   },
   date: {
     fontSize: typography.sizes.bodySmall,
     color: colors.ink3,
+    fontWeight: '500',
   },
-  cardHeader: {
+  greeting: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.ink,
+    letterSpacing: -0.3,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+    alignItems: 'baseline',
   },
-  cardEyebrow: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  cardAmount: {
-    fontSize: 40,
+  sectionTitle: {
+    fontSize: typography.sizes.h2,
     fontWeight: '800',
-    color: colors.gold,
-    marginVertical: spacing.xs,
+    color: colors.ink,
   },
-  cardSub: {
+  sectionLink: {
     fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-    lineHeight: 22,
+    color: colors.goldDark,
+    fontWeight: '700',
   },
-  cardMeta: {
-    marginTop: spacing.sm,
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    fontWeight: '600',
+  jobsList: {
+    gap: spacing.md,
   },
 });
