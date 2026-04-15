@@ -60,7 +60,7 @@ export default function TabsLayout() {
       >
         <Plus size={28} color={colors.ink} strokeWidth={3} />
       </Pressable>
-      <Text style={styles.fabLabel}>{strings.cta.newQuote}</Text>
+      <Text style={styles.fabLabel}>{strings.locked.ctaNewQuote}</Text>
     </View>
   );
 }
