@@ -2,13 +2,13 @@ import { router } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { type PurchasesOffering } from 'react-native-purchases';
+import type { PurchasesOffering } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { useOnboardingDraft } from '@/lib/onboarding-store';
-import { getProOffering, Purchases, restorePurchases } from '@/lib/revenuecat';
+import { getProOffering, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
 import { colors, radii, spacing, typography } from '@/lib/theme';
@@ -37,17 +37,19 @@ export default function Paywall() {
     }
 
     setPurchasing(true);
-    try {
-      await Purchases.purchasePackage(pkg);
+    const outcome = await purchasePackage(pkg);
+    setPurchasing(false);
+
+    if (outcome.status === 'purchased') {
       await commitOnboardingProfile(user?.id, draft);
       router.replace('/(tabs)/home');
-    } catch (err) {
-      const e = err as { userCancelled?: boolean; message?: string };
-      if (!e.userCancelled) {
-        Alert.alert('Purchase failed', e.message ?? 'Unknown error');
-      }
-    } finally {
-      setPurchasing(false);
+    } else if (outcome.status === 'unavailable') {
+      Alert.alert(
+        'Purchases not available',
+        'Run the app in a development build to complete a purchase.',
+      );
+    } else if (outcome.status === 'error') {
+      Alert.alert('Purchase failed', outcome.message);
     }
   }
 
