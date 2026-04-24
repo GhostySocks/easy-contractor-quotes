@@ -7,8 +7,8 @@ export type JobStatus = 'in_progress' | 'scheduled' | 'completed';
 
 export type TodayJob = {
   id: string;
-  time: string;
-  meridiem: 'AM' | 'PM';
+  time?: string;
+  meridiem?: 'AM' | 'PM';
   title: string;
   customerName: string;
   meta: string;
@@ -23,17 +23,24 @@ type Props = {
 };
 
 export function TodayJobRow({ job, onPress, style }: Props) {
+  const hasTime = !!job.time;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${job.title} for ${job.customerName} at ${job.time} ${job.meridiem}`}
+      accessibilityLabel={
+        hasTime
+          ? `${job.title} for ${job.customerName} at ${job.time} ${job.meridiem}`
+          : `${job.title} for ${job.customerName}`
+      }
       onPress={onPress}
       style={({ pressed }) => [styles.row, style, pressed && styles.rowPressed]}
     >
-      <View style={styles.timeCol}>
-        <Text style={styles.time}>{job.time}</Text>
-        <Text style={styles.meridiem}>{job.meridiem}</Text>
-      </View>
+      {hasTime ? (
+        <View style={styles.timeCol}>
+          <Text style={styles.time}>{job.time}</Text>
+          <Text style={styles.meridiem}>{job.meridiem}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.middleCol}>
         <Text style={styles.title} numberOfLines={2}>

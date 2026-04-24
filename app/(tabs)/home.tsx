@@ -5,14 +5,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { MoneyPendingCard } from '@/components/ui/MoneyPendingCard';
-import { TodayJobRow, type TodayJob } from '@/components/ui/TodayJobRow';
+import { TodayJobRow, type JobStatus, type TodayJob } from '@/components/ui/TodayJobRow';
 import { useAuth } from '@/lib/auth-store';
+import { listActiveJobs, type JobWithCustomer } from '@/lib/jobs';
 import {
   fetchProfile,
   firstNameFromProfile,
   initialsFromProfile,
   type ProfileRow,
 } from '@/lib/profile';
+import { strings } from '@/lib/strings';
 import { colors, spacing, typography } from '@/lib/theme';
 
 // TODO(M2): replace with real aggregates from invoices + contracts tables.
@@ -23,49 +25,17 @@ const PREVIEW_MONEY = {
   overdueCount: 1,
 };
 
-// TODO(M2): replace with jobs where scheduled_at::date = today.
-const PREVIEW_JOBS: TodayJob[] = [
-  {
-    id: 'p1',
-    time: '9:00',
-    meridiem: 'AM',
-    title: 'Kitchen faucet replace',
-    customerName: 'Sarah Moore',
-    meta: '2mi away',
-    status: 'in_progress',
-    amountCents: 48000,
-  },
-  {
-    id: 'p2',
-    time: '11:30',
-    meridiem: 'AM',
-    title: 'Fence panel repair',
-    customerName: 'Derek Hayes',
-    meta: 'Repeat',
-    status: 'scheduled',
-    amountCents: 34000,
-  },
-  {
-    id: 'p3',
-    time: '2:00',
-    meridiem: 'PM',
-    title: 'Outlet install ×3',
-    customerName: 'Angela Kim',
-    meta: 'New',
-    status: 'scheduled',
-    amountCents: 22000,
-  },
-];
-
 export default function HomeScreen() {
   const user = useAuth((s) => s.user);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const row = await fetchProfile(user.id);
-    setProfile(row);
+    const [profileRow, jobRows] = await Promise.all([fetchProfile(user.id), listActiveJobs(5)]);
+    setProfile(profileRow);
+    setJobs(jobRows);
   }, [user]);
 
   useEffect(() => {
@@ -109,15 +79,23 @@ export default function HomeScreen() {
         />
 
         <SectionHeader
-          title="Today's jobs"
-          rightText={`${PREVIEW_JOBS.length} scheduled →`}
+          title="Active jobs"
+          rightText={jobs.length > 0 ? `${jobs.length} in flight →` : 'All jobs →'}
           onRightPress={() => router.push('/(tabs)/jobs')}
         />
 
         <View style={styles.jobsList}>
-          {PREVIEW_JOBS.map((job) => (
-            <TodayJobRow key={job.id} job={job} onPress={() => router.push('/(tabs)/jobs')} />
-          ))}
+          {jobs.length === 0 ? (
+            <Text style={styles.emptyState}>{strings.locked.emptyJobs}</Text>
+          ) : (
+            jobs.map((row) => (
+              <TodayJobRow
+                key={row.id}
+                job={toTodayJob(row)}
+                onPress={() => router.push({ pathname: '/job/[id]', params: { id: row.id } })}
+              />
+            ))
+          )}
         </View>
 
         <SectionHeader
@@ -147,6 +125,23 @@ function SectionHeader({
       </Pressable>
     </View>
   );
+}
+
+function toTodayJob(row: JobWithCustomer): TodayJob {
+  const status: JobStatus =
+    row.status === 'in_progress'
+      ? 'in_progress'
+      : row.status === 'completed'
+        ? 'completed'
+        : 'scheduled';
+  return {
+    id: row.id,
+    title: row.title,
+    customerName: row.customer_name ?? 'Customer',
+    meta: row.status === 'in_progress' ? 'Active' : row.status,
+    status,
+    amountCents: row.total_cents ?? 0,
+  };
 }
 
 function greeting(): string {
@@ -206,5 +201,13 @@ const styles = StyleSheet.create({
   },
   jobsList: {
     gap: spacing.md,
+  },
+  emptyState: {
+    fontSize: typography.sizes.bodySmall,
+    color: colors.ink3,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
