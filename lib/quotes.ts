@@ -1,6 +1,38 @@
 import type { LineItem } from './ai';
 import { supabase } from './supabase';
 
+export type SendChannel = 'email' | 'sms';
+
+export type SendQuoteInput = {
+  quote_id: string;
+  channels: SendChannel[];
+  recipient: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+};
+
+export type SendQuoteResult = {
+  email_sent: boolean;
+  email_error: string | null;
+  sms_url: string | null;
+  quote_sent_at: string;
+};
+
+export async function sendQuote(input: SendQuoteInput): Promise<SendQuoteResult> {
+  const { data, error } = await supabase.functions.invoke<SendQuoteResult>('send-quote', {
+    body: input,
+  });
+  if (error) {
+    throw new Error(`send-quote failed: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error('send-quote returned no data');
+  }
+  return data;
+}
+
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
 
 export type QuoteRow = {
