@@ -50,11 +50,11 @@ export async function generateQuote(input: QuoteInput): Promise<QuoteInsertResul
 
 export type ContractInput = {
   kind: 'work' | 'release';
-  job_id: string;
-  state_code: string;
+  quote_id: string;
 };
 
 export type ContractResult = {
+  id: string;
   body_markdown: string;
 };
 
