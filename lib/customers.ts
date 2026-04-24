@@ -36,6 +36,15 @@ export async function searchCustomers(query: string, limit = 8): Promise<Custome
   return (data as CustomerRow[]) ?? [];
 }
 
+export async function fetchCustomer(id: string): Promise<CustomerRow | null> {
+  const { data, error } = await supabase.from('customers').select('*').eq('id', id).maybeSingle();
+  if (error) {
+    console.warn('[customers] fetch failed', error.message);
+    return null;
+  }
+  return (data as CustomerRow) ?? null;
+}
+
 export async function listRecentCustomers(limit = 8): Promise<CustomerRow[]> {
   const { data, error } = await supabase
     .from('customers')
