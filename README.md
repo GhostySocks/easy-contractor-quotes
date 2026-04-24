@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+# Easy Contractor Quotes
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobile-first quoting app for solo handymen and small crews. Quote any job in 60 seconds with AI, send it, get it signed, get paid — without touching a desktop.
 
-## Get started
+> **Tagline:** Quote. Schedule. Get Paid. Done.
 
-1. Install dependencies
+## Status
 
-   ```bash
-   npm install
-   ```
+M0 — Bootstrap. Route tree and design tokens wired. No real features yet.
 
-2. Start the app
+## Source of truth
 
-   ```bash
-   npx expo start
-   ```
+- [`CLAUDE.md`](./CLAUDE.md) — operating manual (tech stack, security rules, design tokens, route map, DB schema, locked copy)
+- [`PRD.md`](./PRD.md) — product requirements
 
-In the output, you'll find options to open the app in a
+If the two conflict: CLAUDE.md wins on implementation, PRD.md wins on scope.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Prerequisites
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Node 20+ (tested on Node 24)
+- npm 10+
+- iOS: Xcode + iOS Simulator (macOS only for full native builds)
+- Android: Android Studio + an emulator
+- Supabase project (for M1+)
 
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env.local   # then fill in values
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
-## Learn more
+## Scripts
 
-To learn more about developing your project with Expo, look at the following resources:
+| Command             | Purpose                      |
+| ------------------- | ---------------------------- |
+| `npm start`         | Launch the Expo dev server   |
+| `npm run ios`       | Launch iOS simulator         |
+| `npm run android`   | Launch Android emulator      |
+| `npm run web`       | Launch web preview           |
+| `npm run lint`      | Run ESLint                   |
+| `npm run typecheck` | Run `tsc --noEmit`           |
+| `npm run format`    | Run Prettier on source files |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Project layout
 
-## Join the community
+```
+app/                   Expo Router routes (see CLAUDE.md §5)
+components/            Shared UI primitives
+features/              Feature-scoped code (quotes, jobs, customers, ...)
+lib/                   Clients (supabase, revenuecat, ai, stripe) + theme + strings
+supabase/
+  migrations/          Timestamped SQL with RLS policies
+  functions/           Edge Functions (ai-quote, ai-contract, webhooks)
+assets/                Images, fonts
+```
 
-Join our community of developers creating universal apps.
+## Security posture
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- No API keys in the client bundle. The client only ever sees `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Every Postgres table has RLS enabled on `auth.uid() = user_id`.
+- Subscription entitlement (`pro_access`) is server-validated via RevenueCat webhook into the `subscriptions` table. The client SDK alone is never trusted.
+- Signed contracts are write-once. `contracts.signed_at` rows are made immutable by trigger.
