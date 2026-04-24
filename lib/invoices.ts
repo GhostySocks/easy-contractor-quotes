@@ -55,6 +55,31 @@ type CreateFromQuoteInput = {
   total_cents: number;
 };
 
+export type SendInvoiceInput = {
+  invoice_id: string;
+  recipient: {
+    name: string | null;
+    email: string;
+  };
+};
+
+export type SendInvoiceResult = {
+  sent_at: string;
+};
+
+export async function sendInvoice(input: SendInvoiceInput): Promise<SendInvoiceResult> {
+  const { data, error } = await supabase.functions.invoke<SendInvoiceResult>('send-invoice', {
+    body: input,
+  });
+  if (error) {
+    throw new Error(`send-invoice failed: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error('send-invoice returned no data');
+  }
+  return data;
+}
+
 /**
  * Creates a new invoice row mirroring a quote. Idempotent-ish: if an
  * invoice already exists for this job, returns it instead of inserting.

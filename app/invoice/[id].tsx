@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, CheckCircle } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
-import { fetchInvoice, type InvoiceRow, type InvoiceStatus } from '@/lib/invoices';
+import { fetchInvoice, sendInvoice, type InvoiceRow, type InvoiceStatus } from '@/lib/invoices';
 import { formatCents } from '@/lib/pricing';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
@@ -25,6 +25,7 @@ export default function InvoiceDetail() {
   const [invoice, setInvoice] = useState<InvoiceRow | null>(null);
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -61,6 +62,27 @@ export default function InvoiceDetail() {
 
   const sent = !!invoice.sent_at;
   const paid = invoice.status === 'paid';
+
+  const handleSend = async () => {
+    if (!invoice || !customer?.email) {
+      Alert.alert("Can't send", 'This invoice is missing a customer email.');
+      return;
+    }
+    setSending(true);
+    try {
+      const result = await sendInvoice({
+        invoice_id: invoice.id,
+        recipient: { name: customer.name ?? null, email: customer.email },
+      });
+      setInvoice({ ...invoice, sent_at: result.sent_at });
+      Alert.alert('Sent', `Invoice emailed to ${customer.email}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert("Couldn't send", message);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -126,11 +148,14 @@ export default function InvoiceDetail() {
       {!paid ? (
         <View style={styles.footer}>
           <PrimaryButton
-            label={sent ? 'Resend invoice' : 'Send invoice'}
-            onPress={() =>
-              Alert.alert('Send invoice', 'Wiring Resend in M1e-6. Button is the real CTA.')
-            }
+            label={sending ? 'Sending…' : sent ? 'Resend invoice' : 'Send invoice'}
+            onPress={handleSend}
+            loading={sending}
+            disabled={sending || !customer?.email}
           />
+          {!customer?.email ? (
+            <Text style={styles.footerHint}>Add an email to the customer to send.</Text>
+          ) : null}
         </View>
       ) : (
         <View style={styles.footerDone}>
@@ -250,9 +275,15 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    gap: spacing.sm,
     borderTopColor: colors.divider,
     borderTopWidth: StyleSheet.hairlineWidth,
     backgroundColor: colors.surface2,
+  },
+  footerHint: {
+    fontSize: typography.sizes.label,
+    color: colors.ink3,
+    textAlign: 'center',
   },
   footerDone: {
     flexDirection: 'row',
