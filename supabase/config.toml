@@ -1,0 +1,14 @@
+# Supabase project configuration. Only function-level settings are
+# tracked here — project_id, API, DB, and auth settings are managed in
+# the Supabase dashboard.
+
+# The customer-facing signing flow is accessed by people who do not
+# have a Supabase session. Disable JWT verification so the functions
+# can serve tokenized requests. Security is enforced by the signing
+# token + service-role ownership check inside each function.
+
+[functions.customer-sign]
+verify_jwt = false
+
+[functions.customer-sign-submit]
+verify_jwt = false

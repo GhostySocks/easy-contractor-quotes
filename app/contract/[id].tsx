@@ -1,10 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Pencil, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,15 +16,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SendRecipientSheet, type Recipient } from '@/components/contract/SendRecipientSheet';
 import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { fetchCustomer } from '@/lib/customers';
 import {
   fetchContract,
   submitSignature,
   updateContractBody,
   type ContractRow,
 } from '@/lib/contracts';
+import { sendQuote } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
@@ -38,17 +42,52 @@ export default function ContractDetail() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [signatureOpen, setSignatureOpen] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [recipient, setRecipient] = useState<Recipient>({ name: '', email: '', phone: '' });
 
   useEffect(() => {
     if (!id) return;
-    void fetchContract(id).then((row) => {
+    void fetchContract(id).then(async (row) => {
       setContract(row);
       setLoading(false);
-      if (row) setBody(row.body_markdown);
+      if (row) {
+        setBody(row.body_markdown);
+        if (row.customer_id) {
+          const customer = await fetchCustomer(row.customer_id);
+          if (customer) {
+            setRecipient({
+              name: customer.name ?? '',
+              email: customer.email ?? '',
+              phone: customer.phone ?? '',
+            });
+          }
+        }
+      }
     });
   }, [id]);
 
   const signed = !!contract?.signed_at;
+
+  // Poll for customer-side signing while the screen is in view and the
+  // contract is unsigned. 15s cadence is cheap (one row read) and covers
+  // the "contractor is watching as the customer signs" scenario. Refetch
+  // immediately on focus so returning to the screen shows fresh state.
+  useFocusEffect(
+    useCallback(() => {
+      if (!id || signed) return;
+      let cancelled = false;
+      const refresh = async () => {
+        const row = await fetchContract(id);
+        if (!cancelled && row) setContract(row);
+      };
+      void refresh();
+      const handle = setInterval(refresh, 15_000);
+      return () => {
+        cancelled = true;
+        clearInterval(handle);
+      };
+    }, [id, signed]),
+  );
 
   const savedSignature = useRef<string | null>(null);
   useEffect(() => {
@@ -78,6 +117,55 @@ export default function ContractDetail() {
     setEditing(false);
     setSignatureOpen(true);
   }, []);
+
+  const openSend = useCallback(() => {
+    setEditing(false);
+    setSendOpen(true);
+  }, []);
+
+  const handleSend = useCallback(
+    async (r: Recipient, channels: { email: boolean; sms: boolean }) => {
+      if (!contract?.quote_id) {
+        Alert.alert("Can't send", 'This contract is not linked to a quote.');
+        return;
+      }
+      try {
+        const channelList: ('email' | 'sms')[] = [];
+        if (channels.email) channelList.push('email');
+        if (channels.sms) channelList.push('sms');
+
+        const result = await sendQuote({
+          quote_id: contract.quote_id,
+          channels: channelList,
+          recipient: {
+            name: r.name || null,
+            email: r.email || null,
+            phone: r.phone || null,
+          },
+        });
+
+        setSendOpen(false);
+        setRecipient(r);
+
+        if (result.sms_url) {
+          await Linking.openURL(result.sms_url);
+        }
+
+        const emailLine = channels.email
+          ? result.email_sent
+            ? 'Email sent.'
+            : `Email failed: ${result.email_error ?? 'unknown error'}`
+          : null;
+        const smsLine = channels.sms ? 'Messages app opened for you to send.' : null;
+        const body = [emailLine, smsLine].filter(Boolean).join('\n');
+        Alert.alert('Sent', body || 'Customer will get the signing link shortly.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        Alert.alert("Couldn't send", message);
+      }
+    },
+    [contract],
+  );
 
   const handleSubmitSignature = useCallback(
     async (signatureSvg: string) => {
@@ -145,8 +233,8 @@ export default function ContractDetail() {
             </Text>
             <Text style={styles.bannerSub}>
               {signed
-                ? `Signed ${formatSignedAt(contract.signed_at)} — this document is locked.`
-                : 'Review, edit, and tap Sign now when ready.'}
+                ? signedBannerText(recipient.name, contract.signed_at)
+                : 'Review, edit, then send the signing link to your customer.'}
             </Text>
           </Card>
 
@@ -167,20 +255,33 @@ export default function ContractDetail() {
         </ScrollView>
 
         {!signed ? (
-          <View style={styles.footer}>
+          <View style={styles.footerColumn}>
+            <View style={styles.footerRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Toggle edit mode"
+                onPress={() => setEditing((e) => !e)}
+                style={styles.editIconButton}
+              >
+                <Pencil size={20} color={colors.ink2} strokeWidth={2} />
+              </Pressable>
+              <PrimaryButton
+                label="Send to customer"
+                onPress={openSend}
+                style={styles.footerButton}
+                accessibilityLabel="Send to customer"
+              />
+            </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Toggle edit mode"
-              onPress={() => setEditing((e) => !e)}
-              style={styles.editIconButton}
-            >
-              <Pencil size={20} color={colors.ink2} strokeWidth={2} />
-            </Pressable>
-            <PrimaryButton
-              label={strings.locked.ctaSignNow}
+              accessibilityLabel="Sign in person instead"
               onPress={openSignature}
-              style={styles.footerButton}
-            />
+              style={styles.inlineLink}
+            >
+              <Text style={styles.inlineLinkText}>
+                {strings.locked.ctaSignNow} in person instead
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.footerSigned}>
@@ -194,6 +295,13 @@ export default function ContractDetail() {
         visible={signatureOpen}
         onCancel={() => setSignatureOpen(false)}
         onSubmit={handleSubmitSignature}
+      />
+
+      <SendRecipientSheet
+        visible={sendOpen}
+        initialRecipient={recipient}
+        onCancel={() => setSendOpen(false)}
+        onSend={handleSend}
       />
     </SafeAreaView>
   );
@@ -214,6 +322,12 @@ function formatSignedAt(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function signedBannerText(customerName: string | undefined, signedAt: string | null): string {
+  const date = formatSignedAt(signedAt);
+  const who = customerName && customerName.trim().length > 0 ? customerName : 'Your customer';
+  return `Signed by ${who} on ${date}. Locked.`;
 }
 
 /**
@@ -399,17 +513,32 @@ const styles = StyleSheet.create({
   mdListItem: { flexDirection: 'row', gap: spacing.sm },
   mdListBullet: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
   mdListText: { flex: 1, fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
-  footer: {
-    flexDirection: 'row',
+  footerColumn: {
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
     borderTopColor: colors.divider,
     borderTopWidth: StyleSheet.hairlineWidth,
     backgroundColor: colors.surface2,
+  },
+  footerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
   },
   footerButton: { flex: 1 },
+  inlineLink: {
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  inlineLinkText: {
+    fontSize: typography.sizes.label,
+    color: colors.ink3,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
   editIconButton: {
     width: typography.minTouchTarget,
     height: typography.minTouchTarget,

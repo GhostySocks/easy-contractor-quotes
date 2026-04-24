@@ -14,6 +14,8 @@ export type ContractRow = {
   signature_svg: string | null;
   signed_at: string | null;
   signed_ip: string | null;
+  signing_token: string | null;
+  signing_token_expires_at: string | null;
   version: number;
   created_at: string;
 };
