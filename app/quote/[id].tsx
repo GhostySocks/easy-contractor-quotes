@@ -20,7 +20,7 @@ import { PriceRangeChips, type PriceBucket } from '@/components/quote/PriceRange
 import { Card } from '@/components/ui/Card';
 import { GhostButton } from '@/components/ui/GhostButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import type { LineItem } from '@/lib/ai';
+import { generateContract, type LineItem } from '@/lib/ai';
 import {
   computeSubtotalCents,
   computeTaxCents,
@@ -42,6 +42,7 @@ export default function QuoteDetail() {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [bucket, setBucket] = useState<PriceBucket>('most_likely');
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [generating, setGenerating] = useState(false);
 
   // Load the quote row once on mount.
   useEffect(() => {
@@ -92,9 +93,23 @@ export default function QuoteDetail() {
     return () => clearTimeout(handle);
   }, [quote, scope, lineItems, subtotal, tax, total, low, high]);
 
-  const handleSend = useCallback(() => {
-    Alert.alert('Send & sign', 'Wired in M1d. For now, the draft stays in your Jobs list.');
-  }, []);
+  const handleSend = useCallback(async () => {
+    if (!quote) return;
+    if (saving === 'saving') {
+      // Let the autosave flush so the contract is generated from the latest scope/line items.
+      return;
+    }
+    setGenerating(true);
+    try {
+      const contract = await generateContract({ kind: 'work', quote_id: quote.id });
+      router.replace({ pathname: '/contract/[id]', params: { id: contract.id } });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert("Couldn't generate contract", message);
+    } finally {
+      setGenerating(false);
+    }
+  }, [quote, saving]);
 
   if (loading) {
     return (
@@ -200,8 +215,10 @@ export default function QuoteDetail() {
             style={styles.footerButton}
           />
           <PrimaryButton
-            label={strings.locked.ctaSendQuote}
+            label={generating ? 'Generating contract…' : strings.locked.ctaSendQuote}
             onPress={handleSend}
+            loading={generating}
+            disabled={generating}
             style={styles.footerButton}
           />
         </View>
