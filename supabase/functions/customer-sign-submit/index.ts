@@ -4,6 +4,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
+import { onContractSigned } from '../_shared/post-sign.ts';
 
 /**
  * Public (unauthenticated) signature submission. Twin of the authenticated
@@ -84,6 +85,10 @@ Deno.serve(async (req: Request) => {
         headers: corsHeaders,
       });
     }
+
+    // Create the downstream job + flip the quote to accepted. Failures are
+    // logged but don't block the 200 response.
+    await onContractSigned(admin, existing.id);
 
     return new Response(JSON.stringify({ signed: true }), { headers: JSON_HEADERS });
   } catch (err) {

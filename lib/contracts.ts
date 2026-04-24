@@ -29,6 +29,21 @@ export async function fetchContract(id: string): Promise<ContractRow | null> {
   return (data as ContractRow) ?? null;
 }
 
+export async function fetchContractByJob(jobId: string): Promise<ContractRow | null> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*')
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn('[contracts] fetch-by-job failed', error.message);
+    return null;
+  }
+  return (data as ContractRow) ?? null;
+}
+
 /**
  * Update body_markdown for an unsigned contract. The DB trigger + RLS policy
  * reject updates once signed_at is set, so we don't defensively check here.
