@@ -5,6 +5,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
+import { onContractSigned } from '../_shared/post-sign.ts';
 
 type SignInput = {
   contract_id: string;
@@ -73,7 +74,12 @@ Deno.serve(async (req: Request) => {
       throw new HttpError(500, `sign failed: ${updateErr?.message ?? 'no row'}`);
     }
 
-    return new Response(JSON.stringify(updated), {
+    // Create the downstream job + flip the quote to accepted. Failures are
+    // logged but don't block the 200 response — the signature itself is
+    // the contractually meaningful event; a missing job can be reconciled.
+    const { job_id } = await onContractSigned(admin, updated.id);
+
+    return new Response(JSON.stringify({ ...updated, job_id: job_id ?? updated.job_id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
