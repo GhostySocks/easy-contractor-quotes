@@ -17,6 +17,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
+import { createInvoiceFromQuote, fetchInvoiceByJob } from '@/lib/invoices';
 import { fetchJob, markJobCompleted, type JobRow } from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
 import { fetchQuote, type QuoteRow } from '@/lib/quotes';
@@ -29,6 +30,7 @@ export default function JobDetail() {
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [contract, setContract] = useState<ContractRow | null>(null);
   const [quote, setQuote] = useState<QuoteRow | null>(null);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
 
@@ -42,12 +44,14 @@ export default function JobDetail() {
         const contractRow = await fetchContractByJob(jobRow.id);
         setContract(contractRow);
 
-        const [customerRow, quoteRow] = await Promise.all([
+        const [customerRow, quoteRow, invoiceRow] = await Promise.all([
           jobRow.customer_id ? fetchCustomer(jobRow.customer_id) : Promise.resolve(null),
           contractRow?.quote_id ? fetchQuote(contractRow.quote_id) : Promise.resolve(null),
+          fetchInvoiceByJob(jobRow.id),
         ]);
         setCustomer(customerRow);
         setQuote(quoteRow);
+        setInvoiceId(invoiceRow?.id ?? null);
       }
 
       setLoading(false);
@@ -55,7 +59,10 @@ export default function JobDetail() {
   }, [id]);
 
   const handleComplete = useCallback(async () => {
-    if (!job) return;
+    if (!job || !quote) {
+      Alert.alert("Can't complete", 'This job is missing its quote.');
+      return;
+    }
     setCompleting(true);
     try {
       const updated = await markJobCompleted(job.id);
@@ -63,13 +70,30 @@ export default function JobDetail() {
         Alert.alert("Couldn't complete", 'Please try again.');
         return;
       }
-      // M1e-4 will create an invoice and route to it from here. For M1e-3
-      // the button just flips job status; navigation is wired next commit.
       setJob(updated);
+
+      const invoice = await createInvoiceFromQuote({
+        user_id: updated.user_id,
+        job_id: updated.id,
+        customer_id: updated.customer_id,
+        quote_id: quote.id,
+        line_items: (quote.line_items ?? []) as LineItem[],
+        subtotal_cents: quote.subtotal_cents,
+        tax_cents: quote.tax_cents,
+        total_cents: quote.total_cents,
+      });
+      if (!invoice) {
+        Alert.alert(
+          'Job completed',
+          "Invoice couldn't be generated right now — open the job again to retry.",
+        );
+        return;
+      }
+      router.replace({ pathname: '/invoice/[id]', params: { id: invoice.id } });
     } finally {
       setCompleting(false);
     }
-  }, [job]);
+  }, [job, quote]);
 
   if (loading) {
     return (
@@ -198,6 +222,13 @@ export default function JobDetail() {
             onPress={handleComplete}
             loading={completing}
             disabled={completing}
+          />
+        </View>
+      ) : invoiceId ? (
+        <View style={styles.footer}>
+          <PrimaryButton
+            label="View invoice"
+            onPress={() => router.push({ pathname: '/invoice/[id]', params: { id: invoiceId } })}
           />
         </View>
       ) : (
