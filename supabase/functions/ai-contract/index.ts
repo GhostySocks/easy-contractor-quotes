@@ -83,8 +83,10 @@ Deno.serve(async (req: Request) => {
         kind: input.kind,
         state_code: context.state_code,
         body_markdown,
+        signing_token: mintSigningToken(),
+        signing_token_expires_at: daysFromNowISO(30),
       })
-      .select('id, body_markdown')
+      .select('id, body_markdown, signing_token')
       .single();
 
     if (insertError || !inserted) {
@@ -236,4 +238,24 @@ async function callAnthropic(
     throw new HttpError(502, 'Anthropic response did not include the expected tool use');
   }
   return toolUse.input as ContractToolOutput;
+}
+
+/**
+ * 32 bytes of CSPRNG randomness, base64url-encoded → 43-character token.
+ * Resistant to guessing; safe to put in a URL.
+ */
+function mintSigningToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function daysFromNowISO(days: number): string {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }

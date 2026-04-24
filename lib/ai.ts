@@ -56,6 +56,7 @@ export type ContractInput = {
 export type ContractResult = {
   id: string;
   body_markdown: string;
+  signing_token: string;
 };
 
 export async function generateContract(input: ContractInput): Promise<ContractResult> {
