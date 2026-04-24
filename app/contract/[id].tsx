@@ -15,9 +15,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { fetchContract, updateContractBody, type ContractRow } from '@/lib/contracts';
+import {
+  fetchContract,
+  submitSignature,
+  updateContractBody,
+  type ContractRow,
+} from '@/lib/contracts';
 import { strings } from '@/lib/strings';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
@@ -31,6 +37,7 @@ export default function ContractDetail() {
   const [body, setBody] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [signatureOpen, setSignatureOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -67,9 +74,29 @@ export default function ContractDetail() {
     return () => clearTimeout(handle);
   }, [contract, body, signed]);
 
-  const handleSign = useCallback(() => {
-    Alert.alert('Sign now', 'Signature canvas wires in M1c-4. The row will become immutable.');
+  const openSignature = useCallback(() => {
+    setEditing(false);
+    setSignatureOpen(true);
   }, []);
+
+  const handleSubmitSignature = useCallback(
+    async (signatureSvg: string) => {
+      if (!contract) return;
+      try {
+        const updated = await submitSignature({
+          contract_id: contract.id,
+          signature_svg: signatureSvg,
+        });
+        setContract(updated);
+        setBody(updated.body_markdown);
+        setSignatureOpen(false);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        Alert.alert("Couldn't sign", message);
+      }
+    },
+    [contract],
+  );
 
   if (loading) {
     return (
@@ -151,7 +178,7 @@ export default function ContractDetail() {
             </Pressable>
             <PrimaryButton
               label={strings.locked.ctaSignNow}
-              onPress={handleSign}
+              onPress={openSignature}
               style={styles.footerButton}
             />
           </View>
@@ -162,6 +189,12 @@ export default function ContractDetail() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      <SignatureModal
+        visible={signatureOpen}
+        onCancel={() => setSignatureOpen(false)}
+        onSubmit={handleSubmitSignature}
+      />
     </SafeAreaView>
   );
 }
