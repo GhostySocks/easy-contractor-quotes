@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Pencil, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -67,6 +67,27 @@ export default function ContractDetail() {
   }, [id]);
 
   const signed = !!contract?.signed_at;
+
+  // Poll for customer-side signing while the screen is in view and the
+  // contract is unsigned. 15s cadence is cheap (one row read) and covers
+  // the "contractor is watching as the customer signs" scenario. Refetch
+  // immediately on focus so returning to the screen shows fresh state.
+  useFocusEffect(
+    useCallback(() => {
+      if (!id || signed) return;
+      let cancelled = false;
+      const refresh = async () => {
+        const row = await fetchContract(id);
+        if (!cancelled && row) setContract(row);
+      };
+      void refresh();
+      const handle = setInterval(refresh, 15_000);
+      return () => {
+        cancelled = true;
+        clearInterval(handle);
+      };
+    }, [id, signed]),
+  );
 
   const savedSignature = useRef<string | null>(null);
   useEffect(() => {
@@ -212,7 +233,7 @@ export default function ContractDetail() {
             </Text>
             <Text style={styles.bannerSub}>
               {signed
-                ? `Signed ${formatSignedAt(contract.signed_at)} — this document is locked.`
+                ? signedBannerText(recipient.name, contract.signed_at)
                 : 'Review, edit, then send the signing link to your customer.'}
             </Text>
           </Card>
@@ -301,6 +322,12 @@ function formatSignedAt(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function signedBannerText(customerName: string | undefined, signedAt: string | null): string {
+  const date = formatSignedAt(signedAt);
+  const who = customerName && customerName.trim().length > 0 ? customerName : 'Your customer';
+  return `Signed by ${who} on ${date}. Locked.`;
 }
 
 /**
