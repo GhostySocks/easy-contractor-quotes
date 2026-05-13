@@ -127,6 +127,29 @@ function escapeLikeWildcards(input: string): string {
   return input.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+/**
+ * All jobs for one customer, newest first. Used by the Customer profile
+ * screen's "Jobs with this customer" section. No status filter — we want the
+ * full history, including completed and cancelled jobs.
+ */
+export async function listJobsForCustomer(
+  customerId: string,
+  limit = 50,
+): Promise<JobWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, customer:customers(name)')
+    .eq('customer_id', customerId)
+    .order('scheduled_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[jobs] list-for-customer failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toJobWithCustomer);
+}
+
 export async function markJobCompleted(id: string): Promise<JobRow | null> {
   const { data, error } = await supabase
     .from('jobs')
