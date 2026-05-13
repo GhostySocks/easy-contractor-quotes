@@ -1,5 +1,353 @@
-import { ScreenStub } from '@/components/ui/ScreenStub';
+import { router } from 'expo-router';
+import { Search, X } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import {
+  TodayJobRow,
+  type JobStatus as RowStatus,
+  type TodayJob,
+} from '@/components/ui/TodayJobRow';
+import { listAllJobs, type JobWithCustomer, type LibraryStatusFilter } from '@/lib/jobs';
+import { strings } from '@/lib/strings';
+import { colors, radii, spacing, typography } from '@/lib/theme';
+
+type Section = { title: string; data: JobWithCustomer[] };
+
+const FILTERS: { key: LibraryStatusFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'done', label: 'Done' },
+];
 
 export default function JobsScreen() {
-  return <ScreenStub name="/(tabs)/jobs" subtitle="Library — search, filter, day-grouped" />;
+  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
+  const [filter, setFilter] = useState<LibraryStatusFilter>('all');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async (status: LibraryStatusFilter, query: string) => {
+    const rows = await listAllJobs({ status, search: query });
+    setJobs(rows);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void load(filter, search).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, search, load]);
+
+  const sections = useMemo(() => groupByDay(jobs), [jobs]);
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.header}>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.title}>Library</Text>
+          <Text style={styles.count}>
+            {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
+          </Text>
+        </View>
+
+        <SearchField value={search} onChangeText={setSearch} />
+
+        <View style={styles.filterRow}>
+          {FILTERS.map((f) => (
+            <FilterPill
+              key={f.key}
+              label={f.label}
+              active={filter === f.key}
+              onPress={() => setFilter(f.key)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        stickySectionHeadersEnabled
+        contentContainerStyle={styles.listContent}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderLabel}>{section.title}</Text>
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <TodayJobRow
+            job={toTodayJob(item)}
+            onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.id } })}
+          />
+        )}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await load(filter, search);
+              setRefreshing(false);
+            }}
+            tintColor={colors.gold}
+          />
+        }
+        ListEmptyComponent={
+          loading ? null : (
+            <Text style={styles.emptyState}>
+              {search || filter !== 'all' ? 'No jobs match this filter.' : strings.locked.emptyJobs}
+            </Text>
+          )
+        }
+      />
+    </SafeAreaView>
+  );
 }
+
+function SearchField({
+  value,
+  onChangeText,
+}: {
+  value: string;
+  onChangeText: (v: string) => void;
+}) {
+  return (
+    <View style={styles.search}>
+      <Search size={18} color={colors.ink3} strokeWidth={2} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder="Search jobs by title"
+        placeholderTextColor={colors.ink3}
+        style={styles.searchInput}
+        returnKeyType="search"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      {value.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          onPress={() => onChangeText('')}
+          hitSlop={12}
+        >
+          <X size={18} color={colors.ink3} strokeWidth={2} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function FilterPill({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={[styles.pill, active && styles.pillActive]}
+    >
+      <Text style={[styles.pillLabel, active && styles.pillLabelActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Group jobs by the date they're scheduled for, falling back to the date they
+ * were created. Sections come out in the same order as the input (newest
+ * first), so we rely on the caller's ordering rather than re-sorting here.
+ */
+function groupByDay(jobs: JobWithCustomer[]): Section[] {
+  const sections: Section[] = [];
+  const seen = new Map<string, Section>();
+
+  for (const job of jobs) {
+    const key = bucketKey(job);
+    let section = seen.get(key);
+    if (!section) {
+      section = { title: formatBucketLabel(key), data: [] };
+      seen.set(key, section);
+      sections.push(section);
+    }
+    section.data.push(job);
+  }
+  return sections;
+}
+
+function bucketKey(job: JobWithCustomer): string {
+  const d = new Date(job.scheduled_at ?? job.created_at);
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function formatBucketLabel(key: string): string {
+  if (key === 'unknown') return 'Unscheduled';
+
+  const [y, m, d] = key.split('-').map(Number);
+  const date = new Date(y, m, d);
+  const today = startOfDay(new Date());
+  const target = startOfDay(date);
+  const diffDays = Math.round((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === -1) return 'Tomorrow';
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+  if (date.getFullYear() === today.getFullYear()) {
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function toTodayJob(row: JobWithCustomer): TodayJob {
+  const status: RowStatus =
+    row.status === 'in_progress'
+      ? 'in_progress'
+      : row.status === 'completed' || row.status === 'paid'
+        ? 'completed'
+        : 'scheduled';
+  return {
+    id: row.id,
+    title: row.title,
+    customerName: row.customer_name ?? 'Customer',
+    meta: metaForStatus(row.status),
+    status,
+    amountCents: row.total_cents ?? 0,
+  };
+}
+
+function metaForStatus(status: JobWithCustomer['status']): string {
+  switch (status) {
+    case 'in_progress':
+      return 'Active';
+    case 'paid':
+      return 'Paid';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return status;
+  }
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.surface2,
+  },
+  header: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: colors.surface2,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: typography.sizes.display,
+    fontWeight: '800',
+    color: colors.ink,
+    letterSpacing: -0.5,
+  },
+  count: {
+    fontSize: typography.sizes.bodySmall,
+    color: colors.ink3,
+    fontWeight: '600',
+  },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.sizes.body,
+    color: colors.ink,
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  pill: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  pillActive: {
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
+  },
+  pillLabel: {
+    fontSize: typography.sizes.bodySmall,
+    fontWeight: '700',
+    color: colors.ink2,
+  },
+  pillLabelActive: {
+    color: colors.gold,
+  },
+  listContent: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.huge + spacing.huge,
+  },
+  sectionHeader: {
+    backgroundColor: colors.surface2,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  sectionHeaderLabel: {
+    fontSize: typography.sizes.label,
+    fontWeight: '800',
+    color: colors.ink3,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  emptyState: {
+    fontSize: typography.sizes.bodySmall,
+    color: colors.ink3,
+    paddingVertical: spacing.huge,
+    paddingHorizontal: spacing.lg,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});
