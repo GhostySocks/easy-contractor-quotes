@@ -59,6 +59,47 @@ export async function listRecentCustomers(limit = 8): Promise<CustomerRow[]> {
   return (data as CustomerRow[]) ?? [];
 }
 
+export type CustomerWithJobs = CustomerRow & {
+  job_count: number;
+};
+
+/**
+ * Full Customers list with the job count rolled in per row. Used by the
+ * Customers tab so we can render the "Repeat" badge (jobs >= 2) without a
+ * second round trip. PostgREST returns the embedded aggregate as
+ * `{ jobs: [{ count }] }`.
+ */
+export async function listCustomers(opts?: {
+  search?: string;
+  limit?: number;
+}): Promise<CustomerWithJobs[]> {
+  const search = opts?.search?.trim() ?? '';
+  const limit = opts?.limit ?? 200;
+
+  let query = supabase
+    .from('customers')
+    .select('*, jobs(count)')
+    .order('last_job_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (search) {
+    query = query.ilike('name', `%${escapeLikeWildcards(search)}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.warn('[customers] list failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toCustomerWithJobs);
+}
+
+function toCustomerWithJobs(row: unknown): CustomerWithJobs {
+  const r = row as CustomerRow & { jobs?: { count: number }[] };
+  return { ...r, job_count: r.jobs?.[0]?.count ?? 0 };
+}
+
 export async function createCustomer(input: {
   name: string;
   phone?: string;
