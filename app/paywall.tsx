@@ -7,21 +7,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
-import { useOnboardingDraft } from '@/lib/onboarding-store';
+import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
+import { commitOnboardingProfile } from '@/lib/onboarding-commit';
 import { getProOffering, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { strings } from '@/lib/strings';
-import { supabase } from '@/lib/supabase';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
 export default function Paywall() {
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const user = useAuth((s) => s.user);
-  const draft = useOnboardingDraft();
 
   useEffect(() => {
     void getProOffering().then(setOffering);
   }, []);
+
+  async function handleDevSkip() {
+    await commitOnboardingProfile(user?.id);
+    router.replace('/(tabs)/home');
+  }
 
   async function handlePurchase() {
     if (!offering) {
@@ -41,7 +45,7 @@ export default function Paywall() {
     setPurchasing(false);
 
     if (outcome.status === 'purchased') {
-      await commitOnboardingProfile(user?.id, draft);
+      await commitOnboardingProfile(user?.id);
       router.replace('/(tabs)/home');
     } else if (outcome.status === 'unavailable') {
       Alert.alert(
@@ -88,27 +92,15 @@ export default function Paywall() {
         <Pressable onPress={handleRestore} style={styles.restore} accessibilityRole="link">
           <Text style={styles.restoreLabel}>{strings.paywall.restore}</Text>
         </Pressable>
+
+        {DEV_BYPASS_PAYWALL ? (
+          <Pressable onPress={handleDevSkip} style={styles.devSkip} accessibilityRole="button">
+            <Text style={styles.devSkipLabel}>DEV — continue without subscribing</Text>
+          </Pressable>
+        ) : null}
       </View>
     </SafeAreaView>
   );
-}
-
-async function commitOnboardingProfile(
-  userId: string | undefined,
-  draft: ReturnType<typeof useOnboardingDraft.getState>,
-): Promise<void> {
-  if (!userId) return;
-  const { error } = await supabase.from('profiles').upsert({
-    id: userId,
-    business_name: draft.business_name || 'My business',
-    logo_url: draft.logo_url,
-    state_code: draft.state_code || 'TX',
-    trade: draft.trade,
-    onboarding_completed_at: new Date().toISOString(),
-  });
-  if (error) {
-    console.warn('[profiles] upsert failed', error.message);
-  }
 }
 
 const styles = StyleSheet.create({
@@ -175,5 +167,23 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     fontSize: typography.sizes.bodySmall,
     fontWeight: '600',
+  },
+  devSkip: {
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: radii.sm,
+    borderStyle: 'dashed',
+  },
+  devSkipLabel: {
+    color: colors.ink3,
+    fontSize: typography.sizes.label,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
 });

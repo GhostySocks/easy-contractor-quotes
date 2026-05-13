@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
+import { commitOnboardingProfile } from '@/lib/onboarding-commit';
 import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, typography } from '@/lib/theme';
@@ -22,7 +24,7 @@ export default function SignUp() {
       return;
     }
     setLoading(true);
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
     });
@@ -30,6 +32,14 @@ export default function SignUp() {
 
     if (signUpError) {
       setError(signUpError.message);
+      return;
+    }
+
+    // Dev-only escape hatch: skip the paywall, commit the profile, jump to home.
+    // Production builds always send the user to /paywall (see lib/dev-flags.ts).
+    if (DEV_BYPASS_PAYWALL) {
+      await commitOnboardingProfile(data.user?.id);
+      router.replace('/(tabs)/home');
       return;
     }
 

@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { useOnboardingDraft } from '@/lib/onboarding-store';
 import { strings } from '@/lib/strings';
+import { supabase } from '@/lib/supabase';
 import { colors, spacing, typography } from '@/lib/theme';
 
 export default function Welcome() {
@@ -29,8 +31,28 @@ export default function Welcome() {
         >
           <Text style={styles.linkLabel}>{strings.welcome.alreadyHaveAccount}</Text>
         </Pressable>
+
+        {__DEV__ ? <DevResetLink /> : null}
       </View>
     </SafeAreaView>
+  );
+}
+
+/**
+ * Dev-only "start over" — signs out of Supabase and clears the in-memory
+ * onboarding draft, then re-routes to /welcome so the next test run is clean.
+ * Renders nothing in production builds.
+ */
+function DevResetLink() {
+  async function handleReset() {
+    await supabase.auth.signOut();
+    useOnboardingDraft.getState().reset();
+    router.replace('/(onboarding)/welcome');
+  }
+  return (
+    <Pressable accessibilityRole="button" style={styles.devReset} onPress={handleReset}>
+      <Text style={styles.devResetLabel}>DEV — reset & start over</Text>
+    </Pressable>
   );
 }
 
@@ -79,5 +101,17 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     fontSize: typography.sizes.bodySmall,
     fontWeight: '600',
+  },
+  devReset: {
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  devResetLabel: {
+    color: colors.ink3,
+    fontSize: typography.sizes.label,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
 });
