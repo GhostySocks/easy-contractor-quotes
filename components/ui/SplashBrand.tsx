@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { TrendingUp } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -42,24 +42,26 @@ export function SplashBrand() {
     <View style={styles.root}>
       <RadialGlow />
 
-      <View style={styles.center}>
-        <IconBadge />
+      <View style={styles.inner}>
+        <View style={styles.center}>
+          <IconBadge />
 
-        <View style={styles.nameStack}>
-          <Text style={styles.name}>Easy Contractor</Text>
-          <Text style={styles.name}>Quotes</Text>
+          <View style={styles.nameStack}>
+            <Text style={styles.name}>Easy Contractor</Text>
+            <Text style={styles.name}>Quotes</Text>
+          </View>
+
+          <Text style={styles.proBadge}>PRO</Text>
+
+          <Text style={styles.tagline}>{strings.app.tagline}</Text>
         </View>
 
-        <Text style={styles.proBadge}>PRO</Text>
-
-        <Text style={styles.tagline}>{strings.app.tagline}</Text>
-      </View>
-
-      <View style={styles.footer}>
-        <View style={styles.barTrack}>
-          <Animated.View style={[styles.bar, barStyle]} />
+        <View style={styles.footer}>
+          <View style={styles.barTrack}>
+            <Animated.View style={[styles.bar, barStyle]} />
+          </View>
+          <Text style={styles.loading}>Getting your jobs ready…</Text>
         </View>
-        <Text style={styles.loading}>Getting your jobs ready…</Text>
       </View>
     </View>
   );
@@ -82,24 +84,26 @@ function IconBadge() {
 }
 
 function RadialGlow() {
-  const { width, height } = Dimensions.get('window');
+  // viewBox + percentage radii so the glow scales with the SVG container at
+  // any size (including web on resize). Avoid Dimensions.get('window') — on
+  // web that snapshot can be narrower than the rendered SVG, leaving the tint
+  // bounded short of the right edge.
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+    <Svg
+      style={StyleSheet.absoluteFill}
+      width="100%"
+      height="100%"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
       <Defs>
-        <RadialGradient
-          id="glow"
-          cx="50%"
-          cy="25%"
-          rx={`${(width * 0.8).toFixed(0)}`}
-          ry={`${(height * 0.45).toFixed(0)}`}
-          gradientUnits="userSpaceOnUse"
-        >
+        <RadialGradient id="glow" cx="50%" cy="25%" rx="80%" ry="60%">
           <Stop offset="0%" stopColor="#D4AF37" stopOpacity="0.28" />
           <Stop offset="55%" stopColor="#D4AF37" stopOpacity="0.06" />
           <Stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
         </RadialGradient>
       </Defs>
-      <Rect x="0" y="0" width={width} height={height} fill="url(#glow)" />
+      <Rect x="0" y="0" width="100" height="100" fill="url(#glow)" />
     </Svg>
   );
 }
@@ -110,7 +114,12 @@ const BAR_TRAVEL = 140;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    width: '100%',
+    alignSelf: 'stretch',
     backgroundColor: colors.ink,
+  },
+  inner: {
+    flex: 1,
     paddingHorizontal: spacing.xl,
   },
   center: {

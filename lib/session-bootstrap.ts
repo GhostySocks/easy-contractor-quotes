@@ -25,19 +25,30 @@ export function useSessionBootstrap(): void {
     let cancelled = false;
 
     async function init() {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      setSession(data.session ?? null);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+        setSession(data.session ?? null);
 
-      if (data.session?.user.id) {
-        await refreshSubscription(data.session.user.id, setSubscription);
-        initRevenueCat(data.session.user.id);
-      } else {
-        initRevenueCat(null);
+        if (data.session?.user.id) {
+          await refreshSubscription(data.session.user.id, setSubscription);
+          initRevenueCat(data.session.user.id);
+        } else {
+          initRevenueCat(null);
+        }
+      } catch (err) {
+        console.warn('[bootstrap] init failed; continuing unauthenticated', err);
+      } finally {
+        if (!cancelled) setBootstrapped(true);
       }
-
-      setBootstrapped(true);
     }
+
+    // Safety net: if a network call hangs (paused Supabase project, offline,
+    // unreachable URL), still release the splash after 4s so the user lands
+    // on /welcome instead of staring at the loading bar forever.
+    const failsafe = setTimeout(() => {
+      if (!cancelled) setBootstrapped(true);
+    }, 4000);
 
     void init();
 
@@ -54,6 +65,7 @@ export function useSessionBootstrap(): void {
 
     return () => {
       cancelled = true;
+      clearTimeout(failsafe);
       listener.subscription.unsubscribe();
     };
   }, [setSession, setSubscription, setBootstrapped]);
