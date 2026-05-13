@@ -131,7 +131,7 @@ function SearchField({
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        placeholder="Search jobs by title"
+        placeholder="Search by job or customer"
         placeholderTextColor={colors.ink3}
         style={styles.searchInput}
         returnKeyType="search"

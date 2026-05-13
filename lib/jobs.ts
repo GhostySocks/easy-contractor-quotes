@@ -57,9 +57,13 @@ const STATUS_GROUPS: Record<LibraryStatusFilter, JobStatus[] | null> = {
 
 /**
  * Full Library list — every job the user owns, newest first. Used by the
- * Jobs tab. Search is a case-insensitive prefix-anywhere match on the job
- * title; for matching by customer name we'd need a Postgres `or` across the
- * joined table, which we can layer in once volume warrants it.
+ * Jobs tab.
+ *
+ * Search matches case-insensitive substrings against either the job title or
+ * the joined customer name. PostgREST can't express "title OR embedded.name"
+ * in a single query while still returning parent rows when only the title
+ * hits, so we resolve customer matches in a small first pass and OR the
+ * resulting customer_id set into the jobs filter.
  */
 export async function listAllJobs(opts?: {
   status?: LibraryStatusFilter;
@@ -69,6 +73,23 @@ export async function listAllJobs(opts?: {
   const status = opts?.status ?? 'all';
   const search = opts?.search?.trim() ?? '';
   const limit = opts?.limit ?? 200;
+
+  // Pre-resolve customers whose name matches the search, so we can OR them
+  // into the jobs filter. Capped at 200 since a real contractor isn't going
+  // to type a query that legitimately matches more.
+  let customerIds: string[] = [];
+  if (search) {
+    const { data: matched, error: customerErr } = await supabase
+      .from('customers')
+      .select('id')
+      .ilike('name', `%${escapeLikeWildcards(search)}%`)
+      .limit(200);
+    if (customerErr) {
+      console.warn('[jobs] customer pre-search failed', customerErr.message);
+    } else {
+      customerIds = (matched ?? []).map((c: { id: string }) => c.id);
+    }
+  }
 
   let query = supabase
     .from('jobs')
@@ -81,7 +102,12 @@ export async function listAllJobs(opts?: {
   if (statuses) query = query.in('status', statuses);
 
   if (search) {
-    query = query.ilike('title', `%${escapeLikeWildcards(search)}%`);
+    const escaped = escapeLikeWildcards(search);
+    if (customerIds.length > 0) {
+      query = query.or(`title.ilike.%${escaped}%,customer_id.in.(${customerIds.join(',')})`);
+    } else {
+      query = query.ilike('title', `%${escaped}%`);
+    }
   }
 
   const { data, error } = await query;
