@@ -25,6 +25,27 @@ export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
   return (data as ProfileRow) ?? null;
 }
 
+/**
+ * Update editable profile fields. RLS restricts the update to the calling
+ * user's own row. Returns the new row on success or null on error.
+ */
+export async function updateProfile(
+  userId: string,
+  patch: Partial<Pick<ProfileRow, 'business_name' | 'state_code' | 'trade' | 'logo_url'>>,
+): Promise<ProfileRow | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', userId)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[profile] update failed', error.message);
+    return null;
+  }
+  return data as ProfileRow;
+}
+
 export function firstNameFromProfile(profile: ProfileRow | null): string {
   if (!profile) return 'there';
   const first = profile.business_name.trim().split(/\s+/)[0];
