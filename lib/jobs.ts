@@ -174,6 +174,51 @@ export async function listJobsForCustomer(
   return (data ?? []).map(toJobWithCustomer);
 }
 
+/**
+ * Jobs with no scheduled_at yet. Used by the Calendar "schedule a job for
+ * this day" picker. Capped because solo contractors rarely have more than a
+ * handful of unscheduled jobs sitting around.
+ */
+export async function listUnscheduledJobs(limit = 50): Promise<JobWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, customer:customers(name)')
+    .is('scheduled_at', null)
+    .not('status', 'in', '(completed,paid,cancelled)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[jobs] list-unscheduled failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toJobWithCustomer);
+}
+
+/**
+ * Set or clear a job's scheduled date. Pass null to unschedule. Also flips
+ * 'todo' jobs to 'scheduled' when we're putting a date on them — so the
+ * status filter on the Library stays meaningful without the caller having
+ * to remember.
+ */
+export async function setJobSchedule(
+  jobId: string,
+  scheduledAt: string | null,
+): Promise<JobRow | null> {
+  const patch: Record<string, unknown> = { scheduled_at: scheduledAt };
+  if (scheduledAt) patch.status = 'scheduled';
+  const { data, error } = await supabase
+    .from('jobs')
+    .update(patch)
+    .eq('id', jobId)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[jobs] set-schedule failed', error.message);
+    return null;
+  }
+  return data as JobRow;
+}
+
 export async function markJobCompleted(id: string): Promise<JobRow | null> {
   const { data, error } = await supabase
     .from('jobs')
