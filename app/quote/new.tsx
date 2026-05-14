@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateQuote } from '@/lib/ai';
 import { useAuth } from '@/lib/auth-store';
-import { type CustomerRow } from '@/lib/customers';
+import { createCustomer, type CustomerRow } from '@/lib/customers';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, typography } from '@/lib/theme';
 
@@ -51,11 +51,26 @@ export default function NewQuote() {
   async function handleGenerate() {
     setGenerating(true);
     try {
+      // If the user typed a customer name but never picked from the dropdown
+      // (or never tapped 'Create new'), auto-create on the fly. createCustomer
+      // dedupes server-side by normalized name so this can't produce a fresh
+      // duplicate of an existing customer.
+      let resolvedCustomerId = customerId;
+      if (!resolvedCustomerId && customerName.trim()) {
+        const created = await createCustomer({ name: customerName });
+        if (!created) {
+          Alert.alert("Couldn't link customer", 'Try picking a customer from the list.');
+          return;
+        }
+        resolvedCustomerId = created.id;
+        setCustomerId(created.id);
+      }
+
       const result = await generateQuote({
         trade: profileTrade,
         state_code: profileState,
         scope_text: description,
-        customer_id: customerId,
+        customer_id: resolvedCustomerId,
         address: {
           line1: addressLine1 || undefined,
           city: city || undefined,
