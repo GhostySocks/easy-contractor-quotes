@@ -32,6 +32,18 @@ export async function requireActiveSubscription(req: Request): Promise<{
   }
   const userId = userResult.user.id;
 
+  // Dev-only escape hatch — server side counterpart to the client's
+  // EXPO_PUBLIC_DEV_BYPASS_PAYWALL. Honored only when explicitly set in this
+  // project's edge function secrets (never via header / body, so it can't be
+  // spoofed by the client). Set with:
+  //   supabase secrets set DEV_BYPASS_ENTITLEMENT=true
+  // and unset before deploying to production. Never prefix with EXPO_PUBLIC_.
+  // @ts-expect-error — Deno env access
+  const bypass = Deno.env.get('DEV_BYPASS_ENTITLEMENT');
+  if (bypass === 'true' || bypass === '1') {
+    return { userId, supabase };
+  }
+
   const { data: sub, error: subError } = await supabase
     .from('subscriptions')
     .select('status')
