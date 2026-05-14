@@ -18,27 +18,50 @@ import {
   type TodayJob,
 } from '@/components/ui/TodayJobRow';
 import { listAllJobs, type JobWithCustomer, type LibraryStatusFilter } from '@/lib/jobs';
+import { listDraftQuotes, type DraftQuoteWithCustomer } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
-type Section = { title: string; data: JobWithCustomer[] };
+// Unified row shape so we can group + render jobs and draft quotes through
+// the same SectionList without separate code paths per source.
+type LibraryRow = {
+  id: string;
+  href: '/job/[id]' | '/quote/[id]';
+  groupingIso: string;
+  todayJob: TodayJob;
+};
+
+type Section = { title: string; data: LibraryRow[] };
 
 const FILTERS: { key: LibraryStatusFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
   { key: 'done', label: 'Done' },
+  { key: 'drafts', label: 'Drafts' },
 ];
 
 export default function JobsScreen() {
-  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
+  const [rows, setRows] = useState<LibraryRow[]>([]);
   const [filter, setFilter] = useState<LibraryStatusFilter>('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (status: LibraryStatusFilter, query: string) => {
-    const rows = await listAllJobs({ status, search: query });
-    setJobs(rows);
+    if (status === 'drafts') {
+      const drafts = await listDraftQuotes();
+      const filtered = query
+        ? drafts.filter(
+            (d) =>
+              (d.scope_of_work ?? '').toLowerCase().includes(query.toLowerCase()) ||
+              (d.customer_name ?? '').toLowerCase().includes(query.toLowerCase()),
+          )
+        : drafts;
+      setRows(filtered.map(draftToRow));
+    } else {
+      const jobs = await listAllJobs({ status, search: query });
+      setRows(jobs.map(jobToRow));
+    }
   }, []);
 
   useEffect(() => {
@@ -52,7 +75,7 @@ export default function JobsScreen() {
     };
   }, [filter, search, load]);
 
-  const sections = useMemo(() => groupByDay(jobs), [jobs]);
+  const sections = useMemo(() => groupByDay(rows), [rows]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -60,7 +83,7 @@ export default function JobsScreen() {
         <View style={styles.headerTitleRow}>
           <Text style={styles.title}>Library</Text>
           <Text style={styles.count}>
-            {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
+            {rows.length} {countNoun(filter, rows.length)}
           </Text>
         </View>
 
@@ -90,8 +113,8 @@ export default function JobsScreen() {
         )}
         renderItem={({ item }) => (
           <TodayJobRow
-            job={toTodayJob(item)}
-            onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.id } })}
+            job={item.todayJob}
+            onPress={() => router.push({ pathname: item.href, params: { id: item.id } })}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
@@ -107,11 +130,7 @@ export default function JobsScreen() {
           />
         }
         ListEmptyComponent={
-          loading ? null : (
-            <Text style={styles.emptyState}>
-              {search || filter !== 'all' ? 'No jobs match this filter.' : strings.locked.emptyJobs}
-            </Text>
-          )
+          loading ? null : <Text style={styles.emptyState}>{emptyLabel(filter, search)}</Text>
         }
       />
     </SafeAreaView>
@@ -174,29 +193,29 @@ function FilterPill({
 }
 
 /**
- * Group jobs by the date they're scheduled for, falling back to the date they
- * were created. Sections come out in the same order as the input (newest
- * first), so we rely on the caller's ordering rather than re-sorting here.
+ * Group rows by the date their `groupingIso` falls on. Sections come out in
+ * the same order as the input (newest first), so we rely on the caller's
+ * ordering rather than re-sorting here.
  */
-function groupByDay(jobs: JobWithCustomer[]): Section[] {
+function groupByDay(rows: LibraryRow[]): Section[] {
   const sections: Section[] = [];
   const seen = new Map<string, Section>();
 
-  for (const job of jobs) {
-    const key = bucketKey(job);
+  for (const row of rows) {
+    const key = bucketKey(row.groupingIso);
     let section = seen.get(key);
     if (!section) {
       section = { title: formatBucketLabel(key), data: [] };
       seen.set(key, section);
       sections.push(section);
     }
-    section.data.push(job);
+    section.data.push(row);
   }
   return sections;
 }
 
-function bucketKey(job: JobWithCustomer): string {
-  const d = new Date(job.scheduled_at ?? job.created_at);
+function bucketKey(iso: string): string {
+  const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'unknown';
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
@@ -226,7 +245,7 @@ function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function toTodayJob(row: JobWithCustomer): TodayJob {
+function jobToRow(row: JobWithCustomer): LibraryRow {
   const status: RowStatus =
     row.status === 'in_progress'
       ? 'in_progress'
@@ -235,12 +254,56 @@ function toTodayJob(row: JobWithCustomer): TodayJob {
         : 'scheduled';
   return {
     id: row.id,
-    title: row.title,
-    customerName: row.customer_name ?? 'Customer',
-    meta: metaForStatus(row.status),
-    status,
-    amountCents: row.total_cents ?? 0,
+    href: '/job/[id]',
+    groupingIso: row.scheduled_at ?? row.created_at,
+    todayJob: {
+      id: row.id,
+      title: row.title,
+      customerName: row.customer_name ?? 'Customer',
+      meta: metaForStatus(row.status),
+      status,
+      amountCents: row.total_cents ?? 0,
+    },
   };
+}
+
+function draftToRow(row: DraftQuoteWithCustomer): LibraryRow {
+  return {
+    id: row.id,
+    href: '/quote/[id]',
+    groupingIso: row.created_at,
+    todayJob: {
+      id: row.id,
+      title: draftTitle(row.scope_of_work),
+      customerName: row.customer_name ?? 'No customer',
+      meta: 'Draft',
+      status: 'draft',
+      amountCents: row.total_cents ?? 0,
+    },
+  };
+}
+
+function draftTitle(scope: string | null): string {
+  if (!scope) return 'Untitled draft';
+  // First sentence-ish — up to first newline or ~60 chars, whichever comes first.
+  const firstLine = scope.split('\n')[0]?.trim() ?? '';
+  if (!firstLine) return 'Untitled draft';
+  return firstLine.length > 60 ? firstLine.slice(0, 57) + '…' : firstLine;
+}
+
+function countNoun(filter: LibraryStatusFilter, n: number): string {
+  if (filter === 'drafts') return n === 1 ? 'draft' : 'drafts';
+  return n === 1 ? 'job' : 'jobs';
+}
+
+function emptyLabel(filter: LibraryStatusFilter, search: string): string {
+  if (filter === 'drafts') {
+    return search
+      ? 'No drafts match this search.'
+      : 'No draft quotes yet. Tap the gold button to start one.';
+  }
+  if (search || filter !== 'all') return 'No jobs match this filter.';
+  return strings.locked.emptyJobs;
 }
 
 function metaForStatus(status: JobWithCustomer['status']): string {

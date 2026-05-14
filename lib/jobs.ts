@@ -47,9 +47,13 @@ export async function listActiveJobs(limit = 8): Promise<JobWithCustomer[]> {
   return (data ?? []).map(toJobWithCustomer);
 }
 
-export type LibraryStatusFilter = 'all' | 'active' | 'done';
+/**
+ * Library tab filter. 'drafts' switches the screen to render quote rows
+ * (drafts that haven't become contracts/jobs yet) rather than jobs.
+ */
+export type LibraryStatusFilter = 'all' | 'active' | 'done' | 'drafts';
 
-const STATUS_GROUPS: Record<LibraryStatusFilter, JobStatus[] | null> = {
+const STATUS_GROUPS: Record<Exclude<LibraryStatusFilter, 'drafts'>, JobStatus[] | null> = {
   all: null,
   active: ['todo', 'scheduled', 'in_progress'],
   done: ['completed', 'paid'],
@@ -73,6 +77,11 @@ export async function listAllJobs(opts?: {
   const status = opts?.status ?? 'all';
   const search = opts?.search?.trim() ?? '';
   const limit = opts?.limit ?? 200;
+
+  // 'drafts' is handled by the Library screen via listDraftQuotes — never
+  // route here. Returning empty is a defensive no-op so a stale caller can't
+  // accidentally render jobs as drafts.
+  if (status === 'drafts') return [];
 
   // Pre-resolve customers whose name matches the search, so we can OR them
   // into the jobs filter. Capped at 200 since a real contractor isn't going
