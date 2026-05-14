@@ -1,7 +1,16 @@
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip } from '@/components/ui/Chip';
@@ -51,81 +60,86 @@ export default function BusinessSettings() {
     }
 
     setSaving(true);
-    const updated = await updateProfile(user.id, {
+    const result = await updateProfile(user.id, {
       business_name: trimmedName,
       state_code: trimmedState,
       trade,
     });
     setSaving(false);
 
-    if (updated) {
+    if (result.ok) {
       router.back();
     } else {
-      Alert.alert("Couldn't save", 'Try again in a moment.');
+      Alert.alert("Couldn't save", result.message);
     }
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <BackButton />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <BackButton />
 
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>Business profile</Text>
-          <Text style={styles.subtitle}>
-            Drives quote tone, contract templates, and how customers see you.
-          </Text>
-        </View>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>Business profile</Text>
+            <Text style={styles.subtitle}>
+              Drives quote tone, contract templates, and how customers see you.
+            </Text>
+          </View>
+
+          {loading ? null : (
+            <>
+              <Input
+                label="Business name"
+                value={businessName}
+                onChangeText={setBusinessName}
+                placeholder="Smith Handyman"
+                autoCapitalize="words"
+                returnKeyType="next"
+              />
+
+              <Input
+                label="State"
+                value={stateCode}
+                onChangeText={(v) => setStateCode(v.toUpperCase().slice(0, 2))}
+                placeholder="TX"
+                autoCapitalize="characters"
+                maxLength={2}
+                returnKeyType="done"
+              />
+
+              <View style={styles.tradeBlock}>
+                <Text style={styles.fieldLabel}>Trade</Text>
+                <View style={styles.tradeGrid}>
+                  {TRADES.map((t) => (
+                    <Chip
+                      key={t}
+                      label={strings.goals.trades[t]}
+                      selected={trade === t}
+                      onPress={() => setTrade(t)}
+                      style={styles.tradeItem}
+                    />
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
+        </ScrollView>
 
         {loading ? null : (
-          <>
-            <Input
-              label="Business name"
-              value={businessName}
-              onChangeText={setBusinessName}
-              placeholder="Smith Handyman"
-              autoCapitalize="words"
-              returnKeyType="next"
+          <View style={styles.footer}>
+            <PrimaryButton
+              label={saving ? 'Saving…' : 'Save changes'}
+              onPress={handleSave}
+              loading={saving}
+              disabled={saving}
             />
-
-            <Input
-              label="State"
-              value={stateCode}
-              onChangeText={(v) => setStateCode(v.toUpperCase().slice(0, 2))}
-              placeholder="TX"
-              autoCapitalize="characters"
-              maxLength={2}
-              returnKeyType="done"
-            />
-
-            <View style={styles.tradeBlock}>
-              <Text style={styles.fieldLabel}>Trade</Text>
-              <View style={styles.tradeGrid}>
-                {TRADES.map((t) => (
-                  <Chip
-                    key={t}
-                    label={strings.goals.trades[t]}
-                    selected={trade === t}
-                    onPress={() => setTrade(t)}
-                    style={styles.tradeItem}
-                  />
-                ))}
-              </View>
-            </View>
-          </>
+          </View>
         )}
-      </ScrollView>
-
-      {loading ? null : (
-        <View style={styles.footer}>
-          <PrimaryButton
-            label={saving ? 'Saving…' : 'Save changes'}
-            onPress={handleSave}
-            loading={saving}
-            disabled={saving}
-          />
-        </View>
-      )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -149,6 +163,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.surface2,
+  },
+  flex: {
+    flex: 1,
   },
   scroll: {
     paddingHorizontal: spacing.xl,
