@@ -33,6 +33,9 @@ export default function TabsLayout() {
           options={{
             title: 'Jobs',
             tabBarIcon: ({ color }) => <ClipboardList size={24} color={color} strokeWidth={2} />,
+            // Pad the inner side of this tab so its icon/label sit further
+            // from the centre FAB and give it room to breathe.
+            tabBarItemStyle: { paddingRight: FAB_BREATHING_ROOM },
           }}
         />
         <Tabs.Screen
@@ -40,6 +43,7 @@ export default function TabsLayout() {
           options={{
             title: 'Calendar',
             tabBarIcon: ({ color }) => <Calendar size={24} color={color} strokeWidth={2} />,
+            tabBarItemStyle: { paddingLeft: FAB_BREATHING_ROOM },
           }}
         />
         <Tabs.Screen
@@ -65,6 +69,10 @@ export default function TabsLayout() {
 
 const FAB_SIZE = 72;
 const TAB_BAR_HEIGHT = 96;
+// Horizontal pad applied to the inner edge of the two tabs adjacent to the
+// FAB (Jobs on the left, Calendar on the right). Padding biases the centred
+// content toward the outer edge, so the visual shift is roughly half this.
+const FAB_BREATHING_ROOM = 32;
 
 const styles = StyleSheet.create({
   root: {
