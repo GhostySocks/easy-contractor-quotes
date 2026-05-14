@@ -128,6 +128,30 @@ function escapeLikeWildcards(input: string): string {
 }
 
 /**
+ * Jobs scheduled inside a date range (inclusive on both ends, ISO datetime
+ * strings). Used by the Calendar tab to mark dots and render the day list.
+ * Returns rows ordered earliest-to-latest within the window.
+ */
+export async function listJobsByDateRange(
+  fromIso: string,
+  toIso: string,
+  limit = 500,
+): Promise<JobWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, customer:customers(name)')
+    .gte('scheduled_at', fromIso)
+    .lte('scheduled_at', toIso)
+    .order('scheduled_at', { ascending: true })
+    .limit(limit);
+  if (error) {
+    console.warn('[jobs] list-by-range failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toJobWithCustomer);
+}
+
+/**
  * All jobs for one customer, newest first. Used by the Customer profile
  * screen's "Jobs with this customer" section. No status filter — we want the
  * full history, including completed and cancelled jobs.
