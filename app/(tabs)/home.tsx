@@ -68,7 +68,15 @@ export default function HomeScreen() {
               {greeting()}, {firstName}
             </Text>
           </View>
-          <Avatar initials={initials} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={({ pressed }) => pressed && styles.avatarPressed}
+          >
+            <Avatar initials={initials} />
+          </Pressable>
         </View>
 
         <MoneyPendingCard
@@ -183,6 +191,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.ink,
     letterSpacing: -0.3,
+  },
+  avatarPressed: {
+    opacity: 0.65,
   },
   sectionHeader: {
     flexDirection: 'row',
