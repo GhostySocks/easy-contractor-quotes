@@ -1,15 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, FileText, ShieldCheck } from 'lucide-react-native';
+import { CalendarClock, ChevronLeft, FileText, ShieldCheck, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Calendar, type DateData } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
@@ -18,7 +21,13 @@ import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { createInvoiceFromQuote, fetchInvoiceByJob } from '@/lib/invoices';
-import { fetchJob, markJobCompleted, type JobRow } from '@/lib/jobs';
+import {
+  fetchJob,
+  markJobCompleted,
+  markJobInProgress,
+  setJobSchedule,
+  type JobRow,
+} from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
 import { fetchQuote, type QuoteRow } from '@/lib/quotes';
 import { colors, radii, spacing, typography } from '@/lib/theme';
@@ -33,6 +42,8 @@ export default function JobDetail() {
   const [invoiceId, setInvoiceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [schedulerOpen, setSchedulerOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -57,6 +68,34 @@ export default function JobDetail() {
       setLoading(false);
     })();
   }, [id]);
+
+  const handleStart = useCallback(async () => {
+    if (!job) return;
+    setStarting(true);
+    try {
+      const updated = await markJobInProgress(job.id);
+      if (!updated) {
+        Alert.alert("Couldn't start job", 'Please try again.');
+        return;
+      }
+      setJob(updated);
+    } finally {
+      setStarting(false);
+    }
+  }, [job]);
+
+  const handlePickDate = useCallback(
+    async (iso: string) => {
+      if (!job) return;
+      // Pick 9:00 AM local on the chosen day; time picker is a follow-up.
+      const [y, m, d] = iso.split('-').map(Number);
+      const scheduledAt = new Date(y, m - 1, d, 9, 0, 0).toISOString();
+      const updated = await setJobSchedule(job.id, scheduledAt);
+      setSchedulerOpen(false);
+      if (updated) setJob(updated);
+    },
+    [job],
+  );
 
   const handleComplete = useCallback(async () => {
     if (!job || !quote) {
@@ -118,6 +157,8 @@ export default function JobDetail() {
 
   const items: LineItem[] = (quote?.line_items as LineItem[]) ?? [];
   const completed = job.status === 'completed' || job.status === 'paid';
+  const inProgress = job.status === 'in_progress';
+  const scheduleEditable = !completed;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -140,6 +181,32 @@ export default function JobDetail() {
           <Text style={styles.jobTitle}>{job.title}</Text>
           {customer ? <Text style={styles.customer}>{customer.name}</Text> : null}
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            job.scheduled_at
+              ? `Scheduled for ${formatDate(job.scheduled_at)}. Tap to change.`
+              : 'Not scheduled. Tap to schedule.'
+          }
+          onPress={scheduleEditable ? () => setSchedulerOpen(true) : undefined}
+          disabled={!scheduleEditable}
+          style={({ pressed }) => [
+            styles.scheduleCard,
+            pressed && scheduleEditable && styles.scheduleCardPressed,
+          ]}
+        >
+          <View style={styles.scheduleIcon}>
+            <CalendarClock size={20} color={colors.goldDark} strokeWidth={2} />
+          </View>
+          <View style={styles.scheduleBody}>
+            <Text style={styles.scheduleLabel}>SCHEDULED</Text>
+            <Text style={styles.scheduleValue}>
+              {job.scheduled_at ? formatDateWithTime(job.scheduled_at) : 'Not scheduled yet'}
+            </Text>
+          </View>
+          {scheduleEditable ? <Text style={styles.scheduleAction}>Change</Text> : null}
+        </Pressable>
 
         {customer ? (
           <Card>
@@ -217,12 +284,21 @@ export default function JobDetail() {
 
       {!completed ? (
         <View style={styles.footer}>
-          <PrimaryButton
-            label={completing ? 'Marking complete…' : 'Mark completed'}
-            onPress={handleComplete}
-            loading={completing}
-            disabled={completing}
-          />
+          {inProgress ? (
+            <PrimaryButton
+              label={completing ? 'Marking complete…' : 'Mark completed'}
+              onPress={handleComplete}
+              loading={completing}
+              disabled={completing}
+            />
+          ) : (
+            <PrimaryButton
+              label={starting ? 'Starting…' : 'Start job'}
+              onPress={handleStart}
+              loading={starting}
+              disabled={starting}
+            />
+          )}
         </View>
       ) : invoiceId ? (
         <View style={styles.footer}>
@@ -239,9 +315,103 @@ export default function JobDetail() {
           </Text>
         </View>
       )}
+
+      <ScheduleSheet
+        visible={schedulerOpen}
+        currentIso={job.scheduled_at}
+        onClose={() => setSchedulerOpen(false)}
+        onPick={(iso) => void handlePickDate(iso)}
+      />
     </SafeAreaView>
   );
 }
+
+function ScheduleSheet({
+  visible,
+  currentIso,
+  onClose,
+  onPick,
+}: {
+  visible: boolean;
+  currentIso: string | null;
+  onClose: () => void;
+  onPick: (iso: string) => void;
+}) {
+  const currentDay = currentIso ? isoDay(new Date(currentIso)) : isoDay(new Date());
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.sheetBackdrop}>
+          <TouchableWithoutFeedback>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>Pick a date</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                  onPress={onClose}
+                  hitSlop={12}
+                  style={styles.sheetClose}
+                >
+                  <X size={20} color={colors.ink2} strokeWidth={2} />
+                </Pressable>
+              </View>
+              <Calendar
+                current={currentDay}
+                onDayPress={(d: DateData) => onPick(d.dateString)}
+                markedDates={{
+                  [currentDay]: {
+                    selected: true,
+                    selectedColor: colors.ink,
+                    selectedTextColor: colors.gold,
+                  },
+                }}
+                firstDay={0}
+                theme={sheetCalendarTheme}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+}
+
+function isoDay(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatDateWithTime(iso: string): string {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${datePart} · ${timePart}`;
+}
+
+const sheetCalendarTheme = {
+  backgroundColor: colors.surface,
+  calendarBackground: colors.surface,
+  selectedDayBackgroundColor: colors.ink,
+  selectedDayTextColor: colors.gold,
+  todayTextColor: colors.goldDark,
+  arrowColor: colors.ink,
+  monthTextColor: colors.ink,
+  textMonthFontWeight: '800' as const,
+};
 
 function StatusPill({ status }: { status: JobRow['status'] }) {
   const { label, bg, fg } = pillStyle(status);
@@ -376,5 +546,77 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.bodySmall,
     color: colors.success,
     fontWeight: '700',
+  },
+  scheduleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 60,
+  },
+  scheduleCardPressed: { opacity: 0.7 },
+  scheduleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
+    backgroundColor: colors.goldTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scheduleBody: { flex: 1, gap: 2 },
+  scheduleLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: colors.ink3,
+  },
+  scheduleValue: {
+    fontSize: typography.sizes.body,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  scheduleAction: {
+    fontSize: typography.sizes.label,
+    fontWeight: '700',
+    color: colors.goldDark,
+    letterSpacing: 0.4,
+  },
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(26, 26, 26, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    maxHeight: '85%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.huge,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  sheetTitle: {
+    fontSize: typography.sizes.h2,
+    fontWeight: '800',
+    color: colors.ink,
+  },
+  sheetClose: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

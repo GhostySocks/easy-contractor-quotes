@@ -219,6 +219,34 @@ export async function setJobSchedule(
   return data as JobRow;
 }
 
+/**
+ * Flip a job into the in-progress state and stamp it with the current time as
+ * its scheduled_at if it didn't already have one. Lets the contractor "Start"
+ * a todo job without going through the schedule step first.
+ */
+export async function markJobInProgress(id: string): Promise<JobRow | null> {
+  const { data: existing } = await supabase
+    .from('jobs')
+    .select('scheduled_at')
+    .eq('id', id)
+    .maybeSingle();
+
+  const patch: Record<string, unknown> = { status: 'in_progress' };
+  if (!existing?.scheduled_at) patch.scheduled_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[jobs] mark-in-progress failed', error.message);
+    return null;
+  }
+  return data as JobRow;
+}
+
 export async function markJobCompleted(id: string): Promise<JobRow | null> {
   const { data, error } = await supabase
     .from('jobs')
