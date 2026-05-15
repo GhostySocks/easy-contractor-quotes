@@ -20,6 +20,22 @@ export type ContractRow = {
   created_at: string;
 };
 
+/**
+ * Count of contracts the user has issued that haven't been e-signed yet.
+ * Drives the "Unsigned" stat on the Home money-pending card.
+ */
+export async function fetchUnsignedContractCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('contracts')
+    .select('id', { count: 'exact', head: true })
+    .is('signed_at', null);
+  if (error) {
+    console.warn('[contracts] unsigned-count failed', error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function fetchContract(id: string): Promise<ContractRow | null> {
   const { data, error } = await supabase.from('contracts').select('*').eq('id', id).maybeSingle();
   if (error) {

@@ -7,6 +7,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { MoneyPendingCard } from '@/components/ui/MoneyPendingCard';
 import { TodayJobRow, type JobStatus, type TodayJob } from '@/components/ui/TodayJobRow';
 import { useAuth } from '@/lib/auth-store';
+import { fetchUnsignedContractCount } from '@/lib/contracts';
+import { fetchUnpaidSummary, type UnpaidSummary } from '@/lib/invoices';
 import { listActiveJobs, type JobWithCustomer } from '@/lib/jobs';
 import {
   fetchProfile,
@@ -17,25 +19,28 @@ import {
 import { strings } from '@/lib/strings';
 import { colors, spacing, typography } from '@/lib/theme';
 
-// TODO(M2): replace with real aggregates from invoices + contracts tables.
-const PREVIEW_MONEY = {
-  totalCents: 428050,
-  unpaidInvoices: 6,
-  unsignedContracts: 2,
-  overdueCount: 1,
-};
+const EMPTY_MONEY: UnpaidSummary = { totalCents: 0, unpaidCount: 0, overdueCount: 0 };
 
 export default function HomeScreen() {
   const user = useAuth((s) => s.user);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
+  const [money, setMoney] = useState<UnpaidSummary>(EMPTY_MONEY);
+  const [unsignedContracts, setUnsignedContracts] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [profileRow, jobRows] = await Promise.all([fetchProfile(user.id), listActiveJobs(5)]);
+    const [profileRow, jobRows, moneyRow, unsigned] = await Promise.all([
+      fetchProfile(user.id),
+      listActiveJobs(5),
+      fetchUnpaidSummary(),
+      fetchUnsignedContractCount(),
+    ]);
     setProfile(profileRow);
     setJobs(jobRows);
+    setMoney(moneyRow);
+    setUnsignedContracts(unsigned);
   }, [user]);
 
   useEffect(() => {
@@ -80,10 +85,10 @@ export default function HomeScreen() {
         </View>
 
         <MoneyPendingCard
-          totalCents={PREVIEW_MONEY.totalCents}
-          unpaidInvoices={PREVIEW_MONEY.unpaidInvoices}
-          unsignedContracts={PREVIEW_MONEY.unsignedContracts}
-          overdueCount={PREVIEW_MONEY.overdueCount}
+          totalCents={money.totalCents}
+          unpaidInvoices={money.unpaidCount}
+          unsignedContracts={unsignedContracts}
+          overdueCount={money.overdueCount}
         />
 
         <SectionHeader
