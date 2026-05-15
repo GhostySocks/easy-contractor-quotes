@@ -204,17 +204,27 @@ export async function listUnscheduledJobs(limit = 50): Promise<JobWithCustomer[]
 }
 
 /**
- * Set or clear a job's scheduled date. Pass null to unschedule. Also flips
- * 'todo' jobs to 'scheduled' when we're putting a date on them — so the
- * status filter on the Library stays meaningful without the caller having
- * to remember.
+ * Set or clear a job's scheduled date. Pass null to unschedule. Flips
+ * 'todo' → 'scheduled' when adding a date, and 'scheduled' → 'todo' when
+ * clearing one, so the Library status filter stays meaningful without the
+ * caller having to remember. in_progress / completed / paid / cancelled are
+ * left alone — their status isn't about scheduling.
  */
 export async function setJobSchedule(
   jobId: string,
   scheduledAt: string | null,
 ): Promise<JobRow | null> {
   const patch: Record<string, unknown> = { scheduled_at: scheduledAt };
-  if (scheduledAt) patch.status = 'scheduled';
+  if (scheduledAt) {
+    patch.status = 'scheduled';
+  } else {
+    const { data: current } = await supabase
+      .from('jobs')
+      .select('status')
+      .eq('id', jobId)
+      .maybeSingle();
+    if (current?.status === 'scheduled') patch.status = 'todo';
+  }
   const { data, error } = await supabase
     .from('jobs')
     .update(patch)

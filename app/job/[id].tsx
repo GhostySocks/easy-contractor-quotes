@@ -97,6 +97,13 @@ export default function JobDetail() {
     [job],
   );
 
+  const handleUnschedule = useCallback(async () => {
+    if (!job) return;
+    const updated = await setJobSchedule(job.id, null);
+    setSchedulerOpen(false);
+    if (updated) setJob(updated);
+  }, [job]);
+
   const handleComplete = useCallback(async () => {
     if (!job || !quote) {
       Alert.alert("Can't complete", 'This job is missing its quote.');
@@ -321,6 +328,7 @@ export default function JobDetail() {
         currentIso={job.scheduled_at}
         onClose={() => setSchedulerOpen(false)}
         onPick={(iso) => void handlePickDate(iso)}
+        onUnschedule={job.scheduled_at ? () => void handleUnschedule() : undefined}
       />
     </SafeAreaView>
   );
@@ -331,11 +339,13 @@ function ScheduleSheet({
   currentIso,
   onClose,
   onPick,
+  onUnschedule,
 }: {
   visible: boolean;
   currentIso: string | null;
   onClose: () => void;
   onPick: (iso: string) => void;
+  onUnschedule?: () => void;
 }) {
   const currentDay = currentIso ? isoDay(new Date(currentIso)) : isoDay(new Date());
 
@@ -376,6 +386,19 @@ function ScheduleSheet({
                 firstDay={0}
                 theme={sheetCalendarTheme}
               />
+              {onUnschedule ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Unschedule this job"
+                  onPress={onUnschedule}
+                  style={({ pressed }) => [
+                    styles.unscheduleAction,
+                    pressed && styles.unscheduleActionPressed,
+                  ]}
+                >
+                  <Text style={styles.unscheduleLabel}>Unschedule this job</Text>
+                </Pressable>
+              ) : null}
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -618,5 +641,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  unscheduleAction: {
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    minHeight: 60,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unscheduleActionPressed: { opacity: 0.7 },
+  unscheduleLabel: {
+    fontSize: typography.sizes.body,
+    fontWeight: '700',
+    color: colors.danger,
   },
 });
