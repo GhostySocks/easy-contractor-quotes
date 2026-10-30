@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, X } from 'lucide-react-native';
+import { CalendarDays, LocateFixed, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -29,6 +29,7 @@ import {
   type CustomerRow,
 } from '@/lib/customers';
 import { fetchJob } from '@/lib/jobs';
+import { currentAddress } from '@/lib/location';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { MAX_PHOTOS } from '@/lib/photo-math';
 import { deleteJobPhotos, pickPhotos, type PhotoSource, uploadJobPhoto } from '@/lib/photos';
@@ -55,6 +56,7 @@ export default function NewQuote() {
   const [dateOpen, setDateOpen] = useState(false);
   const [photos, setPhotos] = useState<StripPhoto[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   // Photos uploaded but not attached to a quote are deleted if the user
   // leaves without generating. Ref so the unmount cleanup sees the latest.
@@ -131,6 +133,30 @@ export default function NewQuote() {
           });
       }
     });
+  }
+
+  async function fillFromLocation() {
+    setLocating(true);
+    try {
+      const result = await currentAddress();
+      if (result.kind === 'ok') {
+        if (result.line1) setAddressLine1(result.line1);
+        if (result.city) setCity(result.city);
+      } else if (result.kind === 'denied') {
+        Alert.alert(
+          'Location access is off',
+          'Turn it on in Settings to fill in the job address.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+          ],
+        );
+      } else {
+        Alert.alert("Couldn't find an address here", 'Type it in instead.');
+      }
+    } finally {
+      setLocating(false);
+    }
   }
 
   function promptAddPhoto() {
@@ -263,6 +289,19 @@ export default function NewQuote() {
             onChangeText={setAddressLine1}
             autoCapitalize="words"
           />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fill in the address from my current location"
+            onPress={() => void fillFromLocation()}
+            disabled={locating}
+            hitSlop={8}
+            style={({ pressed }) => [styles.locate, pressed && styles.pressed]}
+          >
+            <LocateFixed size={18} color={colors.goldDark} strokeWidth={2} />
+            <Text style={styles.locateLabel}>
+              {locating ? 'Finding your location…' : "I'm at the job: use my location"}
+            </Text>
+          </Pressable>
 
           <Input
             label="City"
@@ -432,6 +471,18 @@ const makeStyles = (colors: Colors) =>
     datePlaceholder: {
       fontFamily: typography.fonts.body,
       color: colors.ink3,
+    },
+    locate: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 44,
+      marginTop: -spacing.sm,
+    },
+    locateLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
     },
     pressed: {
       opacity: 0.7,
