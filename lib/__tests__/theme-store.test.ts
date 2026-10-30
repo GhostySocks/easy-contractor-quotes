@@ -14,27 +14,50 @@ describe('theme preference store', () => {
     useThemeStore.setState({ mode: DEFAULT_THEME_MODE });
   });
 
-  it('defaults to dark', () => {
-    expect(DEFAULT_THEME_MODE).toBe('dark');
+  it('defaults to light', () => {
+    expect(DEFAULT_THEME_MODE).toBe('light');
+    expect(useThemeStore.getState().mode).toBe('light');
+  });
+
+  it('moves a stored v1 dark (the old default) to light, keeps other choices', async () => {
+    await AsyncStorage.setItem(
+      THEME_STORAGE_KEY,
+      JSON.stringify({ state: { mode: 'dark' }, version: 1 }),
+    );
+    await useThemeStore.persist.rehydrate();
+    expect(useThemeStore.getState().mode).toBe('light');
+
+    await AsyncStorage.setItem(
+      THEME_STORAGE_KEY,
+      JSON.stringify({ state: { mode: 'system' }, version: 1 }),
+    );
+    await useThemeStore.persist.rehydrate();
+    expect(useThemeStore.getState().mode).toBe('system');
+
+    await AsyncStorage.setItem(
+      THEME_STORAGE_KEY,
+      JSON.stringify({ state: { mode: 'dark' }, version: 2 }),
+    );
+    await useThemeStore.persist.rehydrate();
     expect(useThemeStore.getState().mode).toBe('dark');
   });
 
   it('persists the chosen mode to AsyncStorage', async () => {
-    useThemeStore.getState().setMode('light');
-    expect(useThemeStore.getState().mode).toBe('light');
+    useThemeStore.getState().setMode('dark');
+    expect(useThemeStore.getState().mode).toBe('dark');
 
     // zustand/persist writes synchronously into the storage adapter, which
     // for AsyncStorage resolves on the next tick.
     await new Promise((r) => setTimeout(r, 0));
     const raw = await AsyncStorage.getItem(THEME_STORAGE_KEY);
     expect(raw).not.toBeNull();
-    expect(JSON.parse(raw as string).state.mode).toBe('light');
+    expect(JSON.parse(raw as string).state.mode).toBe('dark');
   });
 
   it('rehydrates a stored preference on the next launch', async () => {
     await AsyncStorage.setItem(
       THEME_STORAGE_KEY,
-      JSON.stringify({ state: { mode: 'system' }, version: 1 }),
+      JSON.stringify({ state: { mode: 'system' }, version: 2 }),
     );
     await useThemeStore.persist.rehydrate();
     expect(useThemeStore.getState().mode).toBe('system');
@@ -43,10 +66,10 @@ describe('theme preference store', () => {
   it('ignores a corrupt stored value and keeps the default', async () => {
     await AsyncStorage.setItem(
       THEME_STORAGE_KEY,
-      JSON.stringify({ state: { mode: 'sepia' }, version: 1 }),
+      JSON.stringify({ state: { mode: 'sepia' }, version: 2 }),
     );
     await useThemeStore.persist.rehydrate();
-    expect(useThemeStore.getState().mode).toBe('dark');
+    expect(useThemeStore.getState().mode).toBe('light');
   });
 });
 
@@ -56,11 +79,11 @@ describe('resolveScheme', () => {
     expect(resolveScheme('dark', 'light')).toBe('dark');
   });
 
-  it('follows the OS when set to system, falling back to dark when unknown', () => {
+  it('follows the OS when set to system, falling back to light when unknown', () => {
     expect(resolveScheme('system', 'light')).toBe('light');
     expect(resolveScheme('system', 'dark')).toBe('dark');
-    expect(resolveScheme('system', null)).toBe('dark');
-    expect(resolveScheme('system', undefined)).toBe('dark');
+    expect(resolveScheme('system', null)).toBe('light');
+    expect(resolveScheme('system', undefined)).toBe('light');
   });
 });
 
