@@ -136,7 +136,6 @@ async function loadContractContext(
 
   const businessName = (profile?.business_name ?? 'Contractor').toString();
   const trade = (profile?.trade ?? 'handyman').toString();
-  const stateCode = (profile?.state_code ?? 'TX').toString().toUpperCase();
 
   let customerName = 'Customer';
   let customerAddress: {
@@ -158,6 +157,15 @@ async function loadContractContext(
         state_code: customer.state_code,
       };
     }
+  }
+
+  // The contract follows the contractor's state. If their profile has none
+  // (onboarding never finished), use the customer's; never assume one.
+  const stateCode = (profile?.state_code ?? customerAddress.state_code ?? '')
+    .toString()
+    .toUpperCase();
+  if (stateCode.length !== 2) {
+    throw new HttpError(400, 'Set your state in Settings > Business before creating a contract.');
   }
 
   return {

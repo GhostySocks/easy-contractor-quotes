@@ -53,7 +53,7 @@ export const strings = {
     nameLabel: 'Business name',
     namePlaceholder: 'Martinez Home Services',
     stateLabel: 'State',
-    statePlaceholder: 'TX',
+    statePlaceholder: '2-letter code',
     cta: 'Continue',
   },
 

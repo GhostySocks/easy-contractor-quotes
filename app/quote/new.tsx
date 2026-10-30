@@ -59,7 +59,8 @@ export default function NewQuote() {
       ],
     );
   }, [paused]);
-  const [profileState, setProfileState] = useState<string>('TX');
+  const [profileState, setProfileState] = useState<string>('');
+  const [profileChecked, setProfileChecked] = useState(false);
   const [jobType, setJobType] = useState<string>('handyman');
   const jobTypeTouched = useRef(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export default function NewQuote() {
       .then(({ data }) => {
         if (data?.trade && !jobTypeTouched.current) setJobType(data.trade);
         if (data?.state_code) setProfileState(data.state_code);
+        setProfileChecked(true);
       });
   }, [user]);
 
@@ -204,6 +206,17 @@ export default function NewQuote() {
   }
 
   async function handleGenerate() {
+    if (profileChecked && !profileState) {
+      Alert.alert(
+        'Which state do you work in?',
+        'Quotes are priced and worded for your state. Add it to your business profile first.',
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Open business profile', onPress: () => router.push('/settings/business') },
+        ],
+      );
+      return;
+    }
     setGenerating(true);
     const startedAt = new Date().toISOString();
     try {
@@ -289,7 +302,8 @@ export default function NewQuote() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.block}>
             <Text style={styles.fieldLabel}>
-              Job type <Text style={styles.fieldMeta}>· {profileState}</Text>
+              Job type{' '}
+              {profileState ? <Text style={styles.fieldMeta}>· {profileState}</Text> : null}
             </Text>
             <View style={styles.chips}>
               {TRADES.map((t) => (
@@ -360,8 +374,8 @@ export default function NewQuote() {
           />
 
           <Text style={styles.hint}>
-            Describe what needs to be done in 2–5 sentences. The more specific you are about
-            materials and room size, the better the quote.
+            Describe what needs to be done in as few sentences as possible. The more specific you
+            are about the materials and job description, the better the quote.
           </Text>
 
           <PhotoStrip photos={photos} onAdd={promptAddPhoto} onRemove={removePhoto} />

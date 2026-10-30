@@ -22,7 +22,9 @@ import {
   patchFromForm,
   validateCustomerForm,
 } from '@/lib/customer-form';
+import { useAuth } from '@/lib/auth-store';
 import { fetchCustomer, updateCustomer } from '@/lib/customers';
+import { fetchProfile } from '@/lib/profile';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
@@ -39,6 +41,13 @@ export default function EditCustomer() {
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerFormValues, boolean>>>({});
   const [saving, setSaving] = useState(false);
   const [missing, setMissing] = useState(false);
+  // The contractor's own state, shown as the hint for a customer's state.
+  const [homeState, setHomeState] = useState<string | null>(null);
+  const userId = useAuth((s) => s.user?.id);
+  useEffect(() => {
+    if (!userId) return;
+    void fetchProfile(userId).then((p) => setHomeState(p?.state_code ?? null));
+  }, [userId]);
 
   useEffect(() => {
     if (!id) return;
@@ -141,7 +150,7 @@ export default function EditCustomer() {
               }
               autoCapitalize="characters"
               maxLength={2}
-              placeholder="TX"
+              placeholder={homeState ?? '2 letters'}
               containerStyle={styles.stateField}
             />
             <Input

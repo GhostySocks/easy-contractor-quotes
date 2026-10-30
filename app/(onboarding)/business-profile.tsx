@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
 import { LogoPicker } from '@/components/ui/LogoPicker';
+import { StateFromLocation } from '@/components/ui/StateFromLocation';
 import { OnboardingFrame } from '@/components/ui/OnboardingFrame';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useOnboardingDraft } from '@/lib/onboarding-store';
@@ -57,6 +58,7 @@ export default function BusinessProfile() {
           maxLength={2}
           returnKeyType="done"
         />
+        <StateFromLocation onState={setState} />
         <LogoPicker
           imageUri={logo?.uri ?? null}
           onPick={() => void pickLogo()}
