@@ -58,9 +58,23 @@ export const strings = {
   },
 
   walkthrough: {
-    title: 'One button. One quote.',
-    body: 'Tap the gold button. AI does the rest.',
+    steps: [
+      {
+        title: 'One button. One quote.',
+        body: 'Tap the gold button. AI does the rest.',
+      },
+      {
+        title: 'Every job in one place.',
+        body: 'Signed quotes become jobs. Schedule them, add photos and notes.',
+      },
+      {
+        title: 'Finish the job, get paid.',
+        body: 'Mark it done and the invoice is ready to send.',
+      },
+    ],
+    next: 'Next',
     cta: 'Got it',
+    skip: 'Skip',
   },
 
   permissions: {
