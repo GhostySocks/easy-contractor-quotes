@@ -41,6 +41,10 @@ export default function AppPaused() {
 
       <View style={styles.footer}>
         <PrimaryButton label={strings.appPaused.cta} onPress={() => router.push('/paywall')} />
+        <GhostButton
+          label="View my jobs (read-only)"
+          onPress={() => router.replace('/(tabs)/home')}
+        />
         <GhostButton label={strings.appPaused.export} onPress={() => router.push('/settings')} />
         <Text style={styles.support}>{strings.appPaused.support}</Text>
         <SignOutButton />

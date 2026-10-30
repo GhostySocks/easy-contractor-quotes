@@ -1,9 +1,10 @@
 import { router, Tabs } from 'expo-router';
-import { Calendar, ClipboardList, Home, Plus, Users } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Calendar, ClipboardList, Home, Lock, Plus, Users } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { radii, typography, type Colors } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
+import { usePaused } from '@/lib/use-paused';
 
 /**
  * Tab bar layout per CLAUDE.md §5 and design handoff §3.5.
@@ -13,6 +14,7 @@ import { useStyles, useTheme } from '@/lib/theme-context';
 export default function TabsLayout() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  const paused = usePaused();
   return (
     <View style={styles.root}>
       <Tabs
@@ -58,14 +60,27 @@ export default function TabsLayout() {
         />
       </Tabs>
 
-      <Pressable
-        accessibilityLabel="New quote. Double-tap to start a new AI-generated quote."
-        accessibilityRole="button"
-        style={styles.fab}
-        onPress={() => router.push('/quote/new')}
-      >
-        <Plus size={28} color={colors.onGold} strokeWidth={3} />
-      </Pressable>
+      {paused ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Subscription paused, read-only. Reactivate."
+          onPress={() => router.push('/paywall')}
+          style={styles.pausedBanner}
+        >
+          <Lock size={16} color={colors.goldDark} strokeWidth={2} />
+          <Text style={styles.pausedText}>Paused · read-only</Text>
+          <Text style={styles.pausedAction}>Reactivate</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityLabel="New quote. Double-tap to start a new AI-generated quote."
+          accessibilityRole="button"
+          style={styles.fab}
+          onPress={() => router.push('/quote/new')}
+        >
+          <Plus size={28} color={colors.onGold} strokeWidth={3} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -93,6 +108,32 @@ const makeStyles = (colors: Colors) =>
     tabLabel: {
       fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
+    },
+    pausedBanner: {
+      position: 'absolute',
+      left: spacing.lg,
+      right: spacing.lg,
+      bottom: TAB_BAR_HEIGHT + spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 48,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.lg,
+      backgroundColor: colors.goldTint,
+      borderWidth: 1,
+      borderColor: colors.gold,
+    },
+    pausedText: {
+      flex: 1,
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    pausedAction: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
     },
     fab: {
       position: 'absolute',
