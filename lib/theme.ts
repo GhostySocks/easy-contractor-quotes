@@ -83,7 +83,8 @@ export const darkColors: Colors = {
 
   goldLight: '#F2CD5B',
   onGold: '#1A1A1A',
-  inverseSurface: '#1C1B18',
+  // One step warmer/lighter than surface2 so hero blocks still lift off the page.
+  inverseSurface: '#26231A',
   onInverse: '#F5F3EC',
   onInverseMuted: '#C9C5B8',
   inverseTint: 'rgba(212,175,55,0.06)',
