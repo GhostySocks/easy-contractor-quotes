@@ -55,6 +55,32 @@ export type QuoteRow = {
   created_at: string;
 };
 
+export type DraftQuoteWithCustomer = QuoteRow & {
+  customer_name: string | null;
+};
+
+/**
+ * All draft quotes the user owns, newest first. Surfaces in the Library tab
+ * under the "Drafts" filter — drafts are quotes that exist but haven't been
+ * sent to the customer yet, so they have no contract or job attached.
+ */
+export async function listDraftQuotes(limit = 200): Promise<DraftQuoteWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('*, customer:customers(name)')
+    .eq('status', 'draft')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[quotes] list-drafts failed', error.message);
+    return [];
+  }
+  return (data ?? []).map((row) => {
+    const r = row as QuoteRow & { customer?: { name?: string } };
+    return { ...r, customer_name: r.customer?.name ?? null };
+  });
+}
+
 export async function fetchQuote(id: string): Promise<QuoteRow | null> {
   const { data, error } = await supabase.from('quotes').select('*').eq('id', id).maybeSingle();
   if (error) {

@@ -66,21 +66,10 @@ export function CustomerAutocomplete({ name, onChangeName, onSelect }: Props) {
 
       {open ? (
         <View style={styles.dropdown}>
-          {showCreate ? (
-            <Pressable
-              style={styles.row}
-              onPress={handleCreate}
-              disabled={creating}
-              accessibilityRole="button"
-            >
-              <View style={styles.iconBadge}>
-                <Plus size={18} color={colors.goldDark} strokeWidth={2.5} />
-              </View>
-              <View style={styles.rowBody}>
-                <Text style={styles.rowTitle}>Create new</Text>
-                <Text style={styles.rowSub}>{trimmed}</Text>
-              </View>
-            </Pressable>
+          {results.length > 0 ? (
+            <View style={styles.sectionLabelWrap}>
+              <Text style={styles.sectionLabel}>{trimmed ? 'Matches' : 'Recent customers'}</Text>
+            </View>
           ) : null}
 
           {results.map((customer) => (
@@ -104,6 +93,20 @@ export function CustomerAutocomplete({ name, onChangeName, onSelect }: Props) {
               </View>
             </Pressable>
           ))}
+
+          {showCreate ? (
+            <Pressable
+              style={[styles.createRow, results.length > 0 && styles.createRowDivided]}
+              onPress={handleCreate}
+              disabled={creating}
+              accessibilityRole="button"
+            >
+              <Plus size={16} color={colors.ink3} strokeWidth={2.5} />
+              <Text style={styles.createLabel}>
+                {results.length > 0 ? `Don't see them? Create "${trimmed}"` : `Create "${trimmed}"`}
+              </Text>
+            </Pressable>
+          ) : null}
 
           {!showCreate && results.length === 0 ? (
             <View style={styles.empty}>
@@ -162,5 +165,34 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.bodySmall,
     color: colors.ink3,
     textAlign: 'center',
+  },
+  sectionLabelWrap: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.ink3,
+  },
+  createRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface2,
+  },
+  createRowDivided: {
+    borderTopColor: colors.divider,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  createLabel: {
+    fontSize: typography.sizes.bodySmall,
+    fontWeight: '600',
+    color: colors.ink2,
+    flexShrink: 1,
   },
 });

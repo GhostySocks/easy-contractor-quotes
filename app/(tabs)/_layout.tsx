@@ -1,9 +1,8 @@
 import { router, Tabs } from 'expo-router';
 import { Calendar, ClipboardList, Home, Plus, Users } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { colors, radii, typography } from '@/lib/theme';
 
 /**
  * Tab bar layout per CLAUDE.md §5 and design handoff §3.5.
@@ -34,6 +33,9 @@ export default function TabsLayout() {
           options={{
             title: 'Jobs',
             tabBarIcon: ({ color }) => <ClipboardList size={24} color={color} strokeWidth={2} />,
+            // Pad the inner side of this tab so its icon/label sit further
+            // from the centre FAB and give it room to breathe.
+            tabBarItemStyle: { paddingRight: FAB_BREATHING_ROOM },
           }}
         />
         <Tabs.Screen
@@ -41,6 +43,7 @@ export default function TabsLayout() {
           options={{
             title: 'Calendar',
             tabBarIcon: ({ color }) => <Calendar size={24} color={color} strokeWidth={2} />,
+            tabBarItemStyle: { paddingLeft: FAB_BREATHING_ROOM },
           }}
         />
         <Tabs.Screen
@@ -60,13 +63,16 @@ export default function TabsLayout() {
       >
         <Plus size={28} color={colors.ink} strokeWidth={3} />
       </Pressable>
-      <Text style={styles.fabLabel}>{strings.locked.ctaNewQuote}</Text>
     </View>
   );
 }
 
 const FAB_SIZE = 72;
 const TAB_BAR_HEIGHT = 96;
+// Horizontal pad applied to the inner edge of the two tabs adjacent to the
+// FAB (Jobs on the left, Calendar on the right). Padding biases the centred
+// content toward the outer edge, so the visual shift is roughly half this.
+const FAB_BREATHING_ROOM = 32;
 
 const styles = StyleSheet.create({
   root: {
@@ -99,13 +105,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
-  },
-  fabLabel: {
-    position: 'absolute',
-    alignSelf: 'center',
-    bottom: spacing.md,
-    color: colors.goldDark,
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
   },
 });

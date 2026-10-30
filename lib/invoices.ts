@@ -20,6 +20,39 @@ export type InvoiceRow = {
   created_at: string;
 };
 
+export type UnpaidSummary = {
+  totalCents: number;
+  unpaidCount: number;
+  overdueCount: number;
+};
+
+/**
+ * Aggregates for the Home "Money Pending" card. Sums unpaid + partial invoices
+ * for the current user, and counts how many of those were sent more than
+ * OVERDUE_DAYS ago. We don't track an explicit due date yet, so sent_at is the
+ * proxy — close enough until invoice terms are user-configurable.
+ */
+const OVERDUE_DAYS = 30;
+
+export async function fetchUnpaidSummary(): Promise<UnpaidSummary> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('total_cents, status, sent_at')
+    .in('status', ['unpaid', 'partial']);
+  if (error) {
+    console.warn('[invoices] unpaid-summary failed', error.message);
+    return { totalCents: 0, unpaidCount: 0, overdueCount: 0 };
+  }
+  const cutoff = Date.now() - OVERDUE_DAYS * 86400000;
+  let totalCents = 0;
+  let overdueCount = 0;
+  for (const row of data ?? []) {
+    totalCents += row.total_cents ?? 0;
+    if (row.sent_at && new Date(row.sent_at).getTime() < cutoff) overdueCount += 1;
+  }
+  return { totalCents, unpaidCount: data?.length ?? 0, overdueCount };
+}
+
 export async function fetchInvoice(id: string): Promise<InvoiceRow | null> {
   const { data, error } = await supabase.from('invoices').select('*').eq('id', id).maybeSingle();
   if (error) {

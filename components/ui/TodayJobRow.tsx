@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { formatCents } from '@/lib/pricing';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
-export type JobStatus = 'in_progress' | 'scheduled' | 'completed';
+export type JobStatus = 'in_progress' | 'scheduled' | 'completed' | 'draft';
 
 export type TodayJob = {
   id: string;
@@ -76,6 +76,8 @@ function pillStyle(status: JobStatus): { label: string; bg: string; fg: string }
       return { label: 'SCHEDULED', bg: colors.surface2, fg: colors.ink2 };
     case 'completed':
       return { label: 'COMPLETED', bg: colors.surface2, fg: colors.success };
+    case 'draft':
+      return { label: 'DRAFT', bg: colors.goldTint, fg: colors.goldDark };
   }
 }
 

@@ -36,16 +36,7 @@ export type QuoteInsertResult = {
 };
 
 export async function generateQuote(input: QuoteInput): Promise<QuoteInsertResult> {
-  const { data, error } = await supabase.functions.invoke<QuoteInsertResult>('ai-quote', {
-    body: input,
-  });
-  if (error) {
-    throw new Error(`ai-quote failed: ${error.message}`);
-  }
-  if (!data) {
-    throw new Error('ai-quote returned no data');
-  }
-  return data;
+  return await invokeWithTimeout<QuoteInsertResult>('ai-quote', input);
 }
 
 export type ContractInput = {
@@ -60,14 +51,41 @@ export type ContractResult = {
 };
 
 export async function generateContract(input: ContractInput): Promise<ContractResult> {
-  const { data, error } = await supabase.functions.invoke<ContractResult>('ai-contract', {
-    body: input,
-  });
-  if (error) {
-    throw new Error(`ai-contract failed: ${error.message}`);
+  return await invokeWithTimeout<ContractResult>('ai-contract', input);
+}
+
+/**
+ * Wrap supabase.functions.invoke with a hard timeout so the UI never spins
+ * forever on a slow or unreachable Edge Function. Surfaces a human-readable
+ * error so the caller's `catch` can show it in an Alert.
+ */
+async function invokeWithTimeout<T>(
+  name: string,
+  body: Record<string, unknown>,
+  ms = 30_000,
+): Promise<T> {
+  const start = Date.now();
+  const result = await Promise.race<
+    { kind: 'ok'; data: T | null; err: { message: string } | null } | { kind: 'timeout' }
+  >([
+    supabase.functions.invoke<T>(name, { body }).then((r) => ({
+      kind: 'ok' as const,
+      data: r.data,
+      err: r.error ? { message: r.error.message } : null,
+    })),
+    new Promise((resolve) => setTimeout(() => resolve({ kind: 'timeout' as const }), ms)),
+  ]);
+
+  if (result.kind === 'timeout') {
+    throw new Error(
+      `${name} did not respond within ${Math.round(ms / 1000)}s — check your Supabase edge function is deployed and reachable.`,
+    );
   }
-  if (!data) {
-    throw new Error('ai-contract returned no data');
+  if (result.err) {
+    throw new Error(`${name} failed: ${result.err.message}`);
   }
-  return data;
+  if (!result.data) {
+    throw new Error(`${name} returned no data (after ${Date.now() - start}ms)`);
+  }
+  return result.data;
 }

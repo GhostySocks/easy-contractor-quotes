@@ -34,38 +34,56 @@ export function LineItemEditor({ items, onChange }: Props) {
       <Text style={styles.sectionLabel}>Line items</Text>
 
       {items.map((item, index) => (
-        <View key={index} style={styles.row}>
+        <View key={index} style={styles.card}>
           <TextInput
             value={item.label}
             onChangeText={(label) => updateItem(index, { label })}
             placeholder="Labor, materials, travel…"
             placeholderTextColor={colors.ink3}
-            style={[styles.field, styles.labelField]}
+            style={styles.labelField}
+            multiline
           />
-          <TextInput
-            value={String(item.qty)}
-            onChangeText={(text) => updateItem(index, { qty: toNumber(text, item.qty) })}
-            keyboardType="numeric"
-            style={[styles.field, styles.qtyField]}
-          />
-          <TextInput
-            value={centsToDollarInput(item.unit_price_cents)}
-            onChangeText={(text) =>
-              updateItem(index, { unit_price_cents: dollarInputToCents(text) })
-            }
-            keyboardType="decimal-pad"
-            style={[styles.field, styles.priceField]}
-          />
-          <Text style={styles.total}>{formatCents(item.total_cents)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${item.label || 'line item'}`}
-            onPress={() => removeItem(index)}
-            hitSlop={8}
-            style={styles.trash}
-          >
-            <Trash2 size={18} color={colors.ink3} strokeWidth={2} />
-          </Pressable>
+
+          <View style={styles.numberRow}>
+            <View style={styles.numberGroup}>
+              <Text style={styles.numberLabel}>Qty</Text>
+              <TextInput
+                value={String(item.qty)}
+                onChangeText={(text) => updateItem(index, { qty: toNumber(text, item.qty) })}
+                keyboardType="numeric"
+                style={[styles.numberField, styles.qtyField]}
+                selectTextOnFocus
+              />
+            </View>
+
+            <View style={styles.numberGroup}>
+              <Text style={styles.numberLabel}>Unit</Text>
+              <TextInput
+                value={centsToDollarInput(item.unit_price_cents)}
+                onChangeText={(text) =>
+                  updateItem(index, { unit_price_cents: dollarInputToCents(text) })
+                }
+                keyboardType="decimal-pad"
+                style={[styles.numberField, styles.priceField]}
+                selectTextOnFocus
+              />
+            </View>
+
+            <View style={styles.totalGroup}>
+              <Text style={styles.numberLabel}>Total</Text>
+              <Text style={styles.total}>{formatCents(item.total_cents)}</Text>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${item.label || 'line item'}`}
+              onPress={() => removeItem(index)}
+              hitSlop={8}
+              style={styles.trash}
+            >
+              <Trash2 size={18} color={colors.ink3} strokeWidth={2} />
+            </Pressable>
+          </View>
         </View>
       ))}
 
@@ -95,7 +113,7 @@ function dollarInputToCents(text: string): number {
 
 const styles = StyleSheet.create({
   list: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   sectionLabel: {
     fontSize: typography.sizes.label,
@@ -104,12 +122,48 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.ink3,
   },
-  row: {
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.divider,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  labelField: {
+    backgroundColor: colors.surface2,
+    borderColor: colors.divider,
+    borderWidth: 1,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: typography.sizes.body,
+    fontWeight: '600',
+    color: colors.ink,
+    minHeight: 44,
+  },
+  numberRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  numberGroup: {
+    flex: 1,
     gap: spacing.xs,
   },
-  field: {
+  totalGroup: {
+    gap: spacing.xs,
+    alignItems: 'flex-end',
+    minWidth: 80,
+  },
+  numberLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: colors.ink3,
+  },
+  numberField: {
     backgroundColor: colors.surface2,
     borderColor: colors.divider,
     borderWidth: 1,
@@ -118,35 +172,37 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     fontSize: typography.sizes.bodySmall,
     color: colors.ink,
-  },
-  labelField: {
-    flex: 2,
+    fontVariant: ['tabular-nums'],
+    minHeight: 40,
   },
   qtyField: {
-    width: 48,
     textAlign: 'center',
   },
   priceField: {
-    width: 72,
     textAlign: 'right',
   },
   total: {
-    width: 72,
-    textAlign: 'right',
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
+    fontSize: typography.sizes.body,
+    fontWeight: '800',
     color: colors.ink,
+    fontVariant: ['tabular-nums'],
+    paddingVertical: spacing.sm,
   },
   trash: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
   addButton: {
     marginTop: spacing.xs,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     alignItems: 'center',
+    borderRadius: radii.md,
+    borderColor: colors.divider,
+    borderWidth: 1,
+    borderStyle: 'dashed',
   },
   addLabel: {
     fontSize: typography.sizes.bodySmall,

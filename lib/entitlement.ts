@@ -6,6 +6,8 @@
  * the app reads from it.
  */
 
+import { DEV_BYPASS_PAYWALL } from './dev-flags';
+
 export type SubscriptionStatus = 'active' | 'in_grace' | 'expired' | 'cancelled';
 
 export type SubscriptionRow = {
@@ -28,6 +30,11 @@ export type SubscriptionRow = {
 export function isActive(
   subscription: Pick<SubscriptionRow, 'status'> | null | undefined,
 ): boolean {
+  // Dev-only escape hatch: when DEV_BYPASS_PAYWALL is set, treat every user as
+  // entitled so RevenueCat-less local builds can exercise the post-paywall UI.
+  // Production builds ignore this flag (see lib/dev-flags.ts).
+  if (DEV_BYPASS_PAYWALL) return true;
+
   if (!subscription) {
     return false;
   }

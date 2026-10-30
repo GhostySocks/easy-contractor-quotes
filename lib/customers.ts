@@ -59,6 +59,47 @@ export async function listRecentCustomers(limit = 8): Promise<CustomerRow[]> {
   return (data as CustomerRow[]) ?? [];
 }
 
+export type CustomerWithJobs = CustomerRow & {
+  job_count: number;
+};
+
+/**
+ * Full Customers list with the job count rolled in per row. Used by the
+ * Customers tab so we can render the "Repeat" badge (jobs >= 2) without a
+ * second round trip. PostgREST returns the embedded aggregate as
+ * `{ jobs: [{ count }] }`.
+ */
+export async function listCustomers(opts?: {
+  search?: string;
+  limit?: number;
+}): Promise<CustomerWithJobs[]> {
+  const search = opts?.search?.trim() ?? '';
+  const limit = opts?.limit ?? 200;
+
+  let query = supabase
+    .from('customers')
+    .select('*, jobs(count)')
+    .order('last_job_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (search) {
+    query = query.ilike('name', `%${escapeLikeWildcards(search)}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.warn('[customers] list failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toCustomerWithJobs);
+}
+
+function toCustomerWithJobs(row: unknown): CustomerWithJobs {
+  const r = row as CustomerRow & { jobs?: { count: number }[] };
+  return { ...r, job_count: r.jobs?.[0]?.count ?? 0 };
+}
+
 export async function createCustomer(input: {
   name: string;
   phone?: string;
@@ -71,11 +112,31 @@ export async function createCustomer(input: {
     console.warn('[customers] cannot create without a session');
     return null;
   }
+
+  const trimmed = input.name.trim();
+  if (!trimmed) return null;
+
+  // Dedupe safety net — if a row already exists with the same normalized
+  // name for this user, return that one instead of inserting. ILIKE makes
+  // the comparison case-insensitive ('John Smith' === 'john smith'). Trim
+  // collapses leading/trailing whitespace; we accept that 'John  Smith'
+  // (double space) would still create a new row, which is fine for MVP.
+  const { data: existing } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('user_id', user.id)
+    .ilike('name', trimmed)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (existing && existing.length > 0) {
+    return existing[0] as CustomerRow;
+  }
+
   const { data, error } = await supabase
     .from('customers')
     .insert({
       user_id: user.id,
-      name: input.name.trim(),
+      name: trimmed,
       phone: input.phone?.trim() || null,
       email: input.email?.trim() || null,
     })
