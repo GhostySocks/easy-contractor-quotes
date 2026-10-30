@@ -6,12 +6,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { strings } from '@/lib/strings';
+import { signInErrorMessage } from '@/lib/auth-result';
 import { supabase } from '@/lib/supabase';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles } from '@/lib/theme-context';
+import { useLeaveWhenSignedIn } from '@/lib/use-leave-when-signed-in';
 
 export default function SignIn() {
   const styles = useStyles(makeStyles);
+  useLeaveWhenSignedIn();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export default function SignIn() {
     setLoading(false);
 
     if (signInError) {
-      setError(signInError.message);
+      setError(signInErrorMessage(signInError.message));
       return;
     }
 
