@@ -15,9 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
+import { LogoPicker } from '@/components/ui/LogoPicker';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
+import { deleteJobPhotos, promptForPhotos, signedPhotoUrls, uploadLogo } from '@/lib/photos';
 import { fetchProfile, updateProfile } from '@/lib/profile';
 import { strings } from '@/lib/strings';
 import { spacing, typography, type Colors } from '@/lib/theme';
@@ -34,6 +36,9 @@ export default function BusinessSettings() {
   const [taxRate, setTaxRate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [logoUri, setLogoUri] = useState<string | null>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -45,10 +50,54 @@ export default function BusinessSettings() {
         setTaxRate(
           Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
         );
+        if (profile.logo_url) {
+          setLogoPath(profile.logo_url);
+          void signedPhotoUrls([profile.logo_url]).then((u) =>
+            setLogoUri(u[profile.logo_url as string] ?? null),
+          );
+        }
       }
       setLoading(false);
     });
   }, [user]);
+
+  // The logo saves on its own, immediately, separate from the Save button.
+  async function handlePickLogo() {
+    if (!user || logoBusy) return;
+    const [picked] = await promptForPhotos(1, 'Business logo');
+    if (!picked) return;
+    setLogoBusy(true);
+    try {
+      const path = await uploadLogo(picked, user.id);
+      const result = await updateProfile(user.id, { logo_url: path });
+      if (!result.ok) {
+        void deleteJobPhotos([path]);
+        Alert.alert("Couldn't save logo", result.message);
+        return;
+      }
+      if (logoPath) void deleteJobPhotos([logoPath]);
+      setLogoPath(path);
+      setLogoUri(picked.uri);
+    } catch (err) {
+      Alert.alert("Couldn't upload logo", err instanceof Error ? err.message : String(err));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
+    if (!user || !logoPath || logoBusy) return;
+    setLogoBusy(true);
+    const result = await updateProfile(user.id, { logo_url: null });
+    setLogoBusy(false);
+    if (!result.ok) {
+      Alert.alert("Couldn't remove logo", result.message);
+      return;
+    }
+    void deleteJobPhotos([logoPath]);
+    setLogoPath(null);
+    setLogoUri(null);
+  }
 
   async function handleSave() {
     if (!user || saving) return;
@@ -104,6 +153,13 @@ export default function BusinessSettings() {
 
           {loading ? null : (
             <>
+              <LogoPicker
+                imageUri={logoUri}
+                busy={logoBusy}
+                onPick={() => void handlePickLogo()}
+                onRemove={() => void handleRemoveLogo()}
+              />
+
               <Input
                 label="Business name"
                 value={businessName}
