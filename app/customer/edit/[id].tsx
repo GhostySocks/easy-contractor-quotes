@@ -79,7 +79,7 @@ export default function EditCustomer() {
 
   if (missing) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <BackButton />
         <View style={styles.center}>
           <Text style={styles.muted}>Customer not found.</Text>
@@ -90,7 +90,7 @@ export default function EditCustomer() {
 
   if (!values) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <BackButton />
         <View style={styles.center}>
           <ActivityIndicator color={colors.gold} />

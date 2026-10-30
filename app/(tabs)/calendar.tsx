@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Calendar, type DateData } from 'react-native-calendars';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BlockTimeSheet } from '@/components/calendar/BlockTimeSheet';
 import {
@@ -220,6 +220,7 @@ function UnscheduledPickerSheet({
   onPick: (job: JobWithCustomer) => void | Promise<void>;
 }) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -243,7 +244,7 @@ function UnscheduledPickerSheet({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.sheetBackdrop}>
           <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: spacing.huge + insets.bottom }]}>
               <View style={styles.sheetHeader}>
                 <Text style={styles.sheetTitle}>Pick a job to schedule</Text>
                 <Pressable

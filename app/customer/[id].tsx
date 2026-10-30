@@ -53,7 +53,7 @@ export default function CustomerDetail() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <BackButton />
       </SafeAreaView>
     );
@@ -61,7 +61,7 @@ export default function CustomerDetail() {
 
   if (!customer) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <BackButton />
         <View style={styles.notFound}>
           <Text style={styles.notFoundText}>Customer not found.</Text>
@@ -74,7 +74,7 @@ export default function CustomerDetail() {
   const lastJob = customer.last_job_at ? new Date(customer.last_job_at) : null;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.topBar}>
           <BackButton />

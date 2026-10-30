@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Chip } from '@/components/ui/Chip';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -35,6 +36,7 @@ type Props = {
 /** Block off a whole day or part of one (PRD CL-03). */
 export function BlockTimeSheet({ visible, day, dayLabel, onClose, onSave }: Props) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [allDay, setAllDay] = useState(true);
   const [start, setStart] = useState(12 * 60);
@@ -76,7 +78,7 @@ export function BlockTimeSheet({ visible, day, dayLabel, onClose, onSave }: Prop
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: spacing.xxxl + insets.bottom }]}>
               <View style={styles.header}>
                 <View style={styles.headerText}>
                   <Text style={styles.title}>Block off time</Text>
