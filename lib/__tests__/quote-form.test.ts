@@ -1,4 +1,11 @@
-import { MAX_PHOTOS, newPhotoId, photoPath, resizeTarget, sanitizePhotoPaths } from '../photo-math';
+import {
+  logoPath,
+  MAX_PHOTOS,
+  newPhotoId,
+  photoPath,
+  resizeTarget,
+  sanitizePhotoPaths,
+} from '../photo-math';
 import {
   jobFieldsFromQuote,
   jobTitleFromScope,
@@ -101,5 +108,12 @@ describe('buildUserMessage with photos', () => {
   it('says nothing about photos when there are none', () => {
     expect(buildUserMessage(base)).not.toMatch(/photo/i);
     expect(buildUserMessage({ ...base, photo_count: 0 })).not.toMatch(/photo/i);
+  });
+});
+
+describe('logoPath', () => {
+  it('stores logos as PNG under the user folder so the same storage rules apply', () => {
+    expect(logoPath('u1', 'abc')).toBe('u1/logo-abc.png');
+    expect(sanitizePhotoPaths([logoPath('u1', 'abc')], 'u1')).toEqual(['u1/logo-abc.png']);
   });
 });

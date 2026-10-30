@@ -1,4 +1,5 @@
 import { useOnboardingDraft } from './onboarding-store';
+import { uploadLogo } from './photos';
 import { supabase } from './supabase';
 
 /**
@@ -14,10 +15,23 @@ import { supabase } from './supabase';
 export async function commitOnboardingProfile(userId: string | undefined): Promise<void> {
   if (!userId) return;
   const draft = useOnboardingDraft.getState();
+
+  // A logo picked during onboarding is uploaded now that there's an account.
+  // A failed upload drops the logo rather than blocking sign-up; it can be
+  // added later from Settings > Business.
+  let logoUrl = draft.logo_url;
+  if (draft.logo_local) {
+    try {
+      logoUrl = await uploadLogo(draft.logo_local, userId);
+    } catch (err) {
+      console.warn('[profiles] logo upload failed', err);
+    }
+  }
+
   const { error } = await supabase.from('profiles').upsert({
     id: userId,
     business_name: draft.business_name || 'My business',
-    logo_url: draft.logo_url,
+    logo_url: logoUrl,
     state_code: draft.state_code || 'TX',
     trade: draft.trade,
     onboarding_completed_at: new Date().toISOString(),

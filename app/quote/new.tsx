@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { CalendarDays, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -22,7 +22,13 @@ import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateQuote } from '@/lib/ai';
 import { useAuth } from '@/lib/auth-store';
-import { createCustomer, rememberCustomerContact, type CustomerRow } from '@/lib/customers';
+import {
+  createCustomer,
+  fetchCustomer,
+  rememberCustomerContact,
+  type CustomerRow,
+} from '@/lib/customers';
+import { fetchJob } from '@/lib/jobs';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { MAX_PHOTOS } from '@/lib/photo-math';
 import { deleteJobPhotos, pickPhotos, type PhotoSource, uploadJobPhoto } from '@/lib/photos';
@@ -74,6 +80,27 @@ export default function NewQuote() {
     },
     [],
   );
+
+  // "Quote again" / "New quote" from a customer or job: prefill the customer
+  // and, from a past job, its description so the contractor edits rather than
+  // retypes. Nothing is generated until they tap Generate.
+  const params = useLocalSearchParams<{ customerId?: string; fromJobId?: string }>();
+  useEffect(() => {
+    if (params.customerId) {
+      void fetchCustomer(params.customerId).then((c) => {
+        if (!c) return;
+        setCustomerId(c.id);
+        setCustomerName(c.name);
+        if (c.address_line1) setAddressLine1(c.address_line1);
+        if (c.city) setCity(c.city);
+      });
+    }
+    if (params.fromJobId) {
+      void fetchJob(params.fromJobId).then((j) => {
+        if (j?.description) setDescription(j.description);
+      });
+    }
+  }, [params.customerId, params.fromJobId]);
 
   const uploading = photos.some((p) => p.path === null && !p.failed);
   const canGenerate = description.trim().length >= 5 && !generating && !uploading;

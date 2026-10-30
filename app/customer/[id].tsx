@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   TodayJobRow,
   type JobStatus as RowStatus,
@@ -101,6 +102,13 @@ export default function CustomerDetail() {
             </View>
           ) : null}
         </View>
+
+        <PrimaryButton
+          label={`New quote for ${customer.name || 'this customer'}`}
+          onPress={() =>
+            router.push({ pathname: '/quote/new', params: { customerId: customer.id } })
+          }
+        />
 
         <View style={styles.statsRow}>
           <Stat label="Lifetime" value={formatCents(customer.lifetime_value_cents)} />
