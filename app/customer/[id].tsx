@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Mail, MapPin, Phone } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft, Mail, MapPin, Pencil, Phone, Plus } from 'lucide-react-native';
+import { useCallback, useState } from 'react';
 import {
   Linking,
   Pressable,
@@ -38,10 +38,17 @@ export default function CustomerDetail() {
     setJobs(j);
   }, [id]);
 
-  useEffect(() => {
-    setLoading(true);
-    void load().finally(() => setLoading(false));
-  }, [load]);
+  // Reload on focus so edits made on the edit screen show on return.
+  useFocusEffect(
+    useCallback(() => {
+      void load().finally(() => setLoading(false));
+    }, [load]),
+  );
+
+  const openEdit = useCallback(() => {
+    if (!id) return;
+    router.push({ pathname: '/customer/edit/[id]', params: { id } });
+  }, [id]);
 
   if (loading) {
     return (
@@ -68,7 +75,19 @@ export default function CustomerDetail() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <BackButton />
+        <View style={styles.topBar}>
+          <BackButton />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit customer"
+            onPress={openEdit}
+            style={({ pressed }) => [styles.editButton, pressed && styles.backPressed]}
+            hitSlop={12}
+          >
+            <Pencil size={18} color={colors.goldDark} strokeWidth={2} />
+            <Text style={styles.editLabel}>Edit</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.titleBlock}>
           <Text style={styles.name}>{customer.name || 'Unnamed customer'}</Text>
@@ -118,7 +137,19 @@ export default function CustomerDetail() {
               />
             ) : null}
           </View>
-        ) : null}
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add phone, email or address"
+            onPress={openEdit}
+            style={({ pressed }) => [styles.addContact, pressed && styles.rowPressed]}
+          >
+            <View style={styles.contactIcon}>
+              <Plus size={18} color={colors.goldDark} strokeWidth={2} />
+            </View>
+            <Text style={styles.addContactLabel}>Add phone, email or address</Text>
+          </Pressable>
+        )}
 
         {customer.notes ? (
           <View style={styles.notesCard}>
@@ -263,6 +294,41 @@ const makeStyles = (colors: Colors) =>
     },
     backPressed: {
       opacity: 0.6,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    editButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
+      minHeight: 44,
+    },
+    editLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.goldDark,
+    },
+    addContact: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 60,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.gold,
+      backgroundColor: colors.surface,
+    },
+    addContactLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
     },
     backLabel: {
       fontFamily: typography.fonts.bodyStrong,

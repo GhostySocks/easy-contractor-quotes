@@ -1,3 +1,4 @@
+import { contactBackfill, type CustomerPatch } from './customer-form';
 import { supabase } from './supabase';
 
 export type CustomerRow = {
@@ -43,6 +44,44 @@ export async function fetchCustomer(id: string): Promise<CustomerRow | null> {
     return null;
   }
   return (data as CustomerRow) ?? null;
+}
+
+export type UpdateCustomerResult =
+  | { ok: true; customer: CustomerRow }
+  | { ok: false; message: string };
+
+/** RLS restricts the update to the caller's own rows. */
+export async function updateCustomer(
+  id: string,
+  patch: CustomerPatch,
+): Promise<UpdateCustomerResult> {
+  const { data, error } = await supabase
+    .from('customers')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[customers] update failed', error.message);
+    return { ok: false, message: error.message };
+  }
+  return { ok: true, customer: data as CustomerRow };
+}
+
+/**
+ * Save contact details the contractor just used elsewhere (Send sheet, New
+ * Quote address) onto the customer, so they never have to retype them.
+ * Best-effort: failures are logged, never shown, and never block the caller.
+ */
+export async function rememberCustomerContact(
+  id: string,
+  used: { name?: string; email?: string; phone?: string; address_line1?: string; city?: string },
+): Promise<void> {
+  const existing = await fetchCustomer(id);
+  if (!existing) return;
+  const patch = contactBackfill(existing, used);
+  if (!patch) return;
+  await updateCustomer(id, patch);
 }
 
 export async function listRecentCustomers(limit = 8): Promise<CustomerRow[]> {

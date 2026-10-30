@@ -20,7 +20,7 @@ import { SendRecipientSheet, type Recipient } from '@/components/contract/SendRe
 import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { fetchCustomer } from '@/lib/customers';
+import { fetchCustomer, rememberCustomerContact } from '@/lib/customers';
 import {
   fetchContract,
   submitSignature,
@@ -149,6 +149,15 @@ export default function ContractDetail() {
 
         setSendOpen(false);
         setRecipient(r);
+
+        // Remember the email / phone used so next time it's prefilled.
+        if (contract.customer_id) {
+          void rememberCustomerContact(contract.customer_id, {
+            name: r.name,
+            email: channels.email ? r.email : undefined,
+            phone: channels.sms ? r.phone : undefined,
+          });
+        }
 
         if (result.sms_url) {
           await Linking.openURL(result.sms_url);
