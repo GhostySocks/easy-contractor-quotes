@@ -69,6 +69,8 @@ export default function SignUp() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="new-password"
             returnKeyType="done"
             error={error ?? undefined}
