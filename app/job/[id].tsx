@@ -30,6 +30,7 @@ import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { createInvoiceFromQuote, fetchInvoiceByJob, type InvoiceRow } from '@/lib/invoices';
+import { confirmScheduleSlot } from '@/lib/availability';
 import { addJobToPhoneCalendar } from '@/lib/calendar-export';
 import { buildTimeline } from '@/lib/job-timeline';
 import { syncJobReminders } from '@/lib/notifications';
@@ -172,6 +173,9 @@ export default function JobDetail() {
   const handlePickDate = useCallback(
     async (iso: string) => {
       if (!job) return;
+      // Warn about other jobs (with travel time) or blocked time first; the
+      // sheet stays open if the contractor picks another time.
+      if (!(await confirmScheduleSlot(iso, job.id))) return;
       const updated = await setJobSchedule(job.id, iso);
       setSchedulerOpen(false);
       if (updated) setJob(updated);

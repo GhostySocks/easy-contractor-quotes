@@ -221,14 +221,14 @@ All tables have `id uuid default gen_random_uuid() primary key`, `user_id uuid r
 
 Canonical SQL lives in `/supabase/migrations/`. Table list:
 
-- `profiles` — business profile, 1:1 with auth user
+- `profiles` — business profile, 1:1 with auth user. `travel_buffer_minutes` (0/15/30/60, default 30) is the travel time kept clear around jobs when scheduling
 - `customers` — CRM customers (PII columns encrypted via pgcrypto)
 - `jobs` — central entity
 - `quotes` — AI-generated, one-to-many with jobs. Also carries `job_type`, `requested_start_at` (the job is created already scheduled for it when the contract is signed) and `photos` (≤ 4 paths in the private `job-photos` storage bucket, `<user_id>/<file>.jpg`, owner-only storage policies)
 - `contracts` — state-specific, AI-generated, e-signed (write-once after signing)
 - `invoices` — auto from quote + actuals
 - `subscriptions` — mirror of RevenueCat, source of truth for entitlement (service_role writes only)
-- `availability` — calendar blocks
+- `availability` — calendar blocks (`kind = unavailable` for time the contractor blocks off on the Calendar tab)
 
 Every migration MUST include the RLS policy in the same file. Never ship a table without RLS.
 
