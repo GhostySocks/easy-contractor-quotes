@@ -63,9 +63,9 @@ export default function SubscriptionSettings() {
           <View style={styles.devCallout}>
             <Text style={styles.devLabel}>DEV BYPASS ACTIVE</Text>
             <Text style={styles.devBody}>
-              EXPO_PUBLIC_DEV_BYPASS_PAYWALL is set in .env.local, so isActive() returns true
-              regardless of the subscriptions table. Remove the flag and restart Metro to test the
-              real paywall.
+              EXPO_PUBLIC_DEV_BYPASS_PAYWALL is set (in .env.local or by the internal build
+              profile), so isActive() returns true regardless of the subscriptions table. Remove the
+              flag to test the real paywall.
             </Text>
           </View>
         ) : null}
