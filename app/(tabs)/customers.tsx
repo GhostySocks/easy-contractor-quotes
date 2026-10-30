@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Search, X } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Chip } from '@/components/ui/Chip';
+import { collectTags, hasTag } from '@/lib/customer-form';
 import { listCustomers, type CustomerWithJobs } from '@/lib/customers';
 import { formatCents } from '@/lib/pricing';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
@@ -22,6 +25,7 @@ export default function CustomersScreen() {
   const { colors } = useTheme();
   const [customers, setCustomers] = useState<CustomerWithJobs[]>([]);
   const [search, setSearch] = useState('');
+  const [tag, setTag] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,21 +45,61 @@ export default function CustomersScreen() {
     };
   }, [search, load]);
 
+  // Refresh quietly when coming back from a profile or edit screen, so edited
+  // names and tags show without a pull-to-refresh. Skips the first focus,
+  // which the effect above already covers.
+  const focusedOnce = useRef(false);
+  const searchRef = useRef(search);
+  searchRef.current = search;
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) void load(searchRef.current);
+      focusedOnce.current = true;
+    }, [load]),
+  );
+
+  const tags = useMemo(() => collectTags(customers), [customers]);
+  // A tag that no longer exists (renamed or removed) stops filtering.
+  const activeTag = tag && tags.some((t) => t.toLowerCase() === tag.toLowerCase()) ? tag : null;
+  const visible = useMemo(
+    () => (activeTag ? customers.filter((c) => hasTag(c, activeTag)) : customers),
+    [customers, activeTag],
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
           <Text style={styles.title}>Customers</Text>
           <Text style={styles.count}>
-            {customers.length} {customers.length === 1 ? 'person' : 'people'}
+            {visible.length} {visible.length === 1 ? 'person' : 'people'}
           </Text>
         </View>
 
         <SearchField value={search} onChangeText={setSearch} />
+
+        {tags.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tagRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Chip label="All" selected={activeTag === null} onPress={() => setTag(null)} />
+            {tags.map((t) => (
+              <Chip
+                key={t}
+                label={t}
+                selected={activeTag?.toLowerCase() === t.toLowerCase()}
+                onPress={() => setTag(activeTag?.toLowerCase() === t.toLowerCase() ? null : t)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
       </View>
 
       <FlatList
-        data={customers}
+        data={visible}
         keyExtractor={(c) => c.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
@@ -79,7 +123,7 @@ export default function CustomersScreen() {
         ListEmptyComponent={
           loading ? null : (
             <Text style={styles.emptyState}>
-              {search
+              {search || activeTag
                 ? 'No customers match this search.'
                 : 'Customers show up here automatically as you quote jobs.'}
             </Text>
@@ -202,6 +246,9 @@ const makeStyles = (colors: Colors) =>
       fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
+    },
+    tagRow: {
+      gap: spacing.sm,
     },
     search: {
       flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
-import { Plus } from 'lucide-react-native';
-import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ClipboardList, Plus, Receipt } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -16,15 +16,21 @@ import { strings } from '@/lib/strings';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
+const STEP_ICONS = [Plus, ClipboardList, Receipt] as const;
+
 /**
- * Onboarding step 4 (ON-04 from PRD). A dark card with a pulsing gold FAB
- * callout to teach the primary action. Not in CLAUDE.md §5 v1.0 — added here
- * as part of the same commit that updates §5 to include walkthrough.tsx.
+ * Onboarding step 4 (ON-04 from PRD): a three-card guide to the main loop,
+ * New Quote → Jobs → Get paid. Each card is a dark panel with a pulsing gold
+ * icon; Skip goes straight to permissions.
  */
 export default function Walkthrough() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  const [step, setStep] = useState(0);
   const pulse = useSharedValue(0);
+  const steps = strings.walkthrough.steps;
+  const last = step === steps.length - 1;
+  const Icon = STEP_ICONS[step];
 
   useEffect(() => {
     pulse.value = withRepeat(
@@ -43,16 +49,31 @@ export default function Walkthrough() {
     transform: [{ scale: 1 + pulse.value * 0.06 }],
   }));
 
+  const finish = () => router.push('/(onboarding)/permissions');
+
   return (
     <OnboardingFrame
       progress={0.8}
       stepLabel="Step 4 of 5"
-      title={strings.walkthrough.title}
+      title={steps[step].title}
       footer={
-        <PrimaryButton
-          label={strings.walkthrough.cta}
-          onPress={() => router.push('/(onboarding)/permissions')}
-        />
+        <View style={styles.footer}>
+          <PrimaryButton
+            label={last ? strings.walkthrough.cta : strings.walkthrough.next}
+            onPress={last ? finish : () => setStep((s) => s + 1)}
+          />
+          {!last ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip the walkthrough"
+              onPress={finish}
+              hitSlop={8}
+              style={styles.skip}
+            >
+              <Text style={styles.skipLabel}>{strings.walkthrough.skip}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       }
     >
       <View style={styles.stage}>
@@ -60,10 +81,15 @@ export default function Walkthrough() {
           <View style={styles.fabWrapper}>
             <Animated.View style={[styles.halo, haloStyle]} />
             <Animated.View style={[styles.fab, fabStyle]}>
-              <Plus size={28} color={colors.onGold} strokeWidth={3} />
+              <Icon size={28} color={colors.onGold} strokeWidth={step === 0 ? 3 : 2.5} />
             </Animated.View>
           </View>
-          <Text style={styles.body}>{strings.walkthrough.body}</Text>
+          <Text style={styles.body}>{steps[step].body}</Text>
+        </View>
+        <View style={styles.dots} accessibilityLabel={`Card ${step + 1} of ${steps.length}`}>
+          {steps.map((_, i) => (
+            <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
+          ))}
         </View>
       </View>
     </OnboardingFrame>
@@ -77,6 +103,7 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: spacing.xl,
+      gap: spacing.lg,
     },
     dark: {
       width: '100%',
@@ -112,5 +139,33 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.h3,
       color: colors.onInverseMuted,
       textAlign: 'center',
+    },
+    dots: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.divider,
+    },
+    dotActive: {
+      width: 24,
+      backgroundColor: colors.gold,
+    },
+    footer: {
+      gap: spacing.sm,
+    },
+    skip: {
+      alignSelf: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    skipLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink3,
     },
   });

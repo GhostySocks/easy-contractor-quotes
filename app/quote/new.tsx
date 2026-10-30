@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomerAutocomplete } from '@/components/quote/CustomerAutocomplete';
 import { PhotoStrip, type StripPhoto } from '@/components/quote/PhotoStrip';
 import { Chip } from '@/components/ui/Chip';
-import { DateSheet, isoDay, morningOf } from '@/components/ui/DateSheet';
+import { DateSheet, isoDay } from '@/components/ui/DateSheet';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateQuote } from '@/lib/ai';
@@ -291,7 +291,7 @@ export default function NewQuote() {
 
           <View style={styles.block}>
             <Text style={styles.fieldLabel}>
-              Start date <Text style={styles.fieldMeta}>(optional)</Text>
+              Start date and time <Text style={styles.fieldMeta}>(optional)</Text>
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -327,8 +327,8 @@ export default function NewQuote() {
         currentIso={startAt}
         minDate={today}
         onClose={() => setDateOpen(false)}
-        onPick={(day) => {
-          setStartAt(morningOf(day));
+        onPick={(iso) => {
+          setStartAt(iso);
           setDateOpen(false);
         }}
         clearLabel={startAt ? 'Clear start date' : undefined}
@@ -342,11 +342,14 @@ export default function NewQuote() {
 }
 
 function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
+  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${date} · ${time}`;
 }
 
 const makeStyles = (colors: Colors) =>

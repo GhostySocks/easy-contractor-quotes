@@ -74,6 +74,26 @@ export function parseTags(input: string): string[] {
   return out;
 }
 
+/**
+ * Every tag in use across these customers, for the Customers tab filter.
+ * Case-insensitive dedupe keeping the first spelling seen, sorted A–Z.
+ */
+export function collectTags(customers: { tags: string[] | null }[]): string[] {
+  const byKey = new Map<string, string>();
+  for (const c of customers) {
+    for (const tag of c.tags ?? []) {
+      const key = tag.toLowerCase();
+      if (!byKey.has(key)) byKey.set(key, tag);
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+export function hasTag(customer: { tags: string[] | null }, tag: string): boolean {
+  const key = tag.toLowerCase();
+  return (customer.tags ?? []).some((t) => t.toLowerCase() === key);
+}
+
 export function validateCustomerForm(v: CustomerFormValues): CustomerFormErrors {
   const errors: CustomerFormErrors = {};
   if (!v.name.trim()) errors.name = 'Name is required';

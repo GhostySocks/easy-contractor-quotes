@@ -24,6 +24,7 @@ import {
   setJobSchedule,
   type JobWithCustomer,
 } from '@/lib/jobs';
+import { atDayAndMinutes, DEFAULT_START_MINUTES } from '@/lib/schedule-time';
 import { formatCents } from '@/lib/pricing';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -50,9 +51,9 @@ export default function CalendarScreen() {
   }, [visibleMonth, load]);
 
   async function handlePick(job: JobWithCustomer) {
-    // Default to 9:00 AM local on the selected day — time picker is a follow-up.
-    const [y, m, d] = selectedDay.split('-').map(Number);
-    const scheduledAt = new Date(y, m - 1, d, 9, 0, 0).toISOString();
+    // Quick-schedule at the default start time; the exact time can be changed
+    // from the job's schedule card.
+    const scheduledAt = atDayAndMinutes(selectedDay, DEFAULT_START_MINUTES);
     const updated = await setJobSchedule(job.id, scheduledAt);
     setPickerOpen(false);
     if (updated) {

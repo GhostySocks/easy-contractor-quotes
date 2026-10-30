@@ -18,6 +18,13 @@ import {
   type TodayJob,
 } from '@/components/ui/TodayJobRow';
 import { listAllJobs, type JobWithCustomer, type LibraryStatusFilter } from '@/lib/jobs';
+import {
+  flatSectionTitle,
+  groupsByDay,
+  LIBRARY_SORTS,
+  sortLibraryRows,
+  type LibrarySort,
+} from '@/lib/library-sort';
 import { listDraftQuotes, type DraftQuoteWithCustomer } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
@@ -47,6 +54,7 @@ export default function JobsScreen() {
   const [rows, setRows] = useState<LibraryRow[]>([]);
   const [filter, setFilter] = useState<LibraryStatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<LibrarySort>('recent');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,7 +86,11 @@ export default function JobsScreen() {
     };
   }, [filter, search, load]);
 
-  const sections = useMemo(() => groupByDay(rows), [rows]);
+  const sections = useMemo(() => {
+    const sorted = sortLibraryRows(rows, sort);
+    if (groupsByDay(sort)) return groupByDay(sorted);
+    return sorted.length > 0 ? [{ title: flatSectionTitle(sort), data: sorted }] : [];
+  }, [rows, sort]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -100,6 +112,25 @@ export default function JobsScreen() {
               active={filter === f.key}
               onPress={() => setFilter(f.key)}
             />
+          ))}
+        </View>
+
+        <View style={styles.sortRow}>
+          <Text style={styles.sortLabel}>Sort</Text>
+          {LIBRARY_SORTS.map((o) => (
+            <Pressable
+              key={o.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: sort === o.key }}
+              accessibilityLabel={`Sort by ${o.label}`}
+              onPress={() => setSort(o.key)}
+              hitSlop={8}
+              style={styles.sortOption}
+            >
+              <Text style={[styles.sortOptionLabel, sort === o.key && styles.sortOptionActive]}>
+                {o.label}
+              </Text>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -372,6 +403,32 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.body,
       color: colors.ink,
       paddingVertical: 0,
+    },
+    sortRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    sortLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+    },
+    sortOption: {
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    sortOptionLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    sortOptionActive: {
+      fontFamily: typography.fonts.bodyStrong,
+      color: colors.goldDark,
+      textDecorationLine: 'underline',
     },
     filterRow: {
       flexDirection: 'row',
