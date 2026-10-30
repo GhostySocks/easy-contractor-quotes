@@ -33,6 +33,14 @@
       "expo-font",
       "expo-local-authentication",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Easy Contractor Quotes uses your photos so you can attach pictures of a job to its quote.",
+          "cameraPermission": "Easy Contractor Quotes uses the camera so you can photograph a job for its quote.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
