@@ -301,6 +301,18 @@ Web is planned for M4 or later. Decisions made now must not make web impossible:
 
 **Never do without explicit permission:** force-push, delete migrations, modify `.env.local` on the server, or ship code that bypasses entitlement checks.
 
+### Model recommendation at the start of every feature
+
+Before starting any punch-list item or feature, state in one line which Claude model the work should run on and why, then wait for the human to confirm or switch. The human decides; this is a recommendation, not a choice. Guide:
+
+| Recommend | When                                                                                                                                                                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Haiku** | Mechanical, fully specified edits: renames, copy changes, adding a field that mirrors an existing one, test scaffolding, formatting.                                                                              |
+| **Opus**  | The default for building to a spec: new screens, forms, data-layer functions, edge functions, library integrations (Stripe, calendar, PDF), bug fixes with a clear repro, most of Phases 1–3.                     |
+| **Fable** | Judgment-heavy or high-blast-radius work: RLS / entitlement / security changes, PII encryption and key management, offline sync design, schema redesign, audits, anything where a wrong call leaks data or money. |
+
+If a task changes character mid-way (an Opus task turns up a security question), say so and recommend switching rather than pressing on.
+
 ---
 
 ## 13. Environment Variables (`.env.local` template)
