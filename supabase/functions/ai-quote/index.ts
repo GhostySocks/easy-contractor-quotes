@@ -12,6 +12,8 @@ import {
   QUOTE_TOOL_NAME,
   type CustomerHistory,
 } from '../_shared/prompts.ts';
+import { normalizeQuote, type QuoteOutput, validateQuote } from '../_shared/quote-validate.ts';
+import { stateNoteFor } from '../_shared/state-notes.ts';
 
 type QuoteInput = {
   trade: string;
@@ -27,21 +29,7 @@ type QuoteInput = {
   photos: string[];
 };
 
-type QuoteToolOutput = {
-  scope_of_work: string;
-  line_items: Array<{
-    label: string;
-    qty: number;
-    unit_price_cents: number;
-    total_cents: number;
-  }>;
-  subtotal_cents: number;
-  tax_cents: number;
-  total_cents: number;
-  total_low_cents: number;
-  total_high_cents: number;
-  state_notes: string | null;
-};
+type QuoteToolOutput = QuoteOutput;
 
 type AnthropicResponse = {
   content: Array<{
@@ -51,7 +39,14 @@ type AnthropicResponse = {
   }>;
 };
 
-const MODEL = 'claude-sonnet-4-6';
+/**
+ * Haiku first: it is ~30x cheaper than Sonnet and faster, and this is a
+ * structured-extraction task it handles well. Anything that fails the
+ * arithmetic / plausibility checks in quote-validate.ts is regenerated once
+ * on Sonnet; if that still fails we normalize the math from the line items.
+ */
+const MODEL_PRIMARY = 'claude-haiku-5-5';
+const MODEL_FALLBACK = 'claude-sonnet-5-5';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 // @ts-expect-error — Deno.serve is provided by the runtime
@@ -90,8 +85,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const startedAt = Date.now();
-    const result = await callAnthropic(apiKey, systemPrompt, userMessage);
+    const result = await generateValidatedQuote(apiKey, systemPrompt, userMessage);
     const aiMs = Date.now() - startedAt;
+    const stateNotes = stateNoteFor(input.state_code);
 
     const { data: inserted, error: insertError } = await supabase
       .from('quotes')
@@ -106,7 +102,7 @@ Deno.serve(async (req: Request) => {
         total_cents: result.total_cents,
         total_low_cents: result.total_low_cents,
         total_high_cents: result.total_high_cents,
-        state_notes: result.state_notes,
+        state_notes: stateNotes,
         status: 'draft',
       })
       .select('id')
@@ -151,8 +147,31 @@ async function loadCustomerHistory(
   };
 }
 
+async function generateValidatedQuote(
+  apiKey: string,
+  systemPrompt: string,
+  userMessage: string,
+): Promise<QuoteToolOutput> {
+  const primary = await callAnthropic(apiKey, MODEL_PRIMARY, systemPrompt, userMessage);
+  const primaryCheck = validateQuote(primary);
+  if (primaryCheck.ok) return primary;
+  console.warn('[ai-quote] primary output failed validation', primaryCheck.reasons.join('; '));
+
+  const fallback = await callAnthropic(apiKey, MODEL_FALLBACK, systemPrompt, userMessage);
+  const fallbackCheck = validateQuote(fallback);
+  if (fallbackCheck.ok) return fallback;
+  console.warn('[ai-quote] fallback output failed validation', fallbackCheck.reasons.join('; '));
+
+  const normalized = normalizeQuote(fallback) ?? normalizeQuote(primary);
+  if (!normalized) {
+    throw new HttpError(502, 'quote generation returned unusable output');
+  }
+  return normalized;
+}
+
 async function callAnthropic(
   apiKey: string,
+  model: string,
   systemPrompt: string,
   userMessage: string,
 ): Promise<QuoteToolOutput> {
@@ -164,8 +183,11 @@ async function callAnthropic(
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: 2000,
+      // Short structured output; no deliberation needed. With a forced tool
+      // call the model skips thinking anyway, this keeps it explicit.
+      output_config: { effort: 'low' },
       system: systemPrompt,
       tools: [
         {
