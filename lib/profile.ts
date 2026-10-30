@@ -55,15 +55,28 @@ export async function updateProfile(
     .update(patch)
     .eq('id', userId)
     .select('*')
-    .single();
+    .maybeSingle();
   if (error) {
     console.warn('[profile] update failed', error.message);
     return { ok: false, message: error.message };
   }
-  if (!data) {
-    return { ok: false, message: 'No profile row matched — RLS or session may be stale.' };
+  if (data) return { ok: true, profile: data as ProfileRow };
+
+  // No row yet: an account that never finished onboarding. Create it, which
+  // needs the two required fields (business name and state).
+  if (!patch.business_name || !patch.state_code) {
+    return { ok: false, message: 'Save your business name and state first.' };
   }
-  return { ok: true, profile: data as ProfileRow };
+  const { data: created, error: insertError } = await supabase
+    .from('profiles')
+    .insert({ id: userId, ...patch, onboarding_completed_at: new Date().toISOString() })
+    .select('*')
+    .single();
+  if (insertError || !created) {
+    console.warn('[profile] create failed', insertError?.message);
+    return { ok: false, message: insertError?.message ?? 'Could not create your profile.' };
+  }
+  return { ok: true, profile: created as ProfileRow };
 }
 
 export function firstNameFromProfile(profile: ProfileRow | null): string {
