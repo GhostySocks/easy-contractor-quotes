@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { formatCents } from '@/lib/pricing';
+import { formatCents, type PriceBucket } from '@/lib/pricing';
 import { colors, radii, spacing, typography } from '@/lib/theme';
 
-export type PriceBucket = 'low' | 'most_likely' | 'high';
+export type { PriceBucket };
 
 type Props = {
   low_cents: number;

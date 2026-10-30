@@ -41,17 +41,32 @@ Deno.serve(async (req: Request) => {
     return new Response('method not allowed', { status: 405, headers: corsHeaders });
   }
 
+  // The secret is mandatory. Without it, anyone who finds the URL could POST
+  // an INITIAL_PURCHASE and grant themselves pro_access.
   // @ts-expect-error — Deno env access
   const expectedSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
+  if (!expectedSecret) {
+    console.error('[revenuecat-webhook] REVENUECAT_WEBHOOK_SECRET is not set; rejecting');
+    return new Response('webhook not configured', { status: 503, headers: corsHeaders });
+  }
   const provided = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (expectedSecret && provided !== expectedSecret) {
+  if (provided !== expectedSecret) {
     return new Response('unauthorized', { status: 401, headers: corsHeaders });
   }
 
   try {
     const payload = (await req.json()) as RcEvent;
     const event = payload.event;
-    const status = STATUS_FROM_TYPE[event.type] ?? 'expired';
+
+    // RevenueCat also sends TEST, TRANSFER, SUBSCRIBER_ALIAS,
+    // TEMPORARY_ENTITLEMENT_GRANT and future types. None of those say the
+    // subscription ended, so they must not touch the status. Acknowledge
+    // and ignore anything we don't explicitly map.
+    const status = STATUS_FROM_TYPE[event.type];
+    if (!status) {
+      console.log('[revenuecat-webhook] ignoring event type', event.type);
+      return new Response('ignored', { status: 200, headers: corsHeaders });
+    }
 
     const admin = createClient(
       // @ts-expect-error — Deno env access
