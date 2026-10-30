@@ -92,6 +92,7 @@ export default function HomeScreen() {
           unpaidInvoices={money.unpaidCount}
           unsignedContracts={unsignedContracts}
           overdueCount={money.overdueCount}
+          onPress={() => router.push('/payments')}
         />
 
         <SectionHeader

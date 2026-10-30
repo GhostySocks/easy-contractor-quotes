@@ -33,6 +33,12 @@
       "expo-font",
       "expo-local-authentication",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Easy Contractor Quotes uses your location only when you tap \"use my location\" to fill in a job address."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Easy Contractor Quotes uses your photos so you can attach pictures of a job to its quote.",

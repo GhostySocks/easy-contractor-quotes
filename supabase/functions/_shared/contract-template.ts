@@ -234,6 +234,24 @@ export function renderReleaseOfLiability(input: ContractTemplateInput): string {
   return out.join('\n');
 }
 
+/**
+ * Body for an amended version of a signed contract (CLAUDE.md §3.6: signed
+ * contracts are write-once; amendments are new versions). Starts from the
+ * signed text with a note on top that the contractor edits before sending.
+ * A previous amendment note is replaced rather than stacked.
+ */
+export function amendmentBody(
+  signedBody: string,
+  newVersion: number,
+  originalSignedAt: string,
+): string {
+  const withoutOldNote = signedBody.replace(/^> \*\*Amendment \d+\*\*[^\n]*\n\n/, '');
+  const note =
+    `> **Amendment ${newVersion - 1}** to the agreement signed ${longDate(originalSignedAt)}. ` +
+    'Once signed, this version replaces the earlier one. Changes are described below.';
+  return `${note}\n\n${withoutOldNote}`;
+}
+
 export function renderContract(kind: ContractKind, input: ContractTemplateInput): string {
   return kind === 'release' ? renderReleaseOfLiability(input) : renderWorkAgreement(input);
 }

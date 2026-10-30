@@ -3,7 +3,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 // @ts-expect-error — Deno-only import resolved by the Supabase edge runtime
 import { type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
-import { renderContract } from '../_shared/contract-template.ts';
+import { amendmentBody, renderContract } from '../_shared/contract-template.ts';
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
 import { type ContractKind, type ContractLineItem } from '../_shared/prompts.ts';
@@ -18,6 +18,8 @@ import { type ContractKind, type ContractLineItem } from '../_shared/prompts.ts'
 type ContractInput = {
   kind: ContractKind;
   quote_id: string;
+  /** Create the next version of this signed contract instead of a new one. */
+  amend_contract_id?: string;
 };
 
 // @ts-expect-error — Deno.serve is provided by the runtime
@@ -30,6 +32,13 @@ Deno.serve(async (req: Request) => {
   try {
     const { userId, supabase } = await requireActiveSubscription(req);
     const input = (await req.json()) as ContractInput;
+
+    if (input.amend_contract_id) {
+      const amended = await createAmendment(supabase, userId, input.amend_contract_id);
+      return new Response(JSON.stringify(amended), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (input.kind !== 'work' && input.kind !== 'release') {
       throw new HttpError(400, 'kind must be "work" or "release"');
@@ -170,6 +179,63 @@ async function loadContractContext(
       total_cents: quote.total_cents,
     },
   };
+}
+
+/**
+ * Copy a signed contract into the next version: same job, quote, customer,
+ * kind and state; body starts from the signed text with an amendment note;
+ * fresh signing link. The signed original is untouched (write-once).
+ */
+async function createAmendment(
+  supabase: SupabaseClient,
+  userId: string,
+  contractId: string,
+): Promise<{ id: string; body_markdown: string; signing_token: string }> {
+  const { data: original, error } = await supabase
+    .from('contracts')
+    .select('id, quote_id, job_id, customer_id, kind, state_code, body_markdown, signed_at')
+    .eq('id', contractId)
+    .maybeSingle();
+  if (error || !original) {
+    throw new HttpError(404, `contract not found: ${error?.message ?? contractId}`);
+  }
+  if (!original.signed_at) {
+    throw new HttpError(409, 'contract is not signed yet; edit it instead of amending');
+  }
+
+  // Next version across every contract for the same job (or quote).
+  const scope = original.job_id
+    ? { column: 'job_id', value: original.job_id }
+    : { column: 'quote_id', value: original.quote_id };
+  const { data: latest } = await supabase
+    .from('contracts')
+    .select('version')
+    .eq(scope.column, scope.value)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const version = ((latest?.version as number | null) ?? 1) + 1;
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('contracts')
+    .insert({
+      user_id: userId,
+      quote_id: original.quote_id,
+      job_id: original.job_id,
+      customer_id: original.customer_id,
+      kind: original.kind,
+      state_code: original.state_code,
+      body_markdown: amendmentBody(original.body_markdown, version, original.signed_at),
+      version,
+      signing_token: mintSigningToken(),
+      signing_token_expires_at: daysFromNowISO(30),
+    })
+    .select('id, body_markdown, signing_token')
+    .single();
+  if (insertError || !inserted) {
+    throw new HttpError(500, `insert amendment failed: ${insertError?.message ?? 'no row'}`);
+  }
+  return inserted;
 }
 
 /**

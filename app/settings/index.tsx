@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CreditCard,
   Download,
+  Fingerprint,
   LogOut,
   Moon,
   Smartphone,
@@ -14,10 +15,11 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth-store';
+import { useBiometricPref } from '@/lib/biometric-lock';
 import { exportCustomersCSV } from '@/lib/customers-export';
 import { supabase } from '@/lib/supabase';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
@@ -35,6 +37,8 @@ export default function Settings() {
   const { colors, mode, setMode } = useTheme();
   const user = useAuth((s) => s.user);
   const [exporting, setExporting] = useState(false);
+  const biometricOn = useBiometricPref((s) => s.enabled);
+  const setBiometricOn = useBiometricPref((s) => s.setEnabled);
 
   async function handleExport() {
     if (exporting) return;
@@ -89,6 +93,25 @@ export default function Settings() {
               onPress={() => setMode(option.mode)}
             />
           ))}
+        </Section>
+
+        <Section title="Security">
+          <View style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Fingerprint size={20} color={colors.goldDark} strokeWidth={2} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.rowLabel}>Unlock with Face ID or fingerprint</Text>
+              <Text style={styles.rowSub}>Asks when you open the app and after a minute away.</Text>
+            </View>
+            <Switch
+              value={biometricOn}
+              onValueChange={setBiometricOn}
+              trackColor={{ true: colors.gold, false: colors.divider }}
+              thumbColor={colors.surface}
+              accessibilityLabel="Unlock with Face ID or fingerprint"
+            />
+          </View>
         </Section>
 
         <Section title="Money">

@@ -15,6 +15,7 @@ import { useEffect, useMemo } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
+import { BiometricGate } from '@/components/BiometricGate';
 import { useSessionBootstrap } from '@/lib/session-bootstrap';
 import { ThemeProvider, useTheme } from '@/lib/theme-context';
 
@@ -47,6 +48,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <SafeAreaProvider>
         <ThemedNavigation />
+        <BiometricGate />
       </SafeAreaProvider>
     </ThemeProvider>
   );
@@ -98,6 +100,7 @@ function ThemedNavigation() {
         <Stack.Screen name="customer/[id]" />
         <Stack.Screen name="customer/edit/[id]" />
         <Stack.Screen name="contract/[id]" />
+        <Stack.Screen name="payments" />
         <Stack.Screen name="settings" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
