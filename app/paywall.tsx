@@ -72,7 +72,7 @@ export default function Paywall() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.body}>
-        <Text style={styles.hero}>{strings.paywall.hero}</Text>
+        <Text style={styles.hero}>{strings.locked.paywallHeadline}</Text>
 
         <View style={styles.features}>
           {strings.paywall.features.map((feature) => (
@@ -85,13 +85,13 @@ export default function Paywall() {
 
         <View style={styles.priceCard}>
           <Text style={styles.price}>$9.99/month</Text>
-          <Text style={styles.priceSub}>{strings.paywall.priceLine}</Text>
+          <Text style={styles.priceSub}>{strings.locked.paywallPriceLine}</Text>
         </View>
       </View>
 
       <View style={styles.footer}>
         <PrimaryButton label={strings.paywall.cta} loading={purchasing} onPress={handlePurchase} />
-        <Text style={styles.trust}>{strings.paywall.trustLine}</Text>
+        <Text style={styles.trust}>{strings.locked.paywallTrustLine}</Text>
         <Pressable onPress={handleRestore} style={styles.restore} accessibilityRole="link">
           <Text style={styles.restoreLabel}>{strings.paywall.restore}</Text>
         </Pressable>

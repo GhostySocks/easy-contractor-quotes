@@ -36,7 +36,9 @@ export type UpdateProfileResult =
  */
 export async function updateProfile(
   userId: string,
-  patch: Partial<Pick<ProfileRow, 'business_name' | 'state_code' | 'trade' | 'logo_url'>>,
+  patch: Partial<
+    Pick<ProfileRow, 'business_name' | 'state_code' | 'trade' | 'logo_url' | 'default_tax_rate'>
+  >,
 ): Promise<UpdateProfileResult> {
   const { data, error } = await supabase
     .from('profiles')

@@ -125,7 +125,7 @@ export async function createCustomer(input: {
     .from('customers')
     .select('*')
     .eq('user_id', user.id)
-    .ilike('name', trimmed)
+    .ilike('name', escapeLikeWildcards(trimmed))
     .order('created_at', { ascending: true })
     .limit(1);
   if (existing && existing.length > 0) {

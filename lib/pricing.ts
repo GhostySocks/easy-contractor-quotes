@@ -49,6 +49,29 @@ export function deriveRange(mostLikelyCents: number): PriceRange {
   };
 }
 
+export const BUCKET_FACTORS = {
+  low: 0.8,
+  most_likely: 1,
+  high: 1.25,
+} as const;
+
+export type PriceBucket = keyof typeof BUCKET_FACTORS;
+
+/**
+ * Apply a price bucket to a set of line items. Every unit price is scaled by
+ * the bucket's factor and totals are recomputed, so the itemized quote, the
+ * subtotal, the tax and the total all agree on the price the contractor
+ * picked. Pass the *most-likely* items as `base`; selecting a different
+ * bucket always derives from those, never from already-scaled items.
+ */
+export function scaleLineItems(base: readonly LineItem[], bucket: PriceBucket): LineItem[] {
+  const factor = BUCKET_FACTORS[bucket];
+  return base.map((item) => {
+    const unit = Math.round(item.unit_price_cents * factor);
+    return { ...item, unit_price_cents: unit, total_cents: unit * item.qty };
+  });
+}
+
 export function formatCents(cents: number): string {
   const sign = cents < 0 ? '-' : '';
   const abs = Math.abs(cents);

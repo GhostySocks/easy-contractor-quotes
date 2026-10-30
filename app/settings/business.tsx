@@ -31,6 +31,7 @@ export default function BusinessSettings() {
   const [businessName, setBusinessName] = useState('');
   const [stateCode, setStateCode] = useState('');
   const [trade, setTrade] = useState<TradeCode | null>(null);
+  const [taxRate, setTaxRate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -41,6 +42,9 @@ export default function BusinessSettings() {
         setBusinessName(profile.business_name);
         setStateCode(profile.state_code);
         setTrade((profile.trade as TradeCode | null) ?? null);
+        setTaxRate(
+          Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
+        );
       }
       setLoading(false);
     });
@@ -60,12 +64,18 @@ export default function BusinessSettings() {
       Alert.alert('State must be a 2-letter code', 'e.g. TX, CA, FL');
       return;
     }
+    const parsedTax = taxRate.trim() === '' ? 0 : Number(taxRate.replace('%', ''));
+    if (!Number.isFinite(parsedTax) || parsedTax < 0 || parsedTax > 30) {
+      Alert.alert('Tax rate must be a percentage between 0 and 30', 'e.g. 8.25');
+      return;
+    }
 
     setSaving(true);
     const result = await updateProfile(user.id, {
       business_name: trimmedName,
       state_code: trimmedState,
       trade,
+      default_tax_rate: Math.round(parsedTax * 100) / 100,
     });
     setSaving(false);
 
@@ -110,6 +120,15 @@ export default function BusinessSettings() {
                 placeholder="TX"
                 autoCapitalize="characters"
                 maxLength={2}
+                returnKeyType="next"
+              />
+
+              <Input
+                label="Sales tax rate (%)"
+                value={taxRate}
+                onChangeText={setTaxRate}
+                placeholder="0 — added to every quote and invoice"
+                keyboardType="decimal-pad"
                 returnKeyType="done"
               />
 
