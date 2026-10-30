@@ -130,6 +130,7 @@ app/
   paywall.tsx                   -> Hard paywall, no skip (single $9.99/mo tier)
   paywall-v2.tsx                -> A/B variant with monthly/annual toggle
   app-paused.tsx                -> Lapsed subscription re-activation
+  payments.tsx                  -> Payments (PRD IN-04): overdue / unpaid / paid invoices. Opened from the Home money card, not a 5th tab, to keep 4 tabs + FAB
   (tabs)/
     _layout.tsx                 -> Bottom tab bar (4 tabs + center FAB)
     home.tsx                    -> Today's jobs, money pending, schedule preview
@@ -143,8 +144,11 @@ app/
     [id].tsx                    -> Job detail, status timeline, attachments
   customer/
     [id].tsx                    -> Customer profile
+    edit/[id].tsx               -> Edit contact, address, notes, tags
   contract/
-    [id].tsx                    -> Contract view + e-sign
+    [id].tsx                    -> Contract view + e-sign; Amend creates the next version of a signed contract
+  invoice/
+    [id].tsx                    -> Invoice: edit actuals, send, share PDF, mark paid
   settings/
     index.tsx
     business.tsx

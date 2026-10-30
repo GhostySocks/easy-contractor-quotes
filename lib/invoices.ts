@@ -1,4 +1,5 @@
 import type { LineItem } from './ai';
+import { isOverdue } from './payments-math';
 import { supabase } from './supabase';
 
 export type InvoiceStatus = 'unpaid' | 'partial' | 'paid' | 'refunded';
@@ -28,12 +29,9 @@ export type UnpaidSummary = {
 
 /**
  * Aggregates for the Home "Money Pending" card. Sums unpaid + partial invoices
- * for the current user, and counts how many of those were sent more than
- * OVERDUE_DAYS ago. We don't track an explicit due date yet, so sent_at is the
- * proxy — close enough until invoice terms are user-configurable.
+ * for the current user, and counts how many are overdue (7 days after sending,
+ * PRD IN-04; see lib/payments-math.ts).
  */
-const OVERDUE_DAYS = 30;
-
 export async function fetchUnpaidSummary(): Promise<UnpaidSummary> {
   const { data, error } = await supabase
     .from('invoices')
@@ -43,14 +41,32 @@ export async function fetchUnpaidSummary(): Promise<UnpaidSummary> {
     console.warn('[invoices] unpaid-summary failed', error.message);
     return { totalCents: 0, unpaidCount: 0, overdueCount: 0 };
   }
-  const cutoff = Date.now() - OVERDUE_DAYS * 86400000;
   let totalCents = 0;
   let overdueCount = 0;
   for (const row of data ?? []) {
     totalCents += row.total_cents ?? 0;
-    if (row.sent_at && new Date(row.sent_at).getTime() < cutoff) overdueCount += 1;
+    if (isOverdue(row)) overdueCount += 1;
   }
   return { totalCents, unpaidCount: data?.length ?? 0, overdueCount };
+}
+
+export type InvoiceWithCustomer = InvoiceRow & { customer_name: string | null };
+
+/** Every invoice with its customer's name, for the Payments screen. */
+export async function listInvoices(limit = 300): Promise<InvoiceWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*, customer:customers(name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[invoices] list failed', error.message);
+    return [];
+  }
+  return (data ?? []).map((row: unknown) => {
+    const r = row as InvoiceRow & { customer?: { name?: string } | null };
+    return { ...r, customer_name: r.customer?.name ?? null };
+  });
 }
 
 export async function fetchInvoice(id: string): Promise<InvoiceRow | null> {
