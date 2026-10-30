@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CreditCard,
   Download,
+  BellRing,
   Fingerprint,
   LogOut,
   Moon,
@@ -20,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth-store';
 import { useBiometricPref } from '@/lib/biometric-lock';
+import { syncJobReminders, useReminderPref } from '@/lib/notifications';
 import { exportCustomersCSV } from '@/lib/customers-export';
 import { supabase } from '@/lib/supabase';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
@@ -39,6 +41,8 @@ export default function Settings() {
   const [exporting, setExporting] = useState(false);
   const biometricOn = useBiometricPref((s) => s.enabled);
   const setBiometricOn = useBiometricPref((s) => s.setEnabled);
+  const remindersOn = useReminderPref((s) => s.enabled);
+  const setRemindersOn = useReminderPref((s) => s.setEnabled);
 
   async function handleExport() {
     if (exporting) return;
@@ -93,6 +97,30 @@ export default function Settings() {
               onPress={() => setMode(option.mode)}
             />
           ))}
+        </Section>
+
+        <Section title="Notifications">
+          <View style={styles.row}>
+            <View style={styles.rowIcon}>
+              <BellRing size={20} color={colors.goldDark} strokeWidth={2} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.rowLabel}>Job reminders</Text>
+              <Text style={styles.rowSub}>A notification an hour before each scheduled job.</Text>
+            </View>
+            <Switch
+              value={remindersOn}
+              onValueChange={(on) => {
+                setRemindersOn(on);
+                // Turning off clears scheduled reminders now; turning on
+                // reschedules them the next time Home is shown.
+                if (!on) void syncJobReminders([]);
+              }}
+              trackColor={{ true: colors.gold, false: colors.divider }}
+              thumbColor={colors.surface}
+              accessibilityLabel="Job reminders"
+            />
+          </View>
         </Section>
 
         <Section title="Security">

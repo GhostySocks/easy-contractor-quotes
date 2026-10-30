@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { deleteJobPhotos, promptForPhotos, signedPhotoUrls, uploadLogo } from '@/lib/photos';
 import { fetchProfile, updateProfile } from '@/lib/profile';
+import { TRAVEL_BUFFER_OPTIONS } from '@/lib/schedule-conflicts';
 import { strings } from '@/lib/strings';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -34,6 +35,7 @@ export default function BusinessSettings() {
   const [stateCode, setStateCode] = useState('');
   const [trade, setTrade] = useState<TradeCode | null>(null);
   const [taxRate, setTaxRate] = useState('');
+  const [travelBuffer, setTravelBuffer] = useState<number>(30);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPath, setLogoPath] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export default function BusinessSettings() {
         setTaxRate(
           Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
         );
+        setTravelBuffer(profile.travel_buffer_minutes ?? 30);
         if (profile.logo_url) {
           setLogoPath(profile.logo_url);
           void signedPhotoUrls([profile.logo_url]).then((u) =>
@@ -125,6 +128,7 @@ export default function BusinessSettings() {
       state_code: trimmedState,
       trade,
       default_tax_rate: Math.round(parsedTax * 100) / 100,
+      travel_buffer_minutes: travelBuffer,
     });
     setSaving(false);
 
@@ -187,6 +191,24 @@ export default function BusinessSettings() {
                 keyboardType="decimal-pad"
                 returnKeyType="done"
               />
+
+              <View style={styles.tradeBlock}>
+                <Text style={styles.fieldLabel}>Travel time between jobs</Text>
+                <View style={styles.tradeGrid}>
+                  {TRAVEL_BUFFER_OPTIONS.map((m) => (
+                    <Chip
+                      key={m}
+                      label={m === 0 ? 'None' : `${m} min`}
+                      selected={travelBuffer === m}
+                      onPress={() => setTravelBuffer(m)}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.travelHint}>
+                  Kept clear before and after each job. You&apos;ll get a warning when a job is
+                  scheduled closer than this.
+                </Text>
+              </View>
 
               <View style={styles.tradeBlock}>
                 <Text style={styles.fieldLabel}>Trade</Text>
@@ -279,6 +301,11 @@ const makeStyles = (colors: Colors) =>
       letterSpacing: -0.5,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    travelHint: {
       fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
