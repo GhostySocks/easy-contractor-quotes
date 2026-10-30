@@ -1,9 +1,15 @@
 /**
  * Design tokens for Easy Contractor Quotes.
  * Source of truth: CLAUDE.md §4. Do not hardcode hex values elsewhere.
+ *
+ * Colors come in two palettes. Per §4, dark mode inverts the ink/surface
+ * pairs and keeps gold identical. Screens never import a palette directly —
+ * they read the active one through `useTheme()` / `useStyles()` from
+ * `@/lib/theme-context`.
  */
 
-export const colors = {
+/** Light palette — the §4 table verbatim, plus a few semantic helpers. */
+export const lightColors = {
   gold: '#D4AF37',
   goldDark: '#A88828',
   goldTint: '#FBF4D9',
@@ -17,9 +23,85 @@ export const colors = {
   warn: '#C88A00',
   danger: '#B3261E',
   sky: '#E6F0FA',
+
+  // --- Semantic helpers (same in both modes unless noted) -------------------
+  /** Lighter gold for gradients / shimmer highlights. */
+  goldLight: '#F2CD5B',
+  /** Text and glyphs sitting on a solid gold fill. Always dark: gold is a light color. */
+  onGold: '#1A1A1A',
+  /** Background of an "inverted" hero block (dark card, selected day, banner). */
+  inverseSurface: '#1A1A1A',
+  /** Primary text on `inverseSurface`. */
+  onInverse: '#FFFFFF',
+  /** Secondary / muted text on `inverseSurface`. */
+  onInverseMuted: '#FBF4D9',
+  /** Subtle fill inside an inverted block (stat tiles on the money card). */
+  inverseTint: 'rgba(255,255,255,0.05)',
+  /** Hairline inside an inverted block. */
+  inverseDivider: 'rgba(255,255,255,0.08)',
+  /** Modal / sheet backdrop. */
+  scrim: 'rgba(0,0,0,0.35)',
+  /** Translucent wash over content while it is busy. */
+  veil: 'rgba(255,255,255,0.6)',
+  /** Translucent gold wash (badges, highlighted rows). */
+  goldWash: 'rgba(212,175,55,0.15)',
+  /** Translucent warn wash (notice boxes). */
+  warnWash: 'rgba(200,138,0,0.08)',
+  /** Translucent danger wash (lapsed / error badges). */
+  dangerWash: 'rgba(179,38,30,0.15)',
+  /** Translucent ink wash (pressed overlays on dark surfaces). */
+  inkWash: 'rgba(26,26,26,0.5)',
+  /** Fill of a selected filter pill / calendar day. Its text is always `gold`. */
+  selection: '#1A1A1A',
+  /** Border of a selected filter pill. */
+  selectionBorder: '#1A1A1A',
 } as const;
 
-export type ColorToken = keyof typeof colors;
+export type ColorToken = keyof typeof lightColors;
+export type Colors = Readonly<Record<ColorToken, string>>;
+
+/**
+ * Dark palette. Deep near-black surfaces, warm (slightly gold-leaning) greys,
+ * gold untouched, state colors lifted so they clear 4.5:1 on #121212.
+ */
+export const darkColors: Colors = {
+  gold: '#D4AF37',
+  // Emphasis gold reads brighter on dark; #A88828 only clears ~5.6:1 on
+  // #121212 and 4.5:1 on gold-tint, so lift it to keep headings/links crisp.
+  goldDark: '#E0BF4F',
+  goldTint: '#2A2515',
+  ink: '#F5F3EC',
+  ink2: '#C9C5B8',
+  ink3: '#8A8A8A',
+  surface: '#121212',
+  surface2: '#1C1B18',
+  divider: '#2E2C26',
+  success: '#3DBB6E',
+  warn: '#E0A21A',
+  danger: '#EF6A62',
+  sky: '#1C2A3A',
+
+  goldLight: '#F2CD5B',
+  onGold: '#1A1A1A',
+  inverseSurface: '#1C1B18',
+  onInverse: '#F5F3EC',
+  onInverseMuted: '#C9C5B8',
+  inverseTint: 'rgba(212,175,55,0.06)',
+  inverseDivider: 'rgba(212,175,55,0.14)',
+  scrim: 'rgba(0,0,0,0.6)',
+  veil: 'rgba(18,18,18,0.6)',
+  goldWash: 'rgba(212,175,55,0.16)',
+  warnWash: 'rgba(224,162,26,0.10)',
+  dangerWash: 'rgba(239,106,98,0.16)',
+  inkWash: 'rgba(0,0,0,0.5)',
+  selection: '#332C17',
+  selectionBorder: '#D4AF37',
+};
+
+export const palettes = {
+  light: lightColors,
+  dark: darkColors,
+} as const satisfies Record<'light' | 'dark', Colors>;
 
 /**
  * Minimum body size is 18pt per CLAUDE.md §4 (contractors work outdoors, often 35-55).
@@ -84,7 +166,7 @@ export const motion = {
 } as const;
 
 export const theme = {
-  colors,
+  palettes,
   typography,
   spacing,
   radii,
