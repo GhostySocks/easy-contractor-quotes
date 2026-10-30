@@ -1,12 +1,17 @@
 import { router } from 'expo-router';
 import {
   Briefcase,
+  Check,
   ChevronLeft,
   ChevronRight,
   CreditCard,
   Download,
   LogOut,
+  Moon,
+  Smartphone,
   Sparkles,
+  Sun,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,9 +20,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-store';
 import { exportCustomersCSV } from '@/lib/customers-export';
 import { supabase } from '@/lib/supabase';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
+import type { ThemeMode } from '@/lib/theme-store';
+
+const APPEARANCE_OPTIONS: { mode: ThemeMode; label: string; sub: string; Icon: LucideIcon }[] = [
+  { mode: 'dark', label: 'Dark', sub: 'Deep black with gold. Easiest on the eyes.', Icon: Moon },
+  { mode: 'light', label: 'Light', sub: 'Bright surfaces for full sun.', Icon: Sun },
+  { mode: 'system', label: 'System', sub: 'Match your phone’s setting.', Icon: Smartphone },
+];
 
 export default function Settings() {
+  const styles = useStyles(makeStyles);
+  const { colors, mode, setMode } = useTheme();
   const user = useAuth((s) => s.user);
   const [exporting, setExporting] = useState(false);
 
@@ -63,6 +78,19 @@ export default function Settings() {
           />
         </Section>
 
+        <Section title="Appearance">
+          {APPEARANCE_OPTIONS.map((option) => (
+            <OptionRow
+              key={option.mode}
+              icon={<option.Icon size={20} color={colors.goldDark} strokeWidth={2} />}
+              label={option.label}
+              sub={option.sub}
+              selected={mode === option.mode}
+              onPress={() => setMode(option.mode)}
+            />
+          ))}
+        </Section>
+
         <Section title="Money">
           <Row
             icon={<CreditCard size={20} color={colors.goldDark} strokeWidth={2} />}
@@ -102,6 +130,8 @@ export default function Settings() {
 }
 
 function BackButton() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -117,6 +147,7 @@ function BackButton() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionLabel}>{title.toUpperCase()}</Text>
@@ -140,6 +171,8 @@ function Row({
   disabled?: boolean;
   destructive?: boolean;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -164,102 +197,151 @@ function Row({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge,
-    gap: spacing.xl,
-  },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginLeft: -spacing.xs,
-    minHeight: 44,
-  },
-  backPressed: {
-    opacity: 0.6,
-  },
-  backLabel: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  titleBlock: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: colors.ink3,
-    paddingHorizontal: spacing.sm,
-  },
-  sectionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 60,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.divider,
-  },
-  rowPressed: {
-    backgroundColor: colors.surface2,
-  },
-  rowDisabled: {
-    opacity: 0.5,
-  },
-  rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowBody: {
-    flex: 1,
-    gap: 2,
-  },
-  rowLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  rowLabelDestructive: {
-    color: colors.danger,
-  },
-  rowSub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-});
+/**
+ * Radio-style row for mutually exclusive choices (Appearance). Same 60pt
+ * target as `Row`; the active option gets a gold check and a gold-tint icon.
+ */
+function OptionRow({
+  icon,
+  label,
+  sub,
+  selected,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sub?: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <View style={[styles.rowIcon, selected && styles.rowIconSelected]}>{icon}</View>
+      <View style={styles.rowBody}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+      </View>
+      <View style={styles.check}>
+        {selected ? <Check size={22} color={colors.gold} strokeWidth={3} /> : null}
+      </View>
+    </Pressable>
+  );
+}
+
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge,
+      gap: spacing.xl,
+    },
+    back: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginLeft: -spacing.xs,
+      minHeight: 44,
+    },
+    backPressed: {
+      opacity: 0.6,
+    },
+    backLabel: {
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontWeight: '600',
+      marginLeft: 2,
+    },
+    titleBlock: {
+      gap: spacing.xs,
+    },
+    title: {
+      fontSize: typography.sizes.display,
+      fontWeight: '800',
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      fontWeight: '500',
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.8,
+      color: colors.ink3,
+      paddingHorizontal: spacing.sm,
+    },
+    sectionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: typography.minTouchTarget,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+    },
+    rowPressed: {
+      backgroundColor: colors.surface2,
+    },
+    rowDisabled: {
+      opacity: 0.5,
+    },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowIconSelected: {
+      borderWidth: 1,
+      borderColor: colors.gold,
+    },
+    rowBody: {
+      flex: 1,
+      gap: 2,
+    },
+    rowLabel: {
+      fontSize: typography.sizes.body,
+      fontWeight: '700',
+      color: colors.ink,
+    },
+    rowLabelDestructive: {
+      color: colors.danger,
+    },
+    rowSub: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      fontWeight: '500',
+    },
+    check: {
+      width: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
