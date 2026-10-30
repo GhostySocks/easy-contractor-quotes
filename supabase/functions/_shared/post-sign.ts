@@ -1,6 +1,8 @@
 // @ts-expect-error — Deno-only import resolved by the Supabase edge runtime
 import { type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
+import { jobFieldsFromQuote } from './job-from-quote.ts';
+
 /**
  * Runs after a contract is signed by either path (authenticated contractor
  * self-sign or tokenized customer sign). Creates the job the contractor
@@ -36,7 +38,7 @@ export async function onContractSigned(
 
   const { data: quote } = await admin
     .from('quotes')
-    .select('id, scope_of_work, total_cents, status')
+    .select('id, scope_of_work, total_cents, status, requested_start_at, photos')
     .eq('id', contract.quote_id)
     .maybeSingle();
   if (!quote) return { job_id: null };
@@ -46,10 +48,7 @@ export async function onContractSigned(
     .insert({
       user_id: contract.user_id,
       customer_id: contract.customer_id,
-      title: jobTitleFromScope(quote.scope_of_work),
-      description: quote.scope_of_work,
-      status: 'in_progress',
-      total_cents: quote.total_cents,
+      ...jobFieldsFromQuote(quote),
     })
     .select('id')
     .single();
@@ -78,13 +77,4 @@ export async function onContractSigned(
   }
 
   return { job_id: insertedJob.id };
-}
-
-function jobTitleFromScope(scope: string | null): string {
-  const s = (scope ?? '').trim();
-  if (!s) return 'Job';
-  // First sentence, capped at 60 chars.
-  const firstSentence = s.split(/[.!?\n]/)[0].trim();
-  const trimmed = firstSentence.length > 0 ? firstSentence : s;
-  return trimmed.length > 60 ? trimmed.slice(0, 57).trimEnd() + '…' : trimmed;
 }
