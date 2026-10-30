@@ -266,6 +266,36 @@ export async function markJobInProgress(id: string): Promise<JobRow | null> {
   return data as JobRow;
 }
 
+/**
+ * Cancel, reopen, or mark paid. Reopening returns a job to 'scheduled' if it
+ * still has a date, otherwise 'todo'. Completion goes through
+ * markJobCompleted (it stamps completed_at).
+ */
+export async function setJobStatus(
+  job: Pick<JobRow, 'id' | 'scheduled_at'>,
+  action: 'cancel' | 'reopen' | 'paid',
+): Promise<JobRow | null> {
+  const status =
+    action === 'cancel'
+      ? 'cancelled'
+      : action === 'paid'
+        ? 'paid'
+        : job.scheduled_at
+          ? 'scheduled'
+          : 'todo';
+  const { data, error } = await supabase
+    .from('jobs')
+    .update({ status })
+    .eq('id', job.id)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[jobs] set status failed', error.message);
+    return null;
+  }
+  return data as JobRow;
+}
+
 /** Notes and photos are the job's own fields; RLS limits this to the owner. */
 export async function updateJobDetails(
   id: string,

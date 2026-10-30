@@ -1,6 +1,13 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarClock, ChevronLeft, FileText, RotateCcw, ShieldCheck } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import {
+  Ban,
+  CalendarClock,
+  ChevronLeft,
+  FileText,
+  RotateCcw,
+  ShieldCheck,
+} from 'lucide-react-native';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,18 +21,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { JobNotes } from '@/components/job/JobNotes';
 import { JobPhotos } from '@/components/job/JobPhotos';
+import { JobTimeline } from '@/components/job/JobTimeline';
 import { Card } from '@/components/ui/Card';
 import { DateSheet } from '@/components/ui/DateSheet';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
-import { createInvoiceFromQuote, fetchInvoiceByJob } from '@/lib/invoices';
+import { createInvoiceFromQuote, fetchInvoiceByJob, type InvoiceRow } from '@/lib/invoices';
+import { buildTimeline } from '@/lib/job-timeline';
 import {
   fetchJob,
   markJobCompleted,
   markJobInProgress,
   setJobSchedule,
+  setJobStatus,
   updateJobDetails,
   type JobRow,
 } from '@/lib/jobs';
@@ -43,35 +53,37 @@ export default function JobDetail() {
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [contract, setContract] = useState<ContractRow | null>(null);
   const [quote, setQuote] = useState<QuoteRow | null>(null);
-  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  const [invoice, setInvoice] = useState<InvoiceRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [starting, setStarting] = useState(false);
   const [schedulerOpen, setSchedulerOpen] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    void (async () => {
-      const jobRow = await fetchJob(id);
-      setJob(jobRow);
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      void (async () => {
+        const jobRow = await fetchJob(id);
+        setJob(jobRow);
 
-      if (jobRow) {
-        const contractRow = await fetchContractByJob(jobRow.id);
-        setContract(contractRow);
+        if (jobRow) {
+          const contractRow = await fetchContractByJob(jobRow.id);
+          setContract(contractRow);
 
-        const [customerRow, quoteRow, invoiceRow] = await Promise.all([
-          jobRow.customer_id ? fetchCustomer(jobRow.customer_id) : Promise.resolve(null),
-          contractRow?.quote_id ? fetchQuote(contractRow.quote_id) : Promise.resolve(null),
-          fetchInvoiceByJob(jobRow.id),
-        ]);
-        setCustomer(customerRow);
-        setQuote(quoteRow);
-        setInvoiceId(invoiceRow?.id ?? null);
-      }
+          const [customerRow, quoteRow, invoiceRow] = await Promise.all([
+            jobRow.customer_id ? fetchCustomer(jobRow.customer_id) : Promise.resolve(null),
+            contractRow?.quote_id ? fetchQuote(contractRow.quote_id) : Promise.resolve(null),
+            fetchInvoiceByJob(jobRow.id),
+          ]);
+          setCustomer(customerRow);
+          setQuote(quoteRow);
+          setInvoice(invoiceRow);
+        }
 
-      setLoading(false);
-    })();
-  }, [id]);
+        setLoading(false);
+      })();
+    }, [id]),
+  );
 
   const jobId = job?.id;
 
@@ -93,6 +105,29 @@ export default function JobDetail() {
     },
     [jobId],
   );
+
+  const handleCancel = useCallback(() => {
+    if (!job) return;
+    Alert.alert('Cancel this job?', 'It moves out of your active jobs. You can reopen it later.', [
+      { text: 'Keep job', style: 'cancel' },
+      {
+        text: 'Cancel job',
+        style: 'destructive',
+        onPress: async () => {
+          const updated = await setJobStatus(job, 'cancel');
+          if (updated) setJob(updated);
+          else Alert.alert("Couldn't cancel", 'Please try again.');
+        },
+      },
+    ]);
+  }, [job]);
+
+  const handleReopen = useCallback(async () => {
+    if (!job) return;
+    const updated = await setJobStatus(job, 'reopen');
+    if (updated) setJob(updated);
+    else Alert.alert("Couldn't reopen", 'Please try again.');
+  }, [job]);
 
   const handleStart = useCallback(async () => {
     if (!job) return;
@@ -186,8 +221,10 @@ export default function JobDetail() {
 
   const items: LineItem[] = (quote?.line_items as LineItem[]) ?? [];
   const completed = job.status === 'completed' || job.status === 'paid';
+  const cancelled = job.status === 'cancelled';
   const inProgress = job.status === 'in_progress';
-  const scheduleEditable = !completed;
+  const scheduleEditable = !completed && !cancelled;
+  const timeline = buildTimeline({ job, contract, invoice });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -312,6 +349,7 @@ export default function JobDetail() {
 
         <JobPhotos paths={job.photos ?? []} onChange={handlePhotosChange} />
         <JobNotes initial={job.notes} onSave={handleNotesSave} />
+        <JobTimeline events={timeline} />
 
         <Pressable
           accessibilityRole="button"
@@ -334,9 +372,26 @@ export default function JobDetail() {
           </View>
           <Text style={styles.linkCardChevron}>›</Text>
         </Pressable>
+
+        {!completed && !cancelled ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel this job"
+            onPress={handleCancel}
+            hitSlop={8}
+            style={({ pressed }) => [styles.cancelLink, pressed && styles.linkCardPressed]}
+          >
+            <Ban size={18} color={colors.danger} strokeWidth={2} />
+            <Text style={styles.cancelLabel}>Cancel job</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
-      {!completed ? (
+      {cancelled ? (
+        <View style={styles.footer}>
+          <PrimaryButton label="Reopen job" onPress={() => void handleReopen()} />
+        </View>
+      ) : !completed ? (
         <View style={styles.footer}>
           {inProgress ? (
             <PrimaryButton
@@ -354,11 +409,11 @@ export default function JobDetail() {
             />
           )}
         </View>
-      ) : invoiceId ? (
+      ) : invoice ? (
         <View style={styles.footer}>
           <PrimaryButton
-            label="View invoice"
-            onPress={() => router.push({ pathname: '/invoice/[id]', params: { id: invoiceId } })}
+            label={invoice.status === 'paid' ? 'View invoice · Paid' : 'View invoice'}
+            onPress={() => router.push({ pathname: '/invoice/[id]', params: { id: invoice.id } })}
           />
         </View>
       ) : (
@@ -507,6 +562,18 @@ const makeStyles = (colors: Colors) =>
       borderWidth: 1,
       borderColor: colors.divider,
       padding: spacing.lg,
+    },
+    cancelLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      minHeight: 60,
+    },
+    cancelLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.danger,
     },
     linkCardPressed: { opacity: 0.75 },
     linkCardText: { flex: 1 },
