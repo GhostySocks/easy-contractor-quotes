@@ -13,7 +13,8 @@ import Animated, {
 import { OnboardingFrame } from '@/components/ui/OnboardingFrame';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 /**
  * Onboarding step 4 (ON-04 from PRD). A dark card with a pulsing gold FAB
@@ -21,6 +22,8 @@ import { colors, radii, spacing, typography } from '@/lib/theme';
  * as part of the same commit that updates §5 to include walkthrough.tsx.
  */
 export default function Walkthrough() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function Walkthrough() {
           <View style={styles.fabWrapper}>
             <Animated.View style={[styles.halo, haloStyle]} />
             <Animated.View style={[styles.fab, fabStyle]}>
-              <Plus size={28} color={colors.ink} strokeWidth={3} />
+              <Plus size={28} color={colors.onGold} strokeWidth={3} />
             </Animated.View>
           </View>
           <Text style={styles.body}>{strings.walkthrough.body}</Text>
@@ -67,46 +70,47 @@ export default function Walkthrough() {
   );
 }
 
-const styles = StyleSheet.create({
-  stage: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-  },
-  dark: {
-    width: '100%',
-    minHeight: 320,
-    borderRadius: radii.xl,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxl,
-    gap: spacing.xxl,
-  },
-  fabWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  halo: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: colors.goldDark,
-  },
-  fab: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '700',
-    color: colors.goldTint,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    stage: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl,
+    },
+    dark: {
+      width: '100%',
+      minHeight: 320,
+      borderRadius: radii.xl,
+      backgroundColor: colors.inverseSurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xxl,
+      gap: spacing.xxl,
+    },
+    fabWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    halo: {
+      position: 'absolute',
+      width: 110,
+      height: 110,
+      borderRadius: 55,
+      backgroundColor: colors.goldDark,
+    },
+    fab: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: colors.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    body: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '700',
+      color: colors.onInverseMuted,
+      textAlign: 'center',
+    },
+  });

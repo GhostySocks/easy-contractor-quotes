@@ -1,16 +1,17 @@
 import { router } from 'expo-router';
-import { Bell, Calendar, MapPin } from 'lucide-react-native';
+import { Bell, Calendar, MapPin, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { OnboardingFrame } from '@/components/ui/OnboardingFrame';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Row = {
   key: 'location' | 'notifications' | 'calendar';
-  icon: React.ReactNode;
+  Icon: LucideIcon;
   title: string;
   body: string;
   defaultOn: boolean;
@@ -19,21 +20,21 @@ type Row = {
 const rows: Row[] = [
   {
     key: 'location',
-    icon: <MapPin size={22} color={colors.goldDark} strokeWidth={2} />,
+    Icon: MapPin,
     title: strings.permissions.location.title,
     body: strings.permissions.location.body,
     defaultOn: true,
   },
   {
     key: 'notifications',
-    icon: <Bell size={22} color={colors.goldDark} strokeWidth={2} />,
+    Icon: Bell,
     title: strings.permissions.notifications.title,
     body: strings.permissions.notifications.body,
     defaultOn: true,
   },
   {
     key: 'calendar',
-    icon: <Calendar size={22} color={colors.goldDark} strokeWidth={2} />,
+    Icon: Calendar,
     title: strings.permissions.calendar.title,
     body: strings.permissions.calendar.body,
     defaultOn: false,
@@ -47,6 +48,8 @@ const rows: Row[] = [
  * native prompts will be wired up in M1b once we need location auto-fill.
  */
 export default function Permissions() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [state, setState] = useState<Record<Row['key'], boolean>>({
     location: true,
     notifications: true,
@@ -69,7 +72,9 @@ export default function Permissions() {
       <View style={styles.list}>
         {rows.map((row) => (
           <View key={row.key} style={styles.row}>
-            <View style={styles.iconBadge}>{row.icon}</View>
+            <View style={styles.iconBadge}>
+              <row.Icon size={22} color={colors.goldDark} strokeWidth={2} />
+            </View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitle}>{row.title}</Text>
               <Text style={styles.rowSub}>{row.body}</Text>
@@ -87,40 +92,41 @@ export default function Permissions() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-    paddingTop: spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-  },
-  iconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowBody: {
-    flex: 1,
-    gap: 2,
-  },
-  rowTitle: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  rowSub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+      paddingTop: spacing.xl,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+    },
+    iconBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: radii.md,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowBody: {
+      flex: 1,
+      gap: 2,
+    },
+    rowTitle: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '700',
+      color: colors.ink,
+    },
+    rowSub: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+  });

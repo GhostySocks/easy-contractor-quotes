@@ -20,9 +20,12 @@ import {
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { listJobsForCustomer, type JobWithCustomer } from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function CustomerDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
@@ -146,6 +149,8 @@ export default function CustomerDetail() {
 }
 
 function BackButton() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -161,6 +166,7 @@ function BackButton() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>
@@ -180,6 +186,7 @@ function ContactRow({
   value: string;
   onPress?: (e: GestureResponderEvent) => void;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -236,168 +243,169 @@ function toTodayJob(row: JobWithCustomer): TodayJob {
   };
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-    gap: spacing.xl,
-  },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginLeft: -spacing.xs,
-    minHeight: 44,
-  },
-  backPressed: {
-    opacity: 0.6,
-  },
-  backLabel: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  notFound: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notFoundText: {
-    fontSize: typography.sizes.body,
-    color: colors.ink3,
-  },
-  titleBlock: {
-    gap: spacing.sm,
-  },
-  name: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  tag: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    backgroundColor: colors.goldTint,
-    borderRadius: radii.pill,
-  },
-  tagLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    color: colors.goldDark,
-    letterSpacing: 0.4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValue: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.ink3,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingVertical: spacing.sm,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 60,
-  },
-  rowPressed: {
-    opacity: 0.6,
-  },
-  contactIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contactBody: {
-    flex: 1,
-    gap: 2,
-  },
-  contactLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.ink3,
-  },
-  contactValue: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '600',
-  },
-  notesCard: {
-    backgroundColor: colors.goldTint,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  notesLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.goldDark,
-  },
-  notesBody: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '500',
-    lineHeight: 24,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  jobList: {
-    gap: spacing.md,
-  },
-  emptyState: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    paddingVertical: spacing.lg,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+      gap: spacing.xl,
+    },
+    back: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginLeft: -spacing.xs,
+      minHeight: 44,
+    },
+    backPressed: {
+      opacity: 0.6,
+    },
+    backLabel: {
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontWeight: '600',
+      marginLeft: 2,
+    },
+    notFound: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    notFoundText: {
+      fontSize: typography.sizes.body,
+      color: colors.ink3,
+    },
+    titleBlock: {
+      gap: spacing.sm,
+    },
+    name: {
+      fontSize: typography.sizes.display,
+      fontWeight: '800',
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    tag: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 4,
+      backgroundColor: colors.goldTint,
+      borderRadius: radii.pill,
+    },
+    tagLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      color: colors.goldDark,
+      letterSpacing: 0.4,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.md,
+    },
+    stat: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 2,
+    },
+    statValue: {
+      fontSize: typography.sizes.h2,
+      fontWeight: '800',
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    statLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.6,
+      color: colors.ink3,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingVertical: spacing.sm,
+    },
+    contactRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: 60,
+    },
+    rowPressed: {
+      opacity: 0.6,
+    },
+    contactIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    contactBody: {
+      flex: 1,
+      gap: 2,
+    },
+    contactLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.6,
+      color: colors.ink3,
+    },
+    contactValue: {
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontWeight: '600',
+    },
+    notesCard: {
+      backgroundColor: colors.goldTint,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+    },
+    notesLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.6,
+      color: colors.goldDark,
+    },
+    notesBody: {
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontWeight: '500',
+      lineHeight: 24,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    sectionTitle: {
+      fontSize: typography.sizes.h2,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    jobList: {
+      gap: spacing.md,
+    },
+    emptyState: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      paddingVertical: spacing.lg,
+      textAlign: 'center',
+    },
+  });

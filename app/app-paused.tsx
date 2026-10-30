@@ -8,9 +8,12 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { supabase } from '@/lib/supabase';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function AppPaused() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const subscription = useAuth((s) => s.subscription);
 
   return (
@@ -58,68 +61,69 @@ function SignOutButton() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.ink,
-    paddingHorizontal: spacing.xl,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  badgeWrapper: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  lockBadge: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pill: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    backgroundColor: 'rgba(179, 38, 30, 0.15)',
-    borderRadius: radii.pill,
-  },
-  pillLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.danger,
-  },
-  title: {
-    fontSize: typography.sizes.h1,
-    fontWeight: '800',
-    color: colors.gold,
-    textAlign: 'center',
-  },
-  body2: {
-    fontSize: typography.sizes.body,
-    color: colors.goldTint,
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-  meta: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-  footer: {
-    paddingVertical: spacing.xl,
-    gap: spacing.md,
-  },
-  support: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.goldDark,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.inverseSurface,
+      paddingHorizontal: spacing.xl,
+    },
+    body: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    badgeWrapper: {
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    lockBadge: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pill: {
+      alignSelf: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      backgroundColor: colors.dangerWash,
+      borderRadius: radii.pill,
+    },
+    pillLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      color: colors.danger,
+    },
+    title: {
+      fontSize: typography.sizes.h1,
+      fontWeight: '800',
+      color: colors.gold,
+      textAlign: 'center',
+    },
+    body2: {
+      fontSize: typography.sizes.body,
+      color: colors.onInverseMuted,
+      textAlign: 'center',
+      opacity: 0.9,
+    },
+    meta: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      textAlign: 'center',
+      marginTop: spacing.md,
+    },
+    footer: {
+      paddingVertical: spacing.xl,
+      gap: spacing.md,
+    },
+    support: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
+      textAlign: 'center',
+    },
+  });

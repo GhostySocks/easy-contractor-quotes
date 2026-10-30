@@ -20,9 +20,12 @@ import { generateQuote } from '@/lib/ai';
 import { useAuth } from '@/lib/auth-store';
 import { createCustomer, type CustomerRow } from '@/lib/customers';
 import { supabase } from '@/lib/supabase';
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function NewQuote() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const user = useAuth((s) => s.user);
   const [profileTrade, setProfileTrade] = useState<string>('handyman');
   const [profileState, setProfileState] = useState<string>('TX');
@@ -178,73 +181,74 @@ function capitalize(str: string): string {
   return str.length === 0 ? str : str[0].toUpperCase() + str.slice(1);
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  flex: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  close: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  tradePill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.goldTint,
-    borderRadius: 999,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-  },
-  tradeLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  tradeValue: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.goldDark,
-  },
-  textarea: {
-    minHeight: 120,
-    paddingTop: spacing.md,
-  },
-  hint: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    lineHeight: 16,
-  },
-  footer: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    flex: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    close: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.lg,
+    },
+    tradePill: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      backgroundColor: colors.goldTint,
+      borderRadius: 999,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'center',
+    },
+    tradeLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+    },
+    tradeValue: {
+      fontSize: typography.sizes.bodySmall,
+      fontWeight: '700',
+      color: colors.goldDark,
+    },
+    textarea: {
+      minHeight: 120,
+      paddingTop: spacing.md,
+    },
+    hint: {
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      lineHeight: 16,
+    },
+    footer: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+  });

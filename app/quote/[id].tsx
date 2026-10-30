@@ -29,11 +29,14 @@ import {
 } from '@/lib/pricing';
 import { fetchQuote, type QuoteRow, updateQuote } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 export default function QuoteDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [quote, setQuote] = useState<QuoteRow | null>(null);
@@ -238,133 +241,134 @@ function statusLabel(status: 'idle' | 'saving' | 'saved'): string {
   }
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  flex: {
-    flex: 1,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  loadingLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  back: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  saveStatus: {
-    minWidth: 56,
-    textAlign: 'right',
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    fontWeight: '600',
-    paddingRight: spacing.md,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  aiBanner: {
-    gap: spacing.xs,
-  },
-  aiEyebrow: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.gold,
-  },
-  aiSub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.goldTint,
-    opacity: 0.85,
-  },
-  sectionLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-    marginBottom: spacing.sm,
-  },
-  scopeField: {
-    minHeight: 100,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    padding: spacing.md,
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink,
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  totalsLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-  },
-  totalsValue: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink,
-    fontWeight: '600',
-  },
-  totalsGrand: {
-    marginTop: spacing.sm,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
-  },
-  totalsGrandLabel: {
-    fontSize: typography.sizes.h3,
-    color: colors.ink,
-    fontWeight: '800',
-  },
-  totalsGrandValue: {
-    fontSize: typography.sizes.h3,
-    color: colors.ink,
-    fontWeight: '800',
-  },
-  stateNote: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-    lineHeight: 22,
-  },
-  footer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerButton: {
-    flex: 1,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    flex: {
+      flex: 1,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+    },
+    loadingLabel: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    back: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    saveStatus: {
+      minWidth: 56,
+      textAlign: 'right',
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      fontWeight: '600',
+      paddingRight: spacing.md,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.lg,
+    },
+    aiBanner: {
+      gap: spacing.xs,
+    },
+    aiEyebrow: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.gold,
+    },
+    aiSub: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.onInverseMuted,
+      opacity: 0.85,
+    },
+    sectionLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+      marginBottom: spacing.sm,
+    },
+    scopeField: {
+      minHeight: 100,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      padding: spacing.md,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    totalsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    totalsLabel: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    totalsValue: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      fontWeight: '600',
+    },
+    totalsGrand: {
+      marginTop: spacing.sm,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingTop: spacing.md,
+    },
+    totalsGrandLabel: {
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+      fontWeight: '800',
+    },
+    totalsGrandValue: {
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+      fontWeight: '800',
+    },
+    stateNote: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      lineHeight: 22,
+    },
+    footer: {
+      flexDirection: 'row',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      gap: spacing.md,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerButton: {
+      flex: 1,
+    },
+  });

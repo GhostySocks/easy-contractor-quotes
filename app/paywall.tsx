@@ -11,9 +11,12 @@ import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
 import { commitOnboardingProfile } from '@/lib/onboarding-commit';
 import { getProOffering, purchasePackage, restorePurchases } from '@/lib/revenuecat';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function Paywall() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const user = useAuth((s) => s.user);
@@ -103,87 +106,88 @@ export default function Paywall() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-    paddingHorizontal: spacing.xl,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
-  hero: {
-    fontSize: 32,
-    lineHeight: 40,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  features: {
-    gap: spacing.md,
-  },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  featureLabel: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '500',
-  },
-  priceCard: {
-    backgroundColor: colors.ink,
-    borderRadius: radii.xl,
-    padding: spacing.xl,
-    gap: spacing.xs,
-  },
-  price: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.gold,
-  },
-  priceSub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.goldTint,
-    opacity: 0.85,
-  },
-  footer: {
-    paddingVertical: spacing.xl,
-    gap: spacing.md,
-  },
-  trust: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-    textAlign: 'center',
-  },
-  restore: {
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  restoreLabel: {
-    color: colors.ink2,
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '600',
-  },
-  devSkip: {
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderRadius: radii.sm,
-    borderStyle: 'dashed',
-  },
-  devSkipLabel: {
-    color: colors.ink3,
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.xl,
+    },
+    body: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: spacing.xl,
+    },
+    hero: {
+      fontSize: 32,
+      lineHeight: 40,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    features: {
+      gap: spacing.md,
+    },
+    feature: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    featureLabel: {
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontWeight: '500',
+    },
+    priceCard: {
+      backgroundColor: colors.inverseSurface,
+      borderRadius: radii.xl,
+      padding: spacing.xl,
+      gap: spacing.xs,
+    },
+    price: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: colors.gold,
+    },
+    priceSub: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.onInverseMuted,
+      opacity: 0.85,
+    },
+    footer: {
+      paddingVertical: spacing.xl,
+      gap: spacing.md,
+    },
+    trust: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      textAlign: 'center',
+    },
+    restore: {
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    restoreLabel: {
+      color: colors.ink2,
+      fontSize: typography.sizes.bodySmall,
+      fontWeight: '600',
+    },
+    devSkip: {
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      borderRadius: radii.sm,
+      borderStyle: 'dashed',
+    },
+    devSkipLabel: {
+      color: colors.ink3,
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+    },
+  });

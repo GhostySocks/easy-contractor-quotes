@@ -6,9 +6,11 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useOnboardingDraft } from '@/lib/onboarding-store';
 import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 export default function Welcome() {
+  const styles = useStyles(makeStyles);
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.body}>
@@ -44,6 +46,7 @@ export default function Welcome() {
  * Renders nothing in production builds.
  */
 function DevResetLink() {
+  const styles = useStyles(makeStyles);
   async function handleReset() {
     await supabase.auth.signOut();
     useOnboardingDraft.getState().reset();
@@ -56,62 +59,63 @@ function DevResetLink() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-    paddingHorizontal: spacing.xl,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  eyebrow: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  hero: {
-    fontSize: 36,
-    lineHeight: 44,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  heroAccent: {
-    color: colors.gold,
-  },
-  sub: {
-    fontSize: typography.sizes.body,
-    lineHeight: 26,
-    color: colors.ink2,
-  },
-  footer: {
-    paddingVertical: spacing.xl,
-    gap: spacing.md,
-  },
-  link: {
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  linkLabel: {
-    color: colors.ink2,
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '600',
-  },
-  devReset: {
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  devResetLabel: {
-    color: colors.ink3,
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.xl,
+    },
+    body: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: spacing.lg,
+    },
+    eyebrow: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+    },
+    hero: {
+      fontSize: 36,
+      lineHeight: 44,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    heroAccent: {
+      color: colors.gold,
+    },
+    sub: {
+      fontSize: typography.sizes.body,
+      lineHeight: 26,
+      color: colors.ink2,
+    },
+    footer: {
+      paddingVertical: spacing.xl,
+      gap: spacing.md,
+    },
+    link: {
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    linkLabel: {
+      color: colors.ink2,
+      fontSize: typography.sizes.bodySmall,
+      fontWeight: '600',
+    },
+    devReset: {
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    devResetLabel: {
+      color: colors.ink3,
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+    },
+  });

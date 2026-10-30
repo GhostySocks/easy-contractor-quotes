@@ -29,11 +29,14 @@ import {
 } from '@/lib/contracts';
 import { sendQuote } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 export default function ContractDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [contract, setContract] = useState<ContractRow | null>(null);
@@ -336,6 +339,7 @@ function signedBannerText(customerName: string | undefined, signedAt: string | n
  * markdown dep would add weight we don't need yet.
  */
 function RenderedMarkdown({ body }: { body: string }) {
+  const styles = useStyles(makeStyles);
   const blocks = useMemo(() => tokenize(body), [body]);
   return (
     <View style={styles.mdRoot}>
@@ -440,128 +444,138 @@ function tokenize(body: string): Block[] {
   return blocks;
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface2 },
-  flex: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  saveStatus: {
-    minWidth: 56,
-    textAlign: 'right',
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    fontWeight: '600',
-    paddingRight: spacing.md,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  banner: { gap: spacing.xs },
-  bannerEyebrow: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: colors.gold,
-  },
-  bannerSub: { fontSize: typography.sizes.bodySmall, color: colors.goldTint, opacity: 0.85 },
-  sectionLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-    marginBottom: spacing.sm,
-  },
-  bodyField: {
-    minHeight: 360,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    padding: spacing.md,
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink,
-    lineHeight: 22,
-  },
-  mdRoot: { gap: spacing.md },
-  mdH1: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-    marginTop: spacing.md,
-  },
-  mdH2: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '800',
-    color: colors.ink,
-    marginTop: spacing.sm,
-  },
-  mdH3: { fontSize: typography.sizes.bodySmall, fontWeight: '700', color: colors.ink2 },
-  mdParagraph: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
-  mdList: { gap: spacing.xs },
-  mdListItem: { flexDirection: 'row', gap: spacing.sm },
-  mdListBullet: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  mdListText: { flex: 1, fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
-  footerColumn: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  footerButton: { flex: 1 },
-  inlineLink: {
-    alignSelf: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  inlineLinkText: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  editIconButton: {
-    width: typography.minTouchTarget,
-    height: typography.minTouchTarget,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerSigned: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerSignedLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.success,
-    fontWeight: '700',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.surface2 },
+    flex: { flex: 1 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+    loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    saveStatus: {
+      minWidth: 56,
+      textAlign: 'right',
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      fontWeight: '600',
+      paddingRight: spacing.md,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.lg,
+    },
+    banner: { gap: spacing.xs },
+    bannerEyebrow: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      color: colors.gold,
+    },
+    bannerSub: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.onInverseMuted,
+      opacity: 0.85,
+    },
+    sectionLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+      marginBottom: spacing.sm,
+    },
+    bodyField: {
+      minHeight: 360,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      padding: spacing.md,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    mdRoot: { gap: spacing.md },
+    mdH1: {
+      fontSize: typography.sizes.h2,
+      fontWeight: '800',
+      color: colors.ink,
+      marginTop: spacing.md,
+    },
+    mdH2: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '800',
+      color: colors.ink,
+      marginTop: spacing.sm,
+    },
+    mdH3: { fontSize: typography.sizes.bodySmall, fontWeight: '700', color: colors.ink2 },
+    mdParagraph: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
+    mdList: { gap: spacing.xs },
+    mdListItem: { flexDirection: 'row', gap: spacing.sm },
+    mdListBullet: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
+    mdListText: {
+      flex: 1,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    footerColumn: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    footerButton: { flex: 1 },
+    inlineLink: {
+      alignSelf: 'center',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    inlineLinkText: {
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
+    editIconButton: {
+      width: typography.minTouchTarget,
+      height: typography.minTouchTarget,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    footerSigned: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.lg,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerSignedLabel: {
+      fontSize: typography.sizes.bodySmall,
+      color: colors.success,
+      fontWeight: '700',
+    },
+  });
