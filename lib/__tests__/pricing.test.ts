@@ -5,6 +5,7 @@ import {
   computeTotalCents,
   deriveRange,
   formatCents,
+  scaleLineItems,
 } from '../pricing';
 
 const items: LineItem[] = [
@@ -73,5 +74,46 @@ describe('formatCents', () => {
     [-500, '-$5.00'],
   ])('formats %i as %s', (input, expected) => {
     expect(formatCents(input)).toBe(expected);
+  });
+});
+
+describe('scaleLineItems', () => {
+  const base: LineItem[] = [
+    { label: 'Labor 2h', qty: 2, unit_price_cents: 9500, total_cents: 19000 },
+    { label: 'Materials', qty: 1, unit_price_cents: 4800, total_cents: 4800 },
+  ];
+
+  it('returns the base items unchanged for most_likely', () => {
+    expect(scaleLineItems(base, 'most_likely')).toEqual(base);
+  });
+
+  it('scales unit prices and recomputes totals for low', () => {
+    const low = scaleLineItems(base, 'low');
+    expect(low[0]).toEqual({
+      label: 'Labor 2h',
+      qty: 2,
+      unit_price_cents: 7600,
+      total_cents: 15200,
+    });
+    expect(low[1]).toEqual({
+      label: 'Materials',
+      qty: 1,
+      unit_price_cents: 3840,
+      total_cents: 3840,
+    });
+    expect(computeSubtotalCents(low)).toBe(19040);
+  });
+
+  it('scales up for high', () => {
+    const high = scaleLineItems(base, 'high');
+    expect(high[0].unit_price_cents).toBe(11875);
+    expect(high[0].total_cents).toBe(23750);
+    expect(high[1].unit_price_cents).toBe(6000);
+  });
+
+  it('always derives from the base, never compounds', () => {
+    const twice = scaleLineItems(scaleLineItems(base, 'most_likely'), 'high');
+    expect(twice).toEqual(scaleLineItems(base, 'high'));
+    expect(base[0].unit_price_cents).toBe(9500);
   });
 });

@@ -16,17 +16,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LineItemEditor } from '@/components/quote/LineItemEditor';
-import { PriceRangeChips, type PriceBucket } from '@/components/quote/PriceRangeChips';
+import { PriceRangeChips } from '@/components/quote/PriceRangeChips';
 import { Card } from '@/components/ui/Card';
 import { GhostButton } from '@/components/ui/GhostButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateContract, type LineItem } from '@/lib/ai';
+import { useAuth } from '@/lib/auth-store';
 import {
   computeSubtotalCents,
   computeTaxCents,
   computeTotalCents,
   formatCents,
+  type PriceBucket,
+  scaleLineItems,
 } from '@/lib/pricing';
+import { fetchProfile } from '@/lib/profile';
 import { fetchQuote, type QuoteRow, updateQuote } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
 import { colors, radii, spacing, typography } from '@/lib/theme';
@@ -43,6 +47,14 @@ export default function QuoteDetail() {
   const [bucket, setBucket] = useState<PriceBucket>('most_likely');
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [generating, setGenerating] = useState(false);
+  const user = useAuth((s) => s.user);
+  // Sales tax from the business profile (percent). Null until loaded so we
+  // never autosave a $0 tax over a real rate during the first render.
+  const [taxRate, setTaxRate] = useState<number | null>(null);
+
+  // The "most likely" line items. Picking a price bucket scales *these*;
+  // editing a line item by hand replaces them and resets the bucket.
+  const baseItems = useRef<LineItem[]>([]);
 
   // Load the quote row once on mount.
   useEffect(() => {
@@ -53,20 +65,48 @@ export default function QuoteDetail() {
       if (row) {
         setScope(row.scope_of_work ?? '');
         setLineItems(row.line_items);
+        baseItems.current = row.line_items;
       }
     });
   }, [id]);
 
+  useEffect(() => {
+    if (!user) return;
+    void fetchProfile(user.id).then((profile) => {
+      setTaxRate(Number(profile?.default_tax_rate ?? 0));
+    });
+  }, [user]);
+
+  const handleLineItemsChange = useCallback((items: LineItem[]) => {
+    baseItems.current = items;
+    setBucket('most_likely');
+    setLineItems(items);
+  }, []);
+
+  const handleBucketSelect = useCallback((next: PriceBucket) => {
+    setBucket(next);
+    setLineItems(scaleLineItems(baseItems.current, next));
+  }, []);
+
+  const rate = taxRate ?? 0;
   const subtotal = computeSubtotalCents(lineItems);
-  const tax = computeTaxCents(subtotal, 0);
+  const tax = computeTaxCents(subtotal, rate);
   const total = computeTotalCents(subtotal, tax);
-  const low = Math.round(total * 0.8);
-  const high = Math.round(total * 1.25);
+
+  // What each chip would make the total, derived from the base items so the
+  // chips stay stable while one of them is selected.
+  const bucketTotal = (b: PriceBucket) => {
+    const sub = computeSubtotalCents(scaleLineItems(baseItems.current, b));
+    return computeTotalCents(sub, computeTaxCents(sub, rate));
+  };
+  const low = bucketTotal('low');
+  const mostLikely = bucketTotal('most_likely');
+  const high = bucketTotal('high');
 
   // Debounced autosave whenever the editable pieces change.
   const savedSignature = useRef<string | null>(null);
   useEffect(() => {
-    if (!quote) return;
+    if (!quote || taxRate === null) return;
     const signature = JSON.stringify({ scope, lineItems, subtotal, total });
     if (savedSignature.current === signature) return;
 
@@ -91,7 +131,7 @@ export default function QuoteDetail() {
     }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => clearTimeout(handle);
-  }, [quote, scope, lineItems, subtotal, tax, total, low, high]);
+  }, [quote, taxRate, scope, lineItems, subtotal, tax, total, low, high]);
 
   const handleSend = useCallback(async () => {
     if (!quote) return;
@@ -172,7 +212,7 @@ export default function QuoteDetail() {
             />
           </View>
 
-          <LineItemEditor items={lineItems} onChange={setLineItems} />
+          <LineItemEditor items={lineItems} onChange={handleLineItemsChange} />
 
           <Card>
             <View style={styles.totalsRow}>
@@ -193,10 +233,10 @@ export default function QuoteDetail() {
             <Text style={styles.sectionLabel}>Price range</Text>
             <PriceRangeChips
               low_cents={low}
-              most_likely_cents={total}
+              most_likely_cents={mostLikely}
               high_cents={high}
               selected={bucket}
-              onSelect={setBucket}
+              onSelect={handleBucketSelect}
             />
           </View>
 
