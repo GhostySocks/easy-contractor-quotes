@@ -114,6 +114,51 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<SendInvoiceR
 }
 
 /**
+ * Record payment received outside the app (cash, check, Zelle). Also moves
+ * the job to 'paid' so the job list and customer value reflect it. Stripe
+ * payments will set these from the webhook instead (punch list Phase 3).
+ */
+export async function markInvoicePaid(invoice: InvoiceRow): Promise<InvoiceRow | null> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
+    .eq('id', invoice.id)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[invoices] mark paid failed', error.message);
+    return null;
+  }
+  if (invoice.job_id) {
+    const { error: jobErr } = await supabase
+      .from('jobs')
+      .update({ status: 'paid' })
+      .eq('id', invoice.job_id);
+    if (jobErr) console.warn('[invoices] job paid status failed', jobErr.message);
+  }
+  return data as InvoiceRow;
+}
+
+/** Save edited actuals. Only valid before the invoice is sent (see invoiceEditable). */
+export async function updateInvoiceTotals(
+  id: string,
+  totals: Pick<InvoiceRow, 'line_items' | 'subtotal_cents' | 'tax_cents' | 'total_cents'>,
+): Promise<InvoiceRow | null> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .update(totals)
+    .eq('id', id)
+    .is('sent_at', null)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[invoices] update totals failed', error.message);
+    return null;
+  }
+  return data as InvoiceRow;
+}
+
+/**
  * Creates a new invoice row mirroring a quote. Idempotent-ish: if an
  * invoice already exists for this job, returns it instead of inserting.
  */
