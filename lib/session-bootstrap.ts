@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useAuth } from './auth-store';
 import type { SubscriptionRow } from './entitlement';
 import { initRevenueCat } from './revenuecat';
-import { supabase } from './supabase';
+import { hasStoredSession, supabase } from './supabase';
 
 /**
  * Bootstrap the auth + subscription state on app launch.
@@ -44,11 +44,20 @@ export function useSessionBootstrap(): void {
     }
 
     // Safety net: if a network call hangs (paused Supabase project, offline,
-    // unreachable URL), still release the splash after 4s so the user lands
-    // on /welcome instead of staring at the loading bar forever.
-    const failsafe = setTimeout(() => {
-      if (!cancelled) setBootstrapped(true);
-    }, 4000);
+    // unreachable URL), still release the splash so nobody stares at the
+    // loading bar forever. With a saved login, restoring it can mean a token
+    // refresh over a slow mobile connection; giving up at 4 s sent signed-in
+    // people to Welcome as if logged out, so they get much longer.
+    let failsafe: ReturnType<typeof setTimeout> | undefined;
+    void hasStoredSession().then((stored) => {
+      if (cancelled) return;
+      failsafe = setTimeout(
+        () => {
+          if (!cancelled) setBootstrapped(true);
+        },
+        stored ? 20_000 : 4_000,
+      );
+    });
 
     void init();
 
@@ -65,7 +74,7 @@ export function useSessionBootstrap(): void {
 
     return () => {
       cancelled = true;
-      clearTimeout(failsafe);
+      if (failsafe) clearTimeout(failsafe);
       listener.subscription.unsubscribe();
     };
   }, [setSession, setSubscription, setBootstrapped]);

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { signUpOutcome } from '@/lib/auth-result';
 import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
 import { commitOnboardingProfile } from '@/lib/onboarding-commit';
 import { strings } from '@/lib/strings';
@@ -26,16 +27,28 @@ export default function SignUp() {
       return;
     }
     setLoading(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const res = await supabase.auth.signUp({
       email: email.trim(),
       password,
     });
     setLoading(false);
 
-    if (signUpError) {
-      setError(signUpError.message);
+    // Only a real session means signed in. Anything else stays on this screen
+    // with an explanation, never a trip to Home without a login.
+    const outcome = signUpOutcome(res);
+    if (outcome.kind === 'error') {
+      setError(outcome.message);
       return;
     }
+    if (outcome.kind === 'exists') {
+      setError('An account with this email already exists. Sign in instead.');
+      return;
+    }
+    if (outcome.kind === 'confirm-email') {
+      setError('Check your email and tap the confirmation link, then sign in.');
+      return;
+    }
+    const data = res.data;
 
     // Dev-only escape hatch: skip the paywall, commit the profile, jump to home.
     // Production builds always send the user to /paywall (see lib/dev-flags.ts).
