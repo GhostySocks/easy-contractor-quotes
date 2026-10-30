@@ -46,3 +46,19 @@ export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
 });
 
 export type SupabaseClient = typeof supabase;
+
+/**
+ * Whether a login is saved on this device, checked locally with no network.
+ * supabase-js stores the session under `sb-<project ref>-auth-token`. Used at
+ * startup to tell "restoring a login on a slow network" (keep waiting) apart
+ * from "never signed in" (go to Welcome).
+ */
+export async function hasStoredSession(): Promise<boolean> {
+  if (!supabaseUrl) return false;
+  try {
+    const ref = new URL(supabaseUrl).hostname.split('.')[0];
+    return (await storage.getItem(`sb-${ref}-auth-token`)) !== null;
+  } catch {
+    return false;
+  }
+}
