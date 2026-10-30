@@ -17,14 +17,10 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('general trade services');
   });
 
-  it('inlines a state-specific note hint when we have one', () => {
+  it('does not ask the model for state notes (they are a static lookup)', () => {
     const p = buildSystemPrompt({ trade: 'handyman', state_code: 'CA' });
-    expect(p).toContain('3-day right-to-cancel');
-  });
-
-  it('falls back to a neutral note guidance when the state has no rule', () => {
-    const p = buildSystemPrompt({ trade: 'handyman', state_code: 'AK' });
-    expect(p).toContain('state_notes: null unless');
+    expect(p).not.toContain('state_notes');
+    expect(QUOTE_TOOL_INPUT_SCHEMA.properties).not.toHaveProperty('state_notes');
   });
 
   it('names the tool the model is required to use', () => {

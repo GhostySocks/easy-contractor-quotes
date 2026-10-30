@@ -53,10 +53,6 @@ export const QUOTE_TOOL_INPUT_SCHEMA = {
     total_cents: { type: 'integer' },
     total_low_cents: { type: 'integer' },
     total_high_cents: { type: 'integer' },
-    state_notes: {
-      type: ['string', 'null'],
-      description: 'Brief state-specific disclosure, or null if none applies.',
-    },
   },
   required: [
     'scope_of_work',
@@ -78,19 +74,10 @@ const TRADE_HINTS: Record<string, string> = {
   other: 'general trade services; labor + materials line items',
 };
 
-const STATE_NOTE_HINTS: Record<string, string> = {
-  TX: "mention mechanic's lien rights for jobs over $250 and prompt permits for gas/electric/plumbing",
-  CA: 'mention 3-day right-to-cancel and CSLB license requirement for jobs over $500',
-  FL: 'mention construction lien rights and 3-day cancellation period',
-  NY: 'mention Home Improvement Contract requirement for jobs over $500',
-  NC: 'mention general-contractor license for jobs over $30,000',
-};
-
 export function buildSystemPrompt(input: { trade: string; state_code: string }): string {
   const tradeKey = input.trade.toLowerCase();
   const tradeHint = TRADE_HINTS[tradeKey] ?? TRADE_HINTS.other;
   const stateKey = input.state_code.toUpperCase();
-  const stateHint = STATE_NOTE_HINTS[stateKey] ?? null;
 
   return [
     'You are a pricing assistant for a solo contractor running an AI-powered quoting app for small residential jobs.',
@@ -108,9 +95,6 @@ export function buildSystemPrompt(input: { trade: string; state_code: string }):
     '- total_low_cents = round(total_cents * 0.8). total_high_cents = round(total_cents * 1.25).',
     '- All amounts are positive integer cents. No floats, no currency symbols.',
     '- tax_cents: 0 unless the contractor explicitly said otherwise. They collect tax manually for now.',
-    stateHint
-      ? `- state_notes: ${stateHint}.`
-      : '- state_notes: null unless a state-specific disclosure clearly applies.',
     '',
     `Return via the ${QUOTE_TOOL_NAME} tool only. Do not output plain text.`,
   ].join('\n');
