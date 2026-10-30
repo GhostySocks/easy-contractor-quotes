@@ -96,6 +96,7 @@ function ThemedNavigation() {
         <Stack.Screen name="quote/[id]" />
         <Stack.Screen name="job/[id]" />
         <Stack.Screen name="customer/[id]" />
+        <Stack.Screen name="customer/edit/[id]" />
         <Stack.Screen name="contract/[id]" />
         <Stack.Screen name="settings" />
       </Stack>
