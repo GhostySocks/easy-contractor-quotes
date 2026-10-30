@@ -2,7 +2,8 @@ import { router, Tabs } from 'expo-router';
 import { Calendar, ClipboardList, Home, Plus, Users } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, radii, typography } from '@/lib/theme';
+import { radii, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 /**
  * Tab bar layout per CLAUDE.md §5 and design handoff §3.5.
@@ -10,6 +11,8 @@ import { colors, radii, typography } from '@/lib/theme';
  * The FAB is an overlay that opens /quote/new and is available from every tab.
  */
 export default function TabsLayout() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.root}>
       <Tabs
@@ -61,7 +64,7 @@ export default function TabsLayout() {
         style={styles.fab}
         onPress={() => router.push('/quote/new')}
       >
-        <Plus size={28} color={colors.ink} strokeWidth={3} />
+        <Plus size={28} color={colors.onGold} strokeWidth={3} />
       </Pressable>
     </View>
   );
@@ -74,36 +77,37 @@ const TAB_BAR_HEIGHT = 96;
 // content toward the outer edge, so the visual shift is roughly half this.
 const FAB_BREATHING_ROOM = 32;
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  tabBar: {
-    height: TAB_BAR_HEIGHT,
-    backgroundColor: colors.surface,
-    borderTopColor: colors.divider,
-    borderTopWidth: 1,
-    paddingTop: 6,
-  },
-  tabLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '600',
-  },
-  fab: {
-    position: 'absolute',
-    alignSelf: 'center',
-    bottom: TAB_BAR_HEIGHT - FAB_SIZE / 2 + 8,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: radii.pill,
-    backgroundColor: colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.goldDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    tabBar: {
+      height: TAB_BAR_HEIGHT,
+      backgroundColor: colors.surface,
+      borderTopColor: colors.divider,
+      borderTopWidth: 1,
+      paddingTop: 6,
+    },
+    tabLabel: {
+      fontSize: typography.sizes.label,
+      fontWeight: '600',
+    },
+    fab: {
+      position: 'absolute',
+      alignSelf: 'center',
+      bottom: TAB_BAR_HEIGHT - FAB_SIZE / 2 + 8,
+      width: FAB_SIZE,
+      height: FAB_SIZE,
+      borderRadius: radii.pill,
+      backgroundColor: colors.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.goldDark,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+  });
