@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CustomerAutocomplete } from '@/components/quote/CustomerAutocomplete';
+import { DictationButton } from '@/components/quote/DictationButton';
 import { PhotoStrip, type StripPhoto } from '@/components/quote/PhotoStrip';
 import { Chip } from '@/components/ui/Chip';
 import { DateSheet, isoDay } from '@/components/ui/DateSheet';
@@ -73,6 +74,7 @@ export default function NewQuote() {
   const [photos, setPhotos] = useState<StripPhoto[]>([]);
   const [generating, setGenerating] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [dictating, setDictating] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   // Step the progress label while the AI works.
@@ -134,7 +136,7 @@ export default function NewQuote() {
   }, [params.customerId, params.fromJobId]);
 
   const uploading = photos.some((p) => p.path === null && !p.failed);
-  const canGenerate = description.trim().length >= 5 && !generating && !uploading;
+  const canGenerate = description.trim().length >= 5 && !generating && !uploading && !dictating;
 
   function addPhotos(source: PhotoSource) {
     if (!user) return;
@@ -371,6 +373,13 @@ export default function NewQuote() {
             multiline
             style={styles.textarea}
             textAlignVertical="top"
+            editable={!dictating}
+          />
+          <DictationButton
+            value={description}
+            onChange={setDescription}
+            onListeningChange={setDictating}
+            disabled={generating}
           />
 
           <Text style={styles.hint}>
