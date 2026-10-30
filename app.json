@@ -33,6 +33,17 @@
       "expo-font",
       "expo-local-authentication",
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Easy Contractor Quotes uses the microphone when you tap \"Talk instead of type\" to describe a job.",
+          "speechRecognitionPermission": "Easy Contractor Quotes turns what you say into text for the job description.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.as"
+          ]
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#D4AF37"
