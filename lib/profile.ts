@@ -6,6 +6,8 @@ export type ProfileRow = {
   logo_url: string | null;
   state_code: string;
   default_tax_rate: number;
+  /** Travel time kept clear around jobs when scheduling: 0, 15, 30 or 60. */
+  travel_buffer_minutes: number;
   trade: string | null;
   stripe_account_id: string | null;
   onboarding_completed_at: string | null;
@@ -37,7 +39,15 @@ export type UpdateProfileResult =
 export async function updateProfile(
   userId: string,
   patch: Partial<
-    Pick<ProfileRow, 'business_name' | 'state_code' | 'trade' | 'logo_url' | 'default_tax_rate'>
+    Pick<
+      ProfileRow,
+      | 'business_name'
+      | 'state_code'
+      | 'trade'
+      | 'logo_url'
+      | 'default_tax_rate'
+      | 'travel_buffer_minutes'
+    >
   >,
 ): Promise<UpdateProfileResult> {
   const { data, error } = await supabase
