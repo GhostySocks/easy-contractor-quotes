@@ -1,5 +1,4 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { TrendingUp } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -28,6 +27,7 @@ import { lightColors, radii, spacing, typography } from '@/lib/theme';
  * light palette's ink/surface directly rather than the active theme.
  */
 const brand = lightColors;
+const MARK = require('@/assets/images/splash-icon.png');
 
 export function SplashBrand() {
   const barProgress = useSharedValue(0);
@@ -73,20 +73,9 @@ export function SplashBrand() {
   );
 }
 
+/** The gold house-and-quote mark, the same artwork as the app icon and native splash. */
 function IconBadge() {
-  return (
-    <View style={styles.iconShadow}>
-      <View style={styles.iconBadge}>
-        <LinearGradient
-          colors={[brand.goldLight, brand.gold, brand.goldDark]}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <TrendingUp size={56} color={brand.onGold} strokeWidth={2.5} />
-      </View>
-    </View>
-  );
+  return <Image source={MARK} style={styles.iconBadge} contentFit="contain" />;
 }
 
 function RadialGlow() {
@@ -134,20 +123,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
   },
-  iconShadow: {
-    shadowColor: brand.goldDark,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    elevation: 12,
-  },
   iconBadge: {
-    width: 112,
-    height: 112,
-    borderRadius: 26,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 120,
+    height: 120,
     marginBottom: spacing.xl,
   },
   nameStack: {
