@@ -1,5 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarClock, ChevronLeft, FileText, ShieldCheck, X } from 'lucide-react-native';
+import {
+  CalendarClock,
+  ChevronLeft,
+  FileText,
+  RotateCcw,
+  ShieldCheck,
+  X,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +22,8 @@ import {
 import { Calendar, type DateData } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { JobNotes } from '@/components/job/JobNotes';
+import { JobPhotos } from '@/components/job/JobPhotos';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { LineItem } from '@/lib/ai';
@@ -26,6 +35,7 @@ import {
   markJobCompleted,
   markJobInProgress,
   setJobSchedule,
+  updateJobDetails,
   type JobRow,
 } from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
@@ -71,6 +81,27 @@ export default function JobDetail() {
       setLoading(false);
     })();
   }, [id]);
+
+  const jobId = job?.id;
+
+  const handlePhotosChange = useCallback(
+    async (photos: string[]) => {
+      if (!jobId) return false;
+      const updated = await updateJobDetails(jobId, { photos });
+      if (updated) setJob(updated);
+      return updated !== null;
+    },
+    [jobId],
+  );
+
+  const handleNotesSave = useCallback(
+    async (notes: string | null) => {
+      if (!jobId) return false;
+      // Don't replace the job in state: the notes field owns its own text.
+      return (await updateJobDetails(jobId, { notes })) !== null;
+    },
+    [jobId],
+  );
 
   const handleStart = useCallback(async () => {
     if (!job) return;
@@ -290,6 +321,31 @@ export default function JobDetail() {
             <Text style={styles.totalAmount}>{formatCents(job.total_cents ?? 0)}</Text>
           </Card>
         )}
+
+        <JobPhotos paths={job.photos ?? []} onChange={handlePhotosChange} />
+        <JobNotes initial={job.notes} onSave={handleNotesSave} />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quote this job again"
+          onPress={() =>
+            router.push({
+              pathname: '/quote/new',
+              params: {
+                fromJobId: job.id,
+                ...(job.customer_id ? { customerId: job.customer_id } : {}),
+              },
+            })
+          }
+          style={({ pressed }) => [styles.linkCard, pressed && styles.linkCardPressed]}
+        >
+          <RotateCcw size={20} color={colors.goldDark} strokeWidth={2} />
+          <View style={styles.linkCardText}>
+            <Text style={styles.linkCardTitle}>Quote again</Text>
+            <Text style={styles.linkCardSub}>Start a new quote from this job</Text>
+          </View>
+          <Text style={styles.linkCardChevron}>›</Text>
+        </Pressable>
       </ScrollView>
 
       {!completed ? (

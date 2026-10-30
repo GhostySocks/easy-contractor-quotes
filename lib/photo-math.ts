@@ -27,9 +27,19 @@ export function resizeTarget(
   return width >= height ? { width: maxEdge } : { height: maxEdge };
 }
 
+/** Photos a job can hold (quote photos carry over, more can be added on the job). */
+export const MAX_JOB_PHOTOS = 12;
+
+/** Business logo: PNG to keep transparency, long edge capped smaller than photos. */
+export const LOGO_LONG_EDGE = 512;
+
 /** Storage path. The first folder must be the user's id (storage policies check it). */
 export function photoPath(userId: string, fileId: string): string {
   return `${userId}/${fileId}.jpg`;
+}
+
+export function logoPath(userId: string, fileId: string): string {
+  return `${userId}/logo-${fileId}.png`;
 }
 
 export function newPhotoId(now = Date.now(), rand = Math.random): string {

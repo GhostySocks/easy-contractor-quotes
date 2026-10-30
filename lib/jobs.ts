@@ -266,6 +266,24 @@ export async function markJobInProgress(id: string): Promise<JobRow | null> {
   return data as JobRow;
 }
 
+/** Notes and photos are the job's own fields; RLS limits this to the owner. */
+export async function updateJobDetails(
+  id: string,
+  patch: Partial<Pick<JobRow, 'notes' | 'photos'>>,
+): Promise<JobRow | null> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) {
+    console.warn('[jobs] update details failed', error.message);
+    return null;
+  }
+  return data as JobRow;
+}
+
 export async function markJobCompleted(id: string): Promise<JobRow | null> {
   const { data, error } = await supabase
     .from('jobs')
