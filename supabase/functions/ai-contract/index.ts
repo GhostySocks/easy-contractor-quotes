@@ -3,36 +3,22 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 // @ts-expect-error — Deno-only import resolved by the Supabase edge runtime
 import { type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
+import { renderContract } from '../_shared/contract-template.ts';
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
-import {
-  buildContractSystemPrompt,
-  buildContractUserMessage,
-  CONTRACT_TOOL_INPUT_SCHEMA,
-  CONTRACT_TOOL_NAME,
-  type ContractKind,
-  type ContractLineItem,
-} from '../_shared/prompts.ts';
+import { type ContractKind, type ContractLineItem } from '../_shared/prompts.ts';
+
+/**
+ * Contract generation. Despite the route name (kept so the client is
+ * unchanged), this no longer calls a model: the contract is a reviewed
+ * template with the quote merged in (see _shared/contract-template.ts).
+ * Instant, free, and the same wording for every customer in a state.
+ */
 
 type ContractInput = {
   kind: ContractKind;
   quote_id: string;
 };
-
-type ContractToolOutput = {
-  body_markdown: string;
-};
-
-type AnthropicResponse = {
-  content: Array<{
-    type: string;
-    name?: string;
-    input?: unknown;
-  }>;
-};
-
-const MODEL = 'claude-sonnet-4-6';
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 // @ts-expect-error — Deno.serve is provided by the runtime
 Deno.serve(async (req: Request) => {
@@ -54,25 +40,14 @@ Deno.serve(async (req: Request) => {
 
     const context = await loadContractContext(supabase, input.quote_id);
 
-    const systemPrompt = buildContractSystemPrompt({
-      kind: input.kind,
-      state_code: context.state_code,
-    });
-    const userMessage = buildContractUserMessage({
+    const body_markdown = renderContract(input.kind, {
       kind: input.kind,
       state_code: context.state_code,
       contractor: context.contractor,
       customer: context.customer,
       quote: context.quote,
+      generated_at: new Date().toISOString(),
     });
-
-    // @ts-expect-error — Deno env access
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      throw new HttpError(500, 'ANTHROPIC_API_KEY is not configured on this project');
-    }
-
-    const { body_markdown } = await callAnthropic(apiKey, systemPrompt, userMessage);
 
     const { data: inserted, error: insertError } = await supabase
       .from('contracts')
@@ -195,49 +170,6 @@ async function loadContractContext(
       total_cents: quote.total_cents,
     },
   };
-}
-
-async function callAnthropic(
-  apiKey: string,
-  systemPrompt: string,
-  userMessage: string,
-): Promise<ContractToolOutput> {
-  const resp = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2500,
-      system: systemPrompt,
-      tools: [
-        {
-          name: CONTRACT_TOOL_NAME,
-          description: 'Return the full contract body as markdown.',
-          input_schema: CONTRACT_TOOL_INPUT_SCHEMA,
-        },
-      ],
-      tool_choice: { type: 'tool', name: CONTRACT_TOOL_NAME },
-      messages: [{ role: 'user', content: userMessage }],
-    }),
-  });
-
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new HttpError(502, `Anthropic error ${resp.status}: ${body.slice(0, 400)}`);
-  }
-
-  const result = (await resp.json()) as AnthropicResponse;
-  const toolUse = result.content.find(
-    (c) => c.type === 'tool_use' && c.name === CONTRACT_TOOL_NAME,
-  );
-  if (!toolUse || !toolUse.input) {
-    throw new HttpError(502, 'Anthropic response did not include the expected tool use');
-  }
-  return toolUse.input as ContractToolOutput;
 }
 
 /**
