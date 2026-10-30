@@ -1,6 +1,7 @@
 import { router, Tabs } from 'expo-router';
 import { Calendar, ClipboardList, Home, Lock, Plus, Users } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -15,6 +16,12 @@ export default function TabsLayout() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const paused = usePaused();
+  // Android draws edge to edge (app.json), so the system navigation bar or
+  // gesture handle sits on top of the app. A fixed height ignores that, which
+  // put the tabs under the system buttons; grow the bar by the bottom inset
+  // and lift the FAB and banner with it.
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom;
   return (
     <View style={styles.root}>
       <Tabs
@@ -22,7 +29,10 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarActiveTintColor: colors.goldDark,
           tabBarInactiveTintColor: colors.ink3,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [
+            styles.tabBar,
+            { height: TAB_BAR_HEIGHT + bottomInset, paddingBottom: bottomInset + 6 },
+          ],
           tabBarLabelStyle: styles.tabLabel,
         }}
       >
@@ -65,7 +75,7 @@ export default function TabsLayout() {
           accessibilityRole="button"
           accessibilityLabel="Subscription paused, read-only. Reactivate."
           onPress={() => router.push('/paywall')}
-          style={styles.pausedBanner}
+          style={[styles.pausedBanner, { bottom: TAB_BAR_HEIGHT + bottomInset + spacing.sm }]}
         >
           <Lock size={16} color={colors.goldDark} strokeWidth={2} />
           <Text style={styles.pausedText}>Paused · read-only</Text>
@@ -75,7 +85,7 @@ export default function TabsLayout() {
         <Pressable
           accessibilityLabel="New quote. Double-tap to start a new AI-generated quote."
           accessibilityRole="button"
-          style={styles.fab}
+          style={[styles.fab, { bottom: TAB_BAR_HEIGHT + bottomInset - FAB_SIZE / 2 + 8 }]}
           onPress={() => router.push('/quote/new')}
         >
           <Plus size={28} color={colors.onGold} strokeWidth={3} />

@@ -23,6 +23,13 @@ export const Input = forwardRef<TextInput, Props>(function Input(
 ) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  // Passwords and email addresses must not auto-capitalize or autocorrect.
+  // Android keyboards capitalize the first letter of a password field unless
+  // told otherwise. A caller can still override any of these.
+  const credential = !!rest.secureTextEntry || rest.keyboardType === 'email-address';
+  const credentialDefaults = credential
+    ? { autoCapitalize: 'none' as const, autoCorrect: false, spellCheck: false }
+    : {};
   return (
     <View style={[styles.container, containerStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -30,6 +37,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
         ref={ref}
         style={[styles.input, !!error && styles.inputError, style]}
         placeholderTextColor={colors.ink3}
+        {...credentialDefaults}
         {...rest}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}

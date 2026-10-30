@@ -29,7 +29,7 @@ export default function SubscriptionSettings() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <BackButton />
 

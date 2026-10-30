@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
 import { LogoPicker } from '@/components/ui/LogoPicker';
+import { StateFromLocation } from '@/components/ui/StateFromLocation';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
@@ -140,7 +141,7 @@ export default function BusinessSettings() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -177,11 +178,12 @@ export default function BusinessSettings() {
                 label="State"
                 value={stateCode}
                 onChangeText={(v) => setStateCode(v.toUpperCase().slice(0, 2))}
-                placeholder="TX"
+                placeholder="2-letter code"
                 autoCapitalize="characters"
                 maxLength={2}
                 returnKeyType="next"
               />
+              <StateFromLocation onState={setStateCode} />
 
               <Input
                 label="Sales tax rate (%)"

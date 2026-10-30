@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, type DateData } from 'react-native-calendars';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -52,6 +53,7 @@ export function DateSheet({
   onClear,
 }: Props) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [day, setDay] = useState(() => isoDay(currentIso ? new Date(currentIso) : new Date()));
   const [minutes, setMinutes] = useState(() =>
@@ -86,7 +88,7 @@ export function DateSheet({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: spacing.xxxl + insets.bottom }]}>
               <View style={styles.header}>
                 <Text style={styles.title}>{title}</Text>
                 <Pressable

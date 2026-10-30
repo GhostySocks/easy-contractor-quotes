@@ -57,6 +57,8 @@ export default function SignIn() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="current-password"
             returnKeyType="done"
             error={error ?? undefined}

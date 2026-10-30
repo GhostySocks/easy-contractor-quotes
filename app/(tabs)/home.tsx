@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
+import { ChevronRight, Settings } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar } from '@/components/ui/Avatar';
 import { MoneyPendingCard } from '@/components/ui/MoneyPendingCard';
 import { TodayJobRow, type JobStatus, type TodayJob } from '@/components/ui/TodayJobRow';
 import { useAuth } from '@/lib/auth-store';
@@ -11,12 +11,7 @@ import { fetchUnsignedContractCount } from '@/lib/contracts';
 import { fetchUnpaidSummary, type UnpaidSummary } from '@/lib/invoices';
 import { listActiveJobs, listUpcomingScheduledJobs, type JobWithCustomer } from '@/lib/jobs';
 import { syncJobReminders } from '@/lib/notifications';
-import {
-  fetchProfile,
-  firstNameFromProfile,
-  initialsFromProfile,
-  type ProfileRow,
-} from '@/lib/profile';
+import { fetchProfile, firstNameFromProfile, type ProfileRow } from '@/lib/profile';
 import { strings } from '@/lib/strings';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -28,6 +23,8 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const user = useAuth((s) => s.user);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  // Only show the setup prompt once we know the profile is really missing.
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [money, setMoney] = useState<UnpaidSummary>(EMPTY_MONEY);
   const [unsignedContracts, setUnsignedContracts] = useState(0);
@@ -42,6 +39,7 @@ export default function HomeScreen() {
       fetchUnsignedContractCount(),
     ]);
     setProfile(profileRow);
+    setProfileLoaded(true);
     setJobs(jobRows);
     setMoney(moneyRow);
     setUnsignedContracts(unsigned);
@@ -62,7 +60,6 @@ export default function HomeScreen() {
   );
 
   const firstName = firstNameFromProfile(profile);
-  const initials = initialsFromProfile(profile);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -89,14 +86,31 @@ export default function HomeScreen() {
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Open settings"
+            accessibilityLabel="Settings"
             onPress={() => router.push('/settings')}
             hitSlop={8}
-            style={({ pressed }) => pressed && styles.avatarPressed}
+            style={({ pressed }) => [styles.settingsButton, pressed && styles.avatarPressed]}
           >
-            <Avatar initials={initials} />
+            <Settings size={24} color={colors.ink} strokeWidth={2} />
           </Pressable>
         </View>
+
+        {profileLoaded && !profile ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Finish setting up your business profile"
+            onPress={() => router.push('/settings/business')}
+            style={({ pressed }) => [styles.setupCard, pressed && styles.avatarPressed]}
+          >
+            <View style={styles.setupText}>
+              <Text style={styles.setupTitle}>Finish your business profile</Text>
+              <Text style={styles.setupSub}>
+                Add your business name and state so quotes, contracts and invoices show them.
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.goldDark} strokeWidth={2} />
+          </Pressable>
+        ) : null}
 
         <MoneyPendingCard
           totalCents={money.totalCents}
@@ -213,6 +227,41 @@ const makeStyles = (colors: Colors) =>
       fontSize: 26,
       color: colors.ink,
       letterSpacing: -0.3,
+    },
+    settingsButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    setupCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 60,
+      padding: spacing.lg,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.gold,
+      backgroundColor: colors.goldTint,
+    },
+    setupText: {
+      flex: 1,
+      gap: 2,
+    },
+    setupTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+    },
+    setupSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
     },
     avatarPressed: {
       opacity: 0.65,

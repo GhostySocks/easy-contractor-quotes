@@ -5,6 +5,7 @@ import {
   wholeDay,
   type ScheduledJob,
 } from '../schedule-conflicts';
+import { stateCodeFromRegion } from '../us-states';
 
 // Local times so the tests mean the same thing in any timezone.
 const at = (h: number, m = 0, day = 4) => new Date(2026, 10, day, h, m).toISOString();
@@ -71,5 +72,20 @@ describe('blocks', () => {
   it('recognizes whole-day blocks', () => {
     expect(isWholeDay(wholeDay('2026-11-04'))).toBe(true);
     expect(isWholeDay({ starts_at: at(9), ends_at: at(12) })).toBe(false);
+  });
+});
+
+describe('stateCodeFromRegion', () => {
+  it('maps full names and codes, case-insensitively', () => {
+    expect(stateCodeFromRegion('Ohio')).toBe('OH');
+    expect(stateCodeFromRegion('new york')).toBe('NY');
+    expect(stateCodeFromRegion('TX')).toBe('TX');
+    expect(stateCodeFromRegion(' ca ')).toBe('CA');
+  });
+
+  it('returns null for anything that is not a US state', () => {
+    expect(stateCodeFromRegion('Ontario')).toBeNull();
+    expect(stateCodeFromRegion('ZZ')).toBeNull();
+    expect(stateCodeFromRegion(null)).toBeNull();
   });
 });

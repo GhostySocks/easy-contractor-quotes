@@ -64,7 +64,7 @@ export default function PaymentsScreen() {
     .reduce((n, s) => n + s.totalCents, 0);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"

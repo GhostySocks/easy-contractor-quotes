@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GhostButton } from '@/components/ui/GhostButton';
 import { Input } from '@/components/ui/Input';
@@ -36,6 +37,7 @@ type Props = {
 
 export function SendRecipientSheet({ visible, initialRecipient, onCancel, onSend }: Props) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [name, setName] = useState(initialRecipient.name);
   const [email, setEmail] = useState(initialRecipient.email);
@@ -80,7 +82,7 @@ export function SendRecipientSheet({ visible, initialRecipient, onCancel, onSend
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.sheetWrap}
         >
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: spacing.xxxl + insets.bottom }]}>
             <View style={styles.header}>
               <Text style={styles.title}>Send to customer</Text>
               <Pressable

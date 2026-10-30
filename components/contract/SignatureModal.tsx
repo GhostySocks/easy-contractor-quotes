@@ -1,6 +1,7 @@
 import { X } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
 
 import { GhostButton } from '@/components/ui/GhostButton';
@@ -33,6 +34,7 @@ function webStyleFor(colors: Colors): string {
 
 export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const webStyle = useMemo(() => webStyleFor(colors), [colors]);
   const ref = useRef<SignatureViewRef>(null);
@@ -62,7 +64,7 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: spacing.xxxl + insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.title}>Sign here</Text>
             <Pressable

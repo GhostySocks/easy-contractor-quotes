@@ -28,11 +28,16 @@ export async function commitOnboardingProfile(userId: string | undefined): Promi
     }
   }
 
+  if (!draft.state_code) {
+    console.warn('[profiles] no state in onboarding draft; profile left for Settings');
+    return;
+  }
+
   const { error } = await supabase.from('profiles').upsert({
     id: userId,
     business_name: draft.business_name || 'My business',
     logo_url: logoUrl,
-    state_code: draft.state_code || 'TX',
+    state_code: draft.state_code,
     trade: draft.trade,
     onboarding_completed_at: new Date().toISOString(),
   });

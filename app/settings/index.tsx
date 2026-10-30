@@ -29,8 +29,8 @@ import { useStyles, useTheme } from '@/lib/theme-context';
 import type { ThemeMode } from '@/lib/theme-store';
 
 const APPEARANCE_OPTIONS: { mode: ThemeMode; label: string; sub: string; Icon: LucideIcon }[] = [
-  { mode: 'dark', label: 'Dark', sub: 'Deep black with gold. Easiest on the eyes.', Icon: Moon },
   { mode: 'light', label: 'Light', sub: 'Bright surfaces for full sun.', Icon: Sun },
+  { mode: 'dark', label: 'Dark', sub: 'Deep black with gold. Easiest on the eyes.', Icon: Moon },
   { mode: 'system', label: 'System', sub: 'Match your phone’s setting.', Icon: Smartphone },
 ];
 
@@ -68,7 +68,7 @@ export default function Settings() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <BackButton />
 

@@ -1,6 +1,36 @@
 import * as Location from 'expo-location';
 
 import { addressFromGeocode } from './geo-address';
+import { stateCodeFromRegion } from './us-states';
+
+export type CurrentState =
+  | { kind: 'ok'; code: string }
+  | { kind: 'denied' }
+  | { kind: 'unavailable' };
+
+/**
+ * The US state the phone is in, as a 2-letter code, for prefilling the
+ * business profile instead of assuming a state. Asks for location only when
+ * the contractor taps the button.
+ */
+export async function currentStateCode(): Promise<CurrentState> {
+  const permission = await Location.requestForegroundPermissionsAsync();
+  if (!permission.granted) return { kind: 'denied' };
+  try {
+    const position =
+      (await Location.getLastKnownPositionAsync({ maxAge: 30 * 60_000 })) ??
+      (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }));
+    const [first] = await Location.reverseGeocodeAsync({
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    });
+    const code = stateCodeFromRegion(first?.region);
+    return code ? { kind: 'ok', code } : { kind: 'unavailable' };
+  } catch (err) {
+    console.warn('[location] state lookup failed', err);
+    return { kind: 'unavailable' };
+  }
+}
 
 export type CurrentAddress =
   | { kind: 'ok'; line1: string; city: string }
