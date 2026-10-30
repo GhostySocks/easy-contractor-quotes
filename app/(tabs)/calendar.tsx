@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { CalendarPlus, Plus, X } from 'lucide-react-native';
+import { Ban, CalendarPlus, Plus, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 import { Calendar, type DateData } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BlockTimeSheet } from '@/components/calendar/BlockTimeSheet';
 import {
   TodayJobRow,
   type JobStatus as RowStatus,
@@ -24,6 +26,8 @@ import {
   setJobSchedule,
   type JobWithCustomer,
 } from '@/lib/jobs';
+import { confirmScheduleSlot, createBlock, deleteBlock, listBlocks } from '@/lib/availability';
+import { blockDays, isWholeDay, type Block } from '@/lib/schedule-conflicts';
 import { atDayAndMinutes, DEFAULT_START_MINUTES } from '@/lib/schedule-time';
 import { formatCents } from '@/lib/pricing';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
@@ -36,14 +40,20 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState(() => isoDay(new Date()));
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blockOpen, setBlockOpen] = useState(false);
 
   // Fetch a buffered window around the visible month so navigation between
   // adjacent months is instant after the first paint of the new range.
   const load = useCallback(async (month: Date) => {
     const from = new Date(month.getFullYear(), month.getMonth() - 1, 1);
     const to = new Date(month.getFullYear(), month.getMonth() + 2, 0, 23, 59, 59);
-    const rows = await listJobsByDateRange(from.toISOString(), to.toISOString());
+    const [rows, blockRows] = await Promise.all([
+      listJobsByDateRange(from.toISOString(), to.toISOString()),
+      listBlocks(from.toISOString(), to.toISOString()),
+    ]);
     setJobs(rows);
+    setBlocks(blockRows);
   }, []);
 
   useEffect(() => {
@@ -54,6 +64,7 @@ export default function CalendarScreen() {
     // Quick-schedule at the default start time; the exact time can be changed
     // from the job's schedule card.
     const scheduledAt = atDayAndMinutes(selectedDay, DEFAULT_START_MINUTES);
+    if (!(await confirmScheduleSlot(scheduledAt, job.id))) return;
     const updated = await setJobSchedule(job.id, scheduledAt);
     setPickerOpen(false);
     if (updated) {
@@ -68,10 +79,38 @@ export default function CalendarScreen() {
   }
 
   const markedDates = useMemo(
-    () => buildMarkedDates(jobs, selectedDay, colors),
-    [jobs, selectedDay, colors],
+    () => buildMarkedDates(jobs, blocks, selectedDay, colors),
+    [jobs, blocks, selectedDay, colors],
   );
   const dayJobs = useMemo(() => jobs.filter((j) => dayOf(j) === selectedDay), [jobs, selectedDay]);
+  const dayBlocks = useMemo(
+    () => blocks.filter((b) => blockDays(b).includes(selectedDay)),
+    [blocks, selectedDay],
+  );
+
+  async function handleBlock(startsAt: string, endsAt: string) {
+    const created = await createBlock(startsAt, endsAt);
+    if (!created) {
+      Alert.alert("Couldn't block that time", 'Please try again.');
+      return;
+    }
+    setBlocks((prev) => [...prev, created]);
+    setBlockOpen(false);
+  }
+
+  function handleUnblock(block: Block) {
+    Alert.alert('Remove this block?', 'Jobs can be scheduled in this time again.', [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          if (await deleteBlock(block.id))
+            setBlocks((prev) => prev.filter((b) => b.id !== block.id));
+        },
+      },
+    ]);
+  }
 
   const selectedDate = new Date(`${selectedDay}T00:00:00`);
 
@@ -90,6 +129,7 @@ export default function CalendarScreen() {
             onMonthChange={(d: DateData) => setVisibleMonth(new Date(d.year, d.month - 1, 1))}
             firstDay={0}
             enableSwipeMonths
+            markingType="multi-dot"
             markedDates={markedDates}
             theme={calendarThemeFor(colors)}
           />
@@ -102,6 +142,20 @@ export default function CalendarScreen() {
               {dayJobs.length} {dayJobs.length === 1 ? 'job' : 'jobs'}
             </Text>
           </View>
+
+          {dayBlocks.map((b) => (
+            <Pressable
+              key={b.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Blocked ${blockLabel(b)}. Remove`}
+              onPress={() => handleUnblock(b)}
+              style={({ pressed }) => [styles.blockRow, pressed && styles.scheduleCtaPressed]}
+            >
+              <Ban size={18} color={colors.ink3} strokeWidth={2} />
+              <Text style={styles.blockLabel}>Blocked · {blockLabel(b)}</Text>
+              <X size={16} color={colors.ink3} strokeWidth={2} />
+            </Pressable>
+          ))}
 
           {dayJobs.length === 0 ? (
             <Text style={styles.emptyState}>Nothing on the books for this day.</Text>
@@ -126,8 +180,26 @@ export default function CalendarScreen() {
             <CalendarPlus size={20} color={colors.goldDark} strokeWidth={2} />
             <Text style={styles.scheduleCtaLabel}>Schedule a job for this day</Text>
           </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Block off time on this day"
+            onPress={() => setBlockOpen(true)}
+            style={({ pressed }) => [styles.blockCta, pressed && styles.scheduleCtaPressed]}
+          >
+            <Ban size={18} color={colors.ink2} strokeWidth={2} />
+            <Text style={styles.blockCtaLabel}>Block off time</Text>
+          </Pressable>
         </View>
       </ScrollView>
+
+      <BlockTimeSheet
+        visible={blockOpen}
+        day={selectedDay}
+        dayLabel={formatDayHeader(selectedDate)}
+        onClose={() => setBlockOpen(false)}
+        onSave={handleBlock}
+      />
 
       <UnscheduledPickerSheet
         visible={pickerOpen}
@@ -227,14 +299,21 @@ function UnscheduledPickerSheet({
 
 function buildMarkedDates(
   jobs: JobWithCustomer[],
+  blocks: Block[],
   selectedDay: string,
   colors: Colors,
 ): Record<string, MarkedDate> {
   const marks: Record<string, MarkedDate> = {};
+  const add = (day: string, dot: { key: string; color: string }) => {
+    const existing = marks[day]?.dots ?? [];
+    if (!existing.some((d) => d.key === dot.key)) marks[day] = { dots: [...existing, dot] };
+  };
   for (const job of jobs) {
     const day = dayOf(job);
-    if (!day) continue;
-    marks[day] = { marked: true, dotColor: colors.gold };
+    if (day) add(day, { key: 'job', color: colors.gold });
+  }
+  for (const block of blocks) {
+    for (const day of blockDays(block)) add(day, { key: 'blocked', color: colors.ink3 });
   }
   marks[selectedDay] = {
     ...(marks[selectedDay] ?? {}),
@@ -246,12 +325,18 @@ function buildMarkedDates(
 }
 
 type MarkedDate = {
-  marked?: boolean;
-  dotColor?: string;
+  dots?: { key: string; color: string }[];
   selected?: boolean;
   selectedColor?: string;
   selectedTextColor?: string;
 };
+
+function blockLabel(b: Block): string {
+  if (isWholeDay(b)) return 'all day';
+  const t = (iso: string) =>
+    new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${t(b.starts_at)} – ${t(b.ends_at)}`;
+}
 
 function dayOf(job: JobWithCustomer): string {
   if (!job.scheduled_at) return '';
@@ -419,6 +504,35 @@ const makeStyles = (colors: Colors) =>
       fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.goldDark,
+    },
+    blockRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 48,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    blockLabel: {
+      flex: 1,
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    blockCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      minHeight: 48,
+    },
+    blockCtaLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
     },
     sheetBackdrop: {
       flex: 1,
