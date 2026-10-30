@@ -1,30 +1,21 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  CalendarClock,
-  ChevronLeft,
-  FileText,
-  RotateCcw,
-  ShieldCheck,
-  X,
-} from 'lucide-react-native';
+import { CalendarClock, ChevronLeft, FileText, RotateCcw, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Calendar, type DateData } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { JobNotes } from '@/components/job/JobNotes';
 import { JobPhotos } from '@/components/job/JobPhotos';
 import { Card } from '@/components/ui/Card';
+import { DateSheet } from '@/components/ui/DateSheet';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
@@ -121,10 +112,7 @@ export default function JobDetail() {
   const handlePickDate = useCallback(
     async (iso: string) => {
       if (!job) return;
-      // Pick 9:00 AM local on the chosen day; time picker is a follow-up.
-      const [y, m, d] = iso.split('-').map(Number);
-      const scheduledAt = new Date(y, m - 1, d, 9, 0, 0).toISOString();
-      const updated = await setJobSchedule(job.id, scheduledAt);
+      const updated = await setJobSchedule(job.id, iso);
       setSchedulerOpen(false);
       if (updated) setJob(updated);
     },
@@ -382,97 +370,17 @@ export default function JobDetail() {
         </View>
       )}
 
-      <ScheduleSheet
+      <DateSheet
         visible={schedulerOpen}
+        title="Schedule job"
         currentIso={job.scheduled_at}
         onClose={() => setSchedulerOpen(false)}
         onPick={(iso) => void handlePickDate(iso)}
-        onUnschedule={job.scheduled_at ? () => void handleUnschedule() : undefined}
+        clearLabel={job.scheduled_at ? 'Unschedule this job' : undefined}
+        onClear={() => void handleUnschedule()}
       />
     </SafeAreaView>
   );
-}
-
-function ScheduleSheet({
-  visible,
-  currentIso,
-  onClose,
-  onPick,
-  onUnschedule,
-}: {
-  visible: boolean;
-  currentIso: string | null;
-  onClose: () => void;
-  onPick: (iso: string) => void;
-  onUnschedule?: () => void;
-}) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const currentDay = currentIso ? isoDay(new Date(currentIso)) : isoDay(new Date());
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.sheetBackdrop}>
-          <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
-              <View style={styles.sheetHeader}>
-                <Text style={styles.sheetTitle}>Pick a date</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                  onPress={onClose}
-                  hitSlop={12}
-                  style={styles.sheetClose}
-                >
-                  <X size={20} color={colors.ink2} strokeWidth={2} />
-                </Pressable>
-              </View>
-              <Calendar
-                current={currentDay}
-                onDayPress={(d: DateData) => onPick(d.dateString)}
-                markedDates={{
-                  [currentDay]: {
-                    selected: true,
-                    selectedColor: colors.ink,
-                    selectedTextColor: colors.gold,
-                  },
-                }}
-                firstDay={0}
-                theme={sheetCalendarThemeFor(colors)}
-              />
-              {onUnschedule ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Unschedule this job"
-                  onPress={onUnschedule}
-                  style={({ pressed }) => [
-                    styles.unscheduleAction,
-                    pressed && styles.unscheduleActionPressed,
-                  ]}
-                >
-                  <Text style={styles.unscheduleLabel}>Unschedule this job</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-}
-
-function isoDay(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 function formatDateWithTime(iso: string): string {
@@ -485,17 +393,6 @@ function formatDateWithTime(iso: string): string {
   const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${datePart} · ${timePart}`;
 }
-
-const sheetCalendarThemeFor = (colors: Colors) => ({
-  backgroundColor: colors.surface,
-  calendarBackground: colors.surface,
-  selectedDayBackgroundColor: colors.selection,
-  selectedDayTextColor: colors.gold,
-  todayTextColor: colors.goldDark,
-  arrowColor: colors.ink,
-  monthTextColor: colors.ink,
-  textMonthFontWeight: '800' as const,
-});
 
 function StatusPill({ status }: { status: JobRow['status'] }) {
   const styles = useStyles(makeStyles);
@@ -738,55 +635,5 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.label,
       color: colors.goldDark,
       letterSpacing: 0.4,
-    },
-    sheetBackdrop: {
-      flex: 1,
-      backgroundColor: colors.scrim,
-      justifyContent: 'flex-end',
-    },
-    sheet: {
-      maxHeight: '85%',
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: radii.xl,
-      borderTopRightRadius: radii.xl,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.huge,
-    },
-    sheetHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: spacing.xl,
-      paddingBottom: spacing.md,
-    },
-    sheetTitle: {
-      fontFamily: typography.fonts.displayHeavy,
-      fontSize: typography.sizes.h2,
-      color: colors.ink,
-    },
-    sheetClose: {
-      width: 36,
-      height: 36,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surface2,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    unscheduleAction: {
-      marginHorizontal: spacing.xl,
-      marginTop: spacing.md,
-      minHeight: 60,
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      backgroundColor: colors.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    unscheduleActionPressed: { opacity: 0.7 },
-    unscheduleLabel: {
-      fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.body,
-      color: colors.danger,
     },
   });
