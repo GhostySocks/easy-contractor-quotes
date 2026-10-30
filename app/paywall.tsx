@@ -167,7 +167,7 @@ const makeStyles = (colors: Colors) =>
     },
     restore: {
       alignItems: 'center',
-      minHeight: 44,
+      minHeight: typography.minTouchTarget,
       justifyContent: 'center',
     },
     restoreLabel: {

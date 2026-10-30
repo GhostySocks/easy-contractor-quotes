@@ -140,6 +140,7 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: spacing.md,
       borderBottomColor: colors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
+      minHeight: typography.minTouchTarget,
     },
     iconBadge: {
       width: 32,
@@ -160,7 +161,7 @@ const makeStyles = (colors: Colors) =>
     },
     rowSub: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
     },
     empty: {
@@ -190,6 +191,7 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       backgroundColor: colors.surface2,
+      minHeight: typography.minTouchTarget,
     },
     createRowDivided: {
       borderTopColor: colors.divider,

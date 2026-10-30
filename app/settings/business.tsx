@@ -315,7 +315,7 @@ const makeStyles = (colors: Colors) =>
     },
     fieldLabel: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       letterSpacing: 0.5,
       color: colors.ink2,
     },

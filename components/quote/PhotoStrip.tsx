@@ -55,7 +55,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
               accessibilityRole="button"
               accessibilityLabel={`Remove photo ${i + 1}`}
               onPress={() => onRemove(i)}
-              hitSlop={10}
+              hitSlop={19}
               style={styles.remove}
             >
               <X size={14} color={colors.surface} strokeWidth={3} />

@@ -122,7 +122,7 @@ const makeStyles = (colors: Colors) =>
     },
     link: {
       alignItems: 'center',
-      minHeight: 44,
+      minHeight: typography.minTouchTarget,
       justifyContent: 'center',
     },
     linkLabel: {

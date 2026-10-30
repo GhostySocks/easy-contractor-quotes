@@ -45,11 +45,21 @@ export function LogoPicker({ imageUri, busy, onPick, onRemove }: Props) {
             : 'Optional. Shown on your quotes and invoices.'}
         </Text>
         <View style={styles.actions}>
-          <Pressable accessibilityRole="button" onPress={onPick} disabled={busy} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onPick}
+            disabled={busy}
+            hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+          >
             <Text style={styles.action}>{imageUri ? 'Change' : 'Add logo'}</Text>
           </Pressable>
           {imageUri && onRemove ? (
-            <Pressable accessibilityRole="button" onPress={onRemove} disabled={busy} hitSlop={8}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onRemove}
+              disabled={busy}
+              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+            >
               <Text style={[styles.action, styles.remove]}>Remove</Text>
             </Pressable>
           ) : null}

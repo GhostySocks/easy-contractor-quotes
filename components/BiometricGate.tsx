@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   link: {
     alignSelf: 'center',
-    minHeight: 44,
+    minHeight: typography.minTouchTarget,
     justifyContent: 'center',
   },
   linkLabel: {

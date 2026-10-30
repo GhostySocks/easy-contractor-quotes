@@ -262,6 +262,7 @@ export default function JobDetail() {
           accessibilityRole="button"
           accessibilityLabel="Back"
           style={styles.back}
+          hitSlop={10}
           onPress={() => router.back()}
         >
           <ChevronLeft size={22} color={colors.ink2} strokeWidth={2} />
@@ -621,6 +622,7 @@ const makeStyles = (colors: Colors) =>
       borderWidth: 1,
       borderColor: colors.divider,
       padding: spacing.lg,
+      minHeight: typography.minTouchTarget,
     },
     cancelLink: {
       flexDirection: 'row',
@@ -643,7 +645,7 @@ const makeStyles = (colors: Colors) =>
     },
     linkCardSub: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       marginTop: 2,
     },
@@ -659,7 +661,7 @@ const makeStyles = (colors: Colors) =>
     },
     openLink: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.goldDark,
     },
     scope: {
@@ -770,7 +772,7 @@ const makeStyles = (colors: Colors) =>
     },
     scheduleAction: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.goldDark,
       letterSpacing: 0.4,
     },

@@ -261,6 +261,7 @@ export default function ContractDetail() {
           accessibilityRole="button"
           accessibilityLabel="Back"
           style={styles.back}
+          hitSlop={10}
           onPress={() => router.back()}
         >
           <ChevronLeft size={22} color={colors.ink2} strokeWidth={2} />
@@ -630,10 +631,12 @@ const makeStyles = (colors: Colors) =>
       alignSelf: 'center',
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
+      minHeight: typography.minTouchTarget,
+      justifyContent: 'center',
     },
     inlineLinkText: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textDecorationLine: 'underline',
     },

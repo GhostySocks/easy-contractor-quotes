@@ -117,7 +117,7 @@ const makeStyles = (colors: Colors) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      minHeight: 48,
+      minHeight: typography.minTouchTarget,
       paddingHorizontal: spacing.lg,
       borderRadius: radii.lg,
       backgroundColor: colors.goldTint,
