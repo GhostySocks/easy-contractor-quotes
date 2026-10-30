@@ -20,8 +20,11 @@ import { Chip } from '@/components/ui/Chip';
 import { DateSheet, isoDay } from '@/components/ui/DateSheet';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { generateQuote } from '@/lib/ai';
+import { AiTimeoutError, finishQuoteInBackground, generateQuote } from '@/lib/ai';
+import { progressLabel } from '@/lib/ai-progress';
+import { notifyQuoteReady } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth-store';
+import { usePaused } from '@/lib/use-paused';
 import {
   createCustomer,
   fetchCustomer,
@@ -44,6 +47,18 @@ export default function NewQuote() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const user = useAuth((s) => s.user);
+  const paused = usePaused();
+  useEffect(() => {
+    if (!paused) return;
+    Alert.alert(
+      'Your subscription is paused',
+      'Reactivate to create new quotes. Your jobs and customers are still here to view.',
+      [
+        { text: 'Not now', style: 'cancel', onPress: () => router.back() },
+        { text: 'Reactivate', onPress: () => router.replace('/paywall') },
+      ],
+    );
+  }, [paused]);
   const [profileState, setProfileState] = useState<string>('TX');
   const [jobType, setJobType] = useState<string>('handyman');
   const jobTypeTouched = useRef(false);
@@ -57,6 +72,18 @@ export default function NewQuote() {
   const [photos, setPhotos] = useState<StripPhoto[]>([]);
   const [generating, setGenerating] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Step the progress label while the AI works.
+  useEffect(() => {
+    if (!generating) {
+      setElapsed(0);
+      return;
+    }
+    const started = Date.now();
+    const handle = setInterval(() => setElapsed(Date.now() - started), 500);
+    return () => clearInterval(handle);
+  }, [generating]);
 
   // Photos uploaded but not attached to a quote are deleted if the user
   // leaves without generating. Ref so the unmount cleanup sees the latest.
@@ -178,6 +205,7 @@ export default function NewQuote() {
 
   async function handleGenerate() {
     setGenerating(true);
+    const startedAt = new Date().toISOString();
     try {
       // If the user typed a customer name but never picked from the dropdown
       // (or never tapped 'Create new'), auto-create on the fly. createCustomer
@@ -219,6 +247,15 @@ export default function NewQuote() {
       submitted.current = true;
       router.replace({ pathname: '/quote/[id]', params: { id: result.id } });
     } catch (err) {
+      if (err instanceof AiTimeoutError) {
+        // The quote keeps generating server-side; watch for it and notify.
+        submitted.current = true;
+        finishQuoteInBackground(startedAt, (quoteId) => void notifyQuoteReady(quoteId));
+        Alert.alert(strings.locked.errorAiTimeout, undefined, [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+        return;
+      }
       Alert.alert('Could not generate quote', err instanceof Error ? err.message : String(err));
     } finally {
       setGenerating(false);
@@ -351,7 +388,11 @@ export default function NewQuote() {
         <View style={styles.footer}>
           <PrimaryButton
             label={
-              generating ? 'Generating quote…' : uploading ? 'Uploading photos…' : 'Generate quote'
+              generating
+                ? progressLabel(elapsed)
+                : uploading
+                  ? 'Uploading photos…'
+                  : 'Generate quote'
             }
             loading={generating}
             disabled={!canGenerate}
