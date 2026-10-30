@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
-import { radii, spacing, type Colors } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles } from '@/lib/theme-context';
 
 type Props = {
@@ -50,8 +50,8 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.85,
     },
     label: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 14,
-      fontWeight: '600',
       color: colors.ink,
     },
     labelSelected: {

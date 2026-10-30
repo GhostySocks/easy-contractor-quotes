@@ -121,11 +121,12 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     rowTitle: {
+      fontFamily: typography.fonts.display,
       fontSize: typography.sizes.h3,
-      fontWeight: '700',
       color: colors.ink,
     },
     rowSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
     },

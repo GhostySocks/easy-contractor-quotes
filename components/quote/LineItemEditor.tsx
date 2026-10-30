@@ -120,8 +120,8 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
@@ -136,6 +136,7 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     labelField: {
+      fontFamily: typography.fonts.bodyStrong,
       backgroundColor: colors.surface2,
       borderColor: colors.divider,
       borderWidth: 1,
@@ -143,7 +144,6 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       fontSize: typography.sizes.body,
-      fontWeight: '600',
       color: colors.ink,
       minHeight: 44,
     },
@@ -162,12 +162,13 @@ const makeStyles = (colors: Colors) =>
       minWidth: 80,
     },
     numberLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.ink3,
     },
     numberField: {
+      fontFamily: typography.fonts.numeric,
       backgroundColor: colors.surface2,
       borderColor: colors.divider,
       borderWidth: 1,
@@ -180,14 +181,18 @@ const makeStyles = (colors: Colors) =>
       minHeight: 40,
     },
     qtyField: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       textAlign: 'center',
     },
     priceField: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       textAlign: 'right',
     },
     total: {
+      fontFamily: typography.fonts.numeric,
       fontSize: typography.sizes.body,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
       paddingVertical: spacing.sm,
@@ -209,8 +214,8 @@ const makeStyles = (colors: Colors) =>
       borderStyle: 'dashed',
     },
     addLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.goldDark,
     },
   });

@@ -108,8 +108,8 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     body: {
+      fontFamily: typography.fonts.display,
       fontSize: typography.sizes.h3,
-      fontWeight: '700',
       color: colors.onInverseMuted,
       textAlign: 'center',
     },

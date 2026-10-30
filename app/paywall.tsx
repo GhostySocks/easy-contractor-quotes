@@ -119,9 +119,9 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xl,
     },
     hero: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: 32,
       lineHeight: 40,
-      fontWeight: '800',
       color: colors.ink,
     },
     features: {
@@ -133,9 +133,9 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     featureLabel: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '500',
     },
     priceCard: {
       backgroundColor: colors.inverseSurface,
@@ -144,11 +144,13 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     price: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: 32,
-      fontWeight: '800',
       color: colors.gold,
     },
     priceSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.onInverseMuted,
       opacity: 0.85,
@@ -158,6 +160,7 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     trust: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
       textAlign: 'center',
@@ -168,9 +171,9 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     restoreLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink2,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '600',
     },
     devSkip: {
       alignItems: 'center',
@@ -185,9 +188,9 @@ const makeStyles = (colors: Colors) =>
       borderStyle: 'dashed',
     },
     devSkipLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink3,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.6,
     },
   });

@@ -31,8 +31,8 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.divider,
     },
     text: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '800',
       color: colors.goldDark,
       letterSpacing: 0.3,
     },

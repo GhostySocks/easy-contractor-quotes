@@ -257,6 +257,7 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     loadingLabel: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
     },
@@ -274,16 +275,16 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h3,
-      fontWeight: '800',
       color: colors.ink,
     },
     saveStatus: {
+      fontFamily: typography.fonts.bodyStrong,
       minWidth: 56,
       textAlign: 'right',
       fontSize: typography.sizes.label,
       color: colors.ink3,
-      fontWeight: '600',
       paddingRight: spacing.md,
     },
     scroll: {
@@ -295,26 +296,28 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     aiEyebrow: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.gold,
     },
     aiSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.onInverseMuted,
       opacity: 0.85,
     },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
       marginBottom: spacing.sm,
     },
     scopeField: {
+      fontFamily: typography.fonts.body,
       minHeight: 100,
       borderRadius: radii.md,
       backgroundColor: colors.surface2,
@@ -330,13 +333,15 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: spacing.xs,
     },
     totalsLabel: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
     },
     totalsValue: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.bodySmall,
       color: colors.ink,
-      fontWeight: '600',
     },
     totalsGrand: {
       marginTop: spacing.sm,
@@ -345,16 +350,18 @@ const makeStyles = (colors: Colors) =>
       paddingTop: spacing.md,
     },
     totalsGrandLabel: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h3,
       color: colors.ink,
-      fontWeight: '800',
     },
     totalsGrandValue: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.h3,
       color: colors.ink,
-      fontWeight: '800',
     },
     stateNote: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
       lineHeight: 22,

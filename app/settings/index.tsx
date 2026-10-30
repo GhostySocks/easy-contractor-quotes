@@ -258,31 +258,31 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.6,
     },
     backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '600',
       marginLeft: 2,
     },
     titleBlock: {
       gap: spacing.xs,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     section: {
       gap: spacing.sm,
     },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.8,
       color: colors.ink3,
       paddingHorizontal: spacing.sm,
@@ -327,17 +327,17 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     rowLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.ink,
     },
     rowLabelDestructive: {
       color: colors.danger,
     },
     rowSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     check: {
       width: 24,

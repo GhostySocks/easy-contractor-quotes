@@ -80,8 +80,8 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.gold,
     },
     label: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       color: colors.ink3,
@@ -90,8 +90,9 @@ const makeStyles = (colors: Colors) =>
       color: colors.goldDark,
     },
     amount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.h3,
-      fontWeight: '800',
       color: colors.ink,
     },
     amountSelected: {

@@ -449,7 +449,11 @@ const makeStyles = (colors: Colors) =>
     safe: { flex: 1, backgroundColor: colors.surface2 },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-    loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
+    loadingLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -458,13 +462,17 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: spacing.sm,
     },
     back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
     saveStatus: {
+      fontFamily: typography.fonts.bodyStrong,
       minWidth: 56,
       textAlign: 'right',
       fontSize: typography.sizes.label,
       color: colors.ink3,
-      fontWeight: '600',
       paddingRight: spacing.md,
     },
     scroll: {
@@ -474,25 +482,27 @@ const makeStyles = (colors: Colors) =>
     },
     banner: { gap: spacing.xs },
     bannerEyebrow: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       color: colors.gold,
     },
     bannerSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.onInverseMuted,
       opacity: 0.85,
     },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
       marginBottom: spacing.sm,
     },
     bodyField: {
+      fontFamily: typography.fonts.body,
       minHeight: 360,
       borderRadius: radii.md,
       backgroundColor: colors.surface,
@@ -505,23 +515,37 @@ const makeStyles = (colors: Colors) =>
     },
     mdRoot: { gap: spacing.md },
     mdH1: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
       marginTop: spacing.md,
     },
     mdH2: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h3,
-      fontWeight: '800',
       color: colors.ink,
       marginTop: spacing.sm,
     },
-    mdH3: { fontSize: typography.sizes.bodySmall, fontWeight: '700', color: colors.ink2 },
-    mdParagraph: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
+    mdH3: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    mdParagraph: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
     mdList: { gap: spacing.xs },
     mdListItem: { flexDirection: 'row', gap: spacing.sm },
-    mdListBullet: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
+    mdListBullet: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
     mdListText: {
+      fontFamily: typography.fonts.body,
       flex: 1,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink,
@@ -548,9 +572,9 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: spacing.md,
     },
     inlineLinkText: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
       color: colors.ink3,
-      fontWeight: '600',
       textDecorationLine: 'underline',
     },
     editIconButton: {
@@ -574,8 +598,8 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.surface2,
     },
     footerSignedLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.success,
-      fontWeight: '700',
     },
   });

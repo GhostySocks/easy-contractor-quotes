@@ -43,13 +43,14 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     label: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
     },
     input: {
+      fontFamily: typography.fonts.body,
       minHeight: 48,
       borderRadius: radii.md,
       backgroundColor: colors.surface2,
@@ -64,6 +65,7 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.danger,
     },
     error: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.danger,
     },

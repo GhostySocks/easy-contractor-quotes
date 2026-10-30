@@ -484,7 +484,11 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.surface2 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-    loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
+    loadingLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -493,7 +497,11 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: spacing.sm,
     },
     back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
     scroll: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.md,
@@ -501,28 +509,42 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.lg,
     },
     jobTitle: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h1,
-      fontWeight: '800',
       color: colors.ink,
       marginTop: spacing.sm,
     },
-    customer: { fontSize: typography.sizes.bodySmall, color: colors.ink2, marginTop: 2 },
+    customer: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      marginTop: 2,
+    },
     pill: {
       alignSelf: 'flex-start',
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,
       borderRadius: radii.sm,
     },
-    pillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+    pillText: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+    },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
       marginBottom: spacing.sm,
     },
-    line: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
+    line: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
     linkCard: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -535,20 +557,52 @@ const makeStyles = (colors: Colors) =>
     },
     linkCardPressed: { opacity: 0.75 },
     linkCardText: { flex: 1 },
-    linkCardTitle: { fontSize: typography.sizes.bodySmall, fontWeight: '700', color: colors.ink },
-    linkCardSub: { fontSize: typography.sizes.label, color: colors.ink3, marginTop: 2 },
-    linkCardChevron: { fontSize: 28, color: colors.ink3, fontWeight: '300' },
+    linkCardTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    linkCardSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      marginTop: 2,
+    },
+    linkCardChevron: {
+      fontFamily: typography.fonts.body,
+      fontSize: 28,
+      color: colors.ink3,
+    },
     scopeHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    openLink: { fontSize: typography.sizes.label, fontWeight: '700', color: colors.goldDark },
-    scope: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
+    openLink: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      color: colors.goldDark,
+    },
+    scope: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
     lineItems: { gap: spacing.xs, marginTop: spacing.md },
     lineItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
-    lineItemLabel: { flex: 1, fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-    lineItemAmount: { fontSize: typography.sizes.bodySmall, color: colors.ink, fontWeight: '600' },
+    lineItemLabel: {
+      fontFamily: typography.fonts.body,
+      flex: 1,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    lineItemAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
     totalRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -557,8 +611,17 @@ const makeStyles = (colors: Colors) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       paddingTop: spacing.md,
     },
-    totalLabel: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-    totalAmount: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    totalLabel: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    totalAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
     footer: {
       paddingHorizontal: spacing.xl,
       paddingVertical: spacing.lg,
@@ -577,9 +640,9 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.surface2,
     },
     footerDoneLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.success,
-      fontWeight: '700',
     },
     scheduleCard: {
       flexDirection: 'row',
@@ -604,19 +667,19 @@ const makeStyles = (colors: Colors) =>
     },
     scheduleBody: { flex: 1, gap: 2 },
     scheduleLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.ink3,
     },
     scheduleValue: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.ink,
     },
     scheduleAction: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       color: colors.goldDark,
       letterSpacing: 0.4,
     },
@@ -641,8 +704,8 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: spacing.md,
     },
     sheetTitle: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
     },
     sheetClose: {
@@ -666,8 +729,8 @@ const makeStyles = (colors: Colors) =>
     },
     unscheduleActionPressed: { opacity: 0.7 },
     unscheduleLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.danger,
     },
   });

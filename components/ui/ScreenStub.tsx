@@ -33,6 +33,7 @@ const makeStyles = (colors: Colors) =>
       padding: spacing.xl,
     },
     label: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
       letterSpacing: 1.5,
@@ -40,12 +41,13 @@ const makeStyles = (colors: Colors) =>
       marginBottom: spacing.sm,
     },
     name: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h1,
-      fontWeight: '800',
       color: colors.ink,
       textAlign: 'center',
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       marginTop: spacing.md,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,

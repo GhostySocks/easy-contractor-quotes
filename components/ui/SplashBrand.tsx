@@ -154,27 +154,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
+    fontFamily: typography.fonts.displayHeavy,
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '800',
     color: brand.surface,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   proBadge: {
+    fontFamily: typography.fonts.bodyStrong,
     fontSize: typography.sizes.label,
-    fontWeight: '800',
     color: brand.gold,
     letterSpacing: 6,
     marginTop: spacing.sm,
   },
   tagline: {
+    fontFamily: typography.fonts.body,
     marginTop: spacing.lg,
     fontSize: typography.sizes.bodySmall,
     color: brand.surface,
     opacity: 0.8,
     textAlign: 'center',
-    fontWeight: '500',
   },
   footer: {
     alignItems: 'center',
@@ -195,10 +195,10 @@ const styles = StyleSheet.create({
     backgroundColor: brand.gold,
   },
   loading: {
+    fontFamily: typography.fonts.bodyStrong,
     fontSize: typography.sizes.label,
     color: brand.goldDark,
     opacity: 0.6,
-    fontWeight: '600',
     letterSpacing: 0.4,
   },
 });

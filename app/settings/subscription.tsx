@@ -190,24 +190,24 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.6,
     },
     backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '600',
       marginLeft: 2,
     },
     titleBlock: {
       gap: spacing.xs,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     hero: {
       flexDirection: 'row',
@@ -231,11 +231,12 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     heroLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '800',
       color: colors.gold,
     },
     heroSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.onInverseMuted,
       opacity: 0.85,
@@ -257,14 +258,14 @@ const makeStyles = (colors: Colors) =>
       borderBottomColor: colors.divider,
     },
     detailLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '600',
     },
     detailValue: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink,
-      fontWeight: '700',
       flexShrink: 1,
       textAlign: 'right',
     },
@@ -278,12 +279,13 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     devLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.8,
       color: colors.warn,
     },
     devBody: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
       lineHeight: 22,

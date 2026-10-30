@@ -192,15 +192,16 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'space-between',
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     count: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '600',
     },
     search: {
       flexDirection: 'row',
@@ -214,10 +215,10 @@ const makeStyles = (colors: Colors) =>
       minHeight: 48,
     },
     searchInput: {
+      fontFamily: typography.fonts.body,
       flex: 1,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '500',
       paddingVertical: 0,
     },
     listContent: {
@@ -248,30 +249,30 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.sm,
     },
     name: {
+      fontFamily: typography.fonts.bodyStrong,
       flexShrink: 1,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.ink,
       lineHeight: 22,
     },
     sub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     rightCol: {
       alignItems: 'flex-end',
       gap: 2,
     },
     ltv: {
+      fontFamily: typography.fonts.numeric,
       fontSize: typography.sizes.body,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
     },
     ltvLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.ink3,
     },
@@ -282,12 +283,13 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.goldTint,
     },
     repeatBadgeLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.goldDark,
     },
     emptyState: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       paddingVertical: spacing.huge,

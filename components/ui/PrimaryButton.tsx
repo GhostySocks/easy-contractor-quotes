@@ -71,8 +71,8 @@ const makeStyles = (colors: Colors) =>
       elevation: 0,
     },
     label: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.onGold,
       fontSize: 17,
-      fontWeight: '700',
     },
   });

@@ -50,8 +50,8 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.5,
     },
     label: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink,
       fontSize: 17,
-      fontWeight: '700',
     },
   });

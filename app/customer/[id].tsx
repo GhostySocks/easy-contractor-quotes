@@ -265,9 +265,9 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.6,
     },
     backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '600',
       marginLeft: 2,
     },
     notFound: {
@@ -276,6 +276,7 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     notFoundText: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.body,
       color: colors.ink3,
     },
@@ -283,8 +284,8 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.sm,
     },
     name: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
@@ -300,8 +301,8 @@ const makeStyles = (colors: Colors) =>
       borderRadius: radii.pill,
     },
     tagLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       color: colors.goldDark,
       letterSpacing: 0.4,
     },
@@ -320,14 +321,14 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     statValue: {
+      fontFamily: typography.fonts.numeric,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
     },
     statLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.ink3,
     },
@@ -362,15 +363,15 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     contactLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.ink3,
     },
     contactValue: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '600',
     },
     notesCard: {
       backgroundColor: colors.goldTint,
@@ -380,29 +381,30 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.sm,
     },
     notesLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
       color: colors.goldDark,
     },
     notesBody: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '500',
       lineHeight: 24,
     },
     section: {
       gap: spacing.md,
     },
     sectionTitle: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
     },
     jobList: {
       gap: spacing.md,
     },
     emptyState: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       paddingVertical: spacing.lg,

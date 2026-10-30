@@ -188,9 +188,9 @@ const makeStyles = (colors: Colors) =>
       opacity: 0.6,
     },
     backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '600',
       marginLeft: 2,
     },
     titleBlock: {
@@ -198,22 +198,22 @@ const makeStyles = (colors: Colors) =>
       marginBottom: spacing.sm,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     tradeBlock: {
       gap: spacing.sm,
     },
     fieldLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       color: colors.ink2,
     },

@@ -93,25 +93,27 @@ const makeStyles = (colors: Colors) =>
       borderRadius: radii.pill,
     },
     pillLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
       color: colors.danger,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h1,
-      fontWeight: '800',
       color: colors.gold,
       textAlign: 'center',
     },
     body2: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.body,
       color: colors.onInverseMuted,
       textAlign: 'center',
       opacity: 0.9,
     },
     meta: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textAlign: 'center',
@@ -122,6 +124,7 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     support: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.goldDark,
       textAlign: 'center',

@@ -61,8 +61,8 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.sm,
     },
     stepLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
       color: colors.ink3,
@@ -74,11 +74,12 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h1,
-      fontWeight: '800',
       color: colors.ink,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
     },

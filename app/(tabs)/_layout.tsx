@@ -91,8 +91,8 @@ const makeStyles = (colors: Colors) =>
       paddingTop: 6,
     },
     tabLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '600',
     },
     fab: {
       position: 'absolute',

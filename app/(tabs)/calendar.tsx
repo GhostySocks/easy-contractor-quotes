@@ -350,15 +350,15 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     calendarCard: {
       backgroundColor: colors.surface,
@@ -376,20 +376,22 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'baseline',
     },
     dayLabel: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
       flexShrink: 1,
     },
     dayCount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '600',
     },
     jobsList: {
       gap: spacing.md,
     },
     emptyState: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       paddingVertical: spacing.lg,
@@ -413,8 +415,8 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.goldTint,
     },
     scheduleCtaLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.goldDark,
     },
     sheetBackdrop: {
@@ -440,8 +442,8 @@ const makeStyles = (colors: Colors) =>
       borderBottomColor: colors.divider,
     },
     sheetTitle: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
     },
     sheetClose: {
@@ -463,11 +465,12 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.xs,
     },
     sheetEmptyTitle: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.ink,
     },
     sheetEmptySub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textAlign: 'center',
@@ -500,18 +503,18 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     pickTitle: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.ink,
     },
     pickSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
-      fontWeight: '500',
     },
     pickAmount: {
+      fontFamily: typography.fonts.numeric,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
     },

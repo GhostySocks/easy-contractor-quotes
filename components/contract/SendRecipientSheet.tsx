@@ -226,7 +226,11 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
     closeButton: {
       width: 40,
       height: 40,
@@ -255,15 +259,16 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.gold,
     },
     channelLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '600',
       color: colors.ink2,
     },
     channelLabelOn: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink,
-      fontWeight: '700',
     },
     hint: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
       lineHeight: 18,

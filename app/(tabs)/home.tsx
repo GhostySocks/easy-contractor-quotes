@@ -192,13 +192,13 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     date: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     greeting: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: 26,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.3,
     },
@@ -211,19 +211,20 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'baseline',
     },
     sectionTitle: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h2,
-      fontWeight: '800',
       color: colors.ink,
     },
     sectionLink: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
       color: colors.goldDark,
-      fontWeight: '700',
     },
     jobsList: {
       gap: spacing.md,
     },
     emptyState: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       paddingVertical: spacing.lg,

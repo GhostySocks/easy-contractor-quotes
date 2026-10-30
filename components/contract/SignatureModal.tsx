@@ -136,7 +136,11 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
     closeButton: {
       width: 40,
       height: 40,
@@ -150,6 +154,7 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: pad.paper,
     },
     hint: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
       textAlign: 'center',

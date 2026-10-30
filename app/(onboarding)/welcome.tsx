@@ -72,22 +72,23 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.lg,
     },
     eyebrow: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
       color: colors.ink3,
     },
     hero: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: 36,
       lineHeight: 44,
-      fontWeight: '800',
       color: colors.ink,
     },
     heroAccent: {
       color: colors.gold,
     },
     sub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.body,
       lineHeight: 26,
       color: colors.ink2,
@@ -102,9 +103,9 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     linkLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink2,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '600',
     },
     devReset: {
       alignItems: 'center',
@@ -113,9 +114,9 @@ const makeStyles = (colors: Colors) =>
       marginTop: spacing.sm,
     },
     devResetLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink3,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.6,
     },
   });

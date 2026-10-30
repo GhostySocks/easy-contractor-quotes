@@ -154,11 +154,12 @@ const makeStyles = (colors: Colors) =>
       gap: 1,
     },
     rowTitle: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.ink,
     },
     rowSub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
     },
@@ -166,6 +167,7 @@ const makeStyles = (colors: Colors) =>
       padding: spacing.md,
     },
     emptyLabel: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textAlign: 'center',
@@ -176,8 +178,8 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: spacing.xs,
     },
     sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.8,
       color: colors.ink3,
     },
@@ -194,8 +196,8 @@ const makeStyles = (colors: Colors) =>
       borderTopWidth: StyleSheet.hairlineWidth,
     },
     createLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '600',
       color: colors.ink2,
       flexShrink: 1,
     },

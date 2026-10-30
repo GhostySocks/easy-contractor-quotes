@@ -111,14 +111,14 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'flex-start',
     },
     time: {
+      fontFamily: typography.fonts.numeric,
       fontSize: 18,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
     },
     meridiem: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       color: colors.ink3,
       letterSpacing: 0.6,
     },
@@ -127,15 +127,15 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
     },
     title: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
-      fontWeight: '700',
       color: colors.ink,
       lineHeight: 22,
     },
     sub: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '500',
     },
     rightCol: {
       alignItems: 'flex-end',
@@ -147,13 +147,13 @@ const makeStyles = (colors: Colors) =>
       borderRadius: radii.sm,
     },
     pillText: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: 10,
-      fontWeight: '800',
       letterSpacing: 0.6,
     },
     amount: {
+      fontFamily: typography.fonts.numeric,
       fontSize: typography.sizes.body,
-      fontWeight: '800',
       color: colors.ink,
       fontVariant: ['tabular-nums'],
     },

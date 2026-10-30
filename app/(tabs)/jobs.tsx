@@ -344,15 +344,16 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'space-between',
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.display,
-      fontWeight: '800',
       color: colors.ink,
       letterSpacing: -0.5,
     },
     count: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      fontWeight: '600',
     },
     search: {
       flexDirection: 'row',
@@ -366,10 +367,10 @@ const makeStyles = (colors: Colors) =>
       minHeight: 48,
     },
     searchInput: {
+      fontFamily: typography.fonts.body,
       flex: 1,
       fontSize: typography.sizes.body,
       color: colors.ink,
-      fontWeight: '500',
       paddingVertical: 0,
     },
     filterRow: {
@@ -389,8 +390,8 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.selectionBorder,
     },
     pillLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.ink2,
     },
     pillLabelActive: {
@@ -406,13 +407,14 @@ const makeStyles = (colors: Colors) =>
       marginBottom: spacing.sm,
     },
     sectionHeaderLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '800',
       color: colors.ink3,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
     emptyState: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       paddingVertical: spacing.huge,

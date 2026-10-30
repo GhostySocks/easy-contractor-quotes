@@ -204,8 +204,8 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h3,
-      fontWeight: '800',
       color: colors.ink,
     },
     scroll: {
@@ -224,15 +224,15 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'center',
     },
     tradeLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.label,
-      fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
     },
     tradeValue: {
+      fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '700',
       color: colors.goldDark,
     },
     textarea: {
@@ -240,6 +240,7 @@ const makeStyles = (colors: Colors) =>
       paddingTop: spacing.md,
     },
     hint: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.label,
       color: colors.ink3,
       lineHeight: 16,

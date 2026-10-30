@@ -91,11 +91,12 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.lg,
     },
     title: {
+      fontFamily: typography.fonts.displayHeavy,
       fontSize: typography.sizes.h1,
-      fontWeight: '800',
       color: colors.ink,
     },
     subtitle: {
+      fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
     },
@@ -113,8 +114,8 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     linkLabel: {
+      fontFamily: typography.fonts.bodyStrong,
       color: colors.ink2,
       fontSize: typography.sizes.bodySmall,
-      fontWeight: '600',
     },
   });
