@@ -1,4 +1,5 @@
 import {
+  amendmentBody,
   type ContractTemplateInput,
   renderContract,
   renderReleaseOfLiability,
@@ -100,5 +101,22 @@ describe('stateNoteFor', () => {
     expect(stateNoteFor('TX')).toMatch(/lien/);
     expect(stateNoteFor('AK')).toBeNull();
     expect(stateNoteFor(null)).toBeNull();
+  });
+});
+
+describe('amendmentBody', () => {
+  it('puts an amendment note on top of the signed text', () => {
+    const body = amendmentBody('# Work Agreement\n\nScope…', 2, '2026-10-01T12:00:00Z');
+    expect(body.startsWith('> **Amendment 1** to the agreement signed October 1, 2026.')).toBe(
+      true,
+    );
+    expect(body).toContain('# Work Agreement\n\nScope…');
+  });
+
+  it('replaces an earlier amendment note instead of stacking them', () => {
+    const v2 = amendmentBody('# Work Agreement', 2, '2026-10-01T12:00:00Z');
+    const v3 = amendmentBody(v2, 3, '2026-10-15T12:00:00Z');
+    expect(v3.match(/\*\*Amendment/g)).toHaveLength(1);
+    expect(v3).toContain('**Amendment 2**');
   });
 });

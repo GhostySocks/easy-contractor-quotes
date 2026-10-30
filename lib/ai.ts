@@ -45,6 +45,8 @@ export async function generateQuote(input: QuoteInput): Promise<QuoteInsertResul
 export type ContractInput = {
   kind: 'work' | 'release';
   quote_id: string;
+  /** Create the next version of this signed contract instead of a new one. */
+  amend_contract_id?: string;
 };
 
 export type ContractResult = {

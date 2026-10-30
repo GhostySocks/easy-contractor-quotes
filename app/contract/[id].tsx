@@ -19,7 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SendRecipientSheet, type Recipient } from '@/components/contract/SendRecipientSheet';
 import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
+import { GhostButton } from '@/components/ui/GhostButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { generateContract } from '@/lib/ai';
 import { fetchCustomer, rememberCustomerContact } from '@/lib/customers';
 import {
   fetchContract,
@@ -70,6 +72,39 @@ export default function ContractDetail() {
   }, [id]);
 
   const signed = !!contract?.signed_at;
+  const [amending, setAmending] = useState(false);
+
+  const handleAmend = useCallback(() => {
+    if (!contract) return;
+    Alert.alert(
+      'Amend this contract?',
+      'The signed version stays locked. A new version is created from it for you to edit and send for signature.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Create amendment',
+          onPress: async () => {
+            setAmending(true);
+            try {
+              const next = await generateContract({
+                kind: contract.kind,
+                quote_id: contract.quote_id ?? '',
+                amend_contract_id: contract.id,
+              });
+              router.replace({ pathname: '/contract/[id]', params: { id: next.id } });
+            } catch (err) {
+              Alert.alert(
+                "Couldn't create the amendment",
+                err instanceof Error ? err.message : String(err),
+              );
+            } finally {
+              setAmending(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [contract]);
 
   // Poll for customer-side signing while the screen is in view and the
   // contract is unsigned. 15s cadence is cheap (one row read) and covers
@@ -296,9 +331,19 @@ export default function ContractDetail() {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.footerSigned}>
-            <ShieldCheck size={18} color={colors.success} strokeWidth={2} />
-            <Text style={styles.footerSignedLabel}>Signed and locked</Text>
+          <View style={styles.footerColumn}>
+            <View style={styles.signedInline}>
+              <ShieldCheck size={18} color={colors.success} strokeWidth={2} />
+              <Text style={styles.footerSignedLabel}>
+                Signed and locked{contract.version > 1 ? ` · version ${contract.version}` : ''}
+              </Text>
+            </View>
+            <GhostButton
+              label={amending ? 'Creating amendment…' : 'Amend contract'}
+              onPress={handleAmend}
+              disabled={amending}
+              accessibilityLabel="Create an amended version of this signed contract"
+            />
           </View>
         )}
       </KeyboardAvoidingView>
@@ -559,6 +604,12 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.bodySmall,
       color: colors.ink,
       lineHeight: 22,
+    },
+    signedInline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
     },
     footerColumn: {
       paddingHorizontal: spacing.xl,
