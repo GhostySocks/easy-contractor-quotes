@@ -38,8 +38,40 @@ export type QuoteInsertResult = {
   ai_generation_ms: number;
 };
 
+/** The screen stopped waiting; the edge function may still finish and save the quote. */
+export class AiTimeoutError extends Error {}
+
 export async function generateQuote(input: QuoteInput): Promise<QuoteInsertResult> {
   return await invokeWithTimeout<QuoteInsertResult>('ai-quote', input);
+}
+
+/**
+ * After a timeout, keep looking for the quote the edge function saves when it
+ * finishes, then notify. Runs outside any screen so the contractor can move
+ * on. Gives up quietly after `forMs`.
+ */
+export function finishQuoteInBackground(
+  startedAt: string,
+  onReady: (quoteId: string) => void,
+  forMs = 120_000,
+  everyMs = 4_000,
+): void {
+  const deadline = Date.now() + forMs;
+  const tick = async () => {
+    const { data } = await supabase
+      .from('quotes')
+      .select('id')
+      .gte('created_at', startedAt)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) {
+      onReady(data.id as string);
+      return;
+    }
+    if (Date.now() < deadline) setTimeout(() => void tick(), everyMs);
+  };
+  setTimeout(() => void tick(), everyMs);
 }
 
 export type ContractInput = {
@@ -82,7 +114,7 @@ async function invokeWithTimeout<T>(
   ]);
 
   if (result.kind === 'timeout') {
-    throw new Error(
+    throw new AiTimeoutError(
       `${name} did not respond within ${Math.round(ms / 1000)}s — check your Supabase edge function is deployed and reachable.`,
     );
   }

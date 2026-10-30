@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { BiometricGate } from '@/components/BiometricGate';
+import { useNotificationRouting } from '@/lib/notifications';
 import { useSessionBootstrap } from '@/lib/session-bootstrap';
 import { ThemeProvider, useTheme } from '@/lib/theme-context';
 
@@ -25,6 +26,7 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useSessionBootstrap();
+  useNotificationRouting();
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_500Medium,

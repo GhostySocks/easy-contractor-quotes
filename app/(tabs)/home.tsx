@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,7 +9,8 @@ import { TodayJobRow, type JobStatus, type TodayJob } from '@/components/ui/Toda
 import { useAuth } from '@/lib/auth-store';
 import { fetchUnsignedContractCount } from '@/lib/contracts';
 import { fetchUnpaidSummary, type UnpaidSummary } from '@/lib/invoices';
-import { listActiveJobs, type JobWithCustomer } from '@/lib/jobs';
+import { listActiveJobs, listUpcomingScheduledJobs, type JobWithCustomer } from '@/lib/jobs';
+import { syncJobReminders } from '@/lib/notifications';
 import {
   fetchProfile,
   firstNameFromProfile,
@@ -46,9 +47,19 @@ export default function HomeScreen() {
     setUnsignedContracts(unsigned);
   }, [user]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Reload whenever Home is shown, so money and today's jobs are current after
+  // working in a job or invoice, and keep job reminders in step with the
+  // schedule (covers jobs scheduled anywhere, including on contract signing).
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+      if (user) {
+        void listUpcomingScheduledJobs().then((upcoming) =>
+          syncJobReminders(upcoming.map((j) => ({ ...j, customer_name: j.customer_name }))),
+        );
+      }
+    }, [load, user]),
+  );
 
   const firstName = firstNameFromProfile(profile);
   const initials = initialsFromProfile(profile);

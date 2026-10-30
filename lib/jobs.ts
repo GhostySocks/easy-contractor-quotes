@@ -296,6 +296,22 @@ export async function setJobStatus(
   return data as JobRow;
 }
 
+/** Every to-do or scheduled job with a start time still ahead, for reminders. */
+export async function listUpcomingScheduledJobs(): Promise<JobWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, customer:customers(name)')
+    .in('status', ['todo', 'scheduled'])
+    .gt('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(200);
+  if (error) {
+    console.warn('[jobs] list upcoming failed', error.message);
+    return [];
+  }
+  return (data ?? []).map(toJobWithCustomer);
+}
+
 /** Notes and photos are the job's own fields; RLS limits this to the owner. */
 export async function updateJobDetails(
   id: string,
