@@ -2,12 +2,13 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Ban,
   CalendarClock,
+  CalendarPlus,
   ChevronLeft,
   FileText,
   RotateCcw,
   ShieldCheck,
 } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +30,9 @@ import type { LineItem } from '@/lib/ai';
 import { fetchContractByJob, type ContractRow } from '@/lib/contracts';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { createInvoiceFromQuote, fetchInvoiceByJob, type InvoiceRow } from '@/lib/invoices';
+import { addJobToPhoneCalendar } from '@/lib/calendar-export';
 import { buildTimeline } from '@/lib/job-timeline';
+import { syncJobReminders } from '@/lib/notifications';
 import {
   fetchJob,
   markJobCompleted,
@@ -86,6 +89,28 @@ export default function JobDetail() {
   );
 
   const jobId = job?.id;
+
+  // Keep this job's reminder in step with every schedule or status change
+  // made here (reschedule, unschedule, start, cancel, reopen, complete).
+  const jobStatus = job?.status;
+  const jobScheduledAt = job?.scheduled_at;
+  const jobTitle = job?.title;
+  const customerName = customer?.name;
+  useEffect(() => {
+    if (!jobId || !jobStatus || !jobTitle) return;
+    void syncJobReminders(
+      [
+        {
+          id: jobId,
+          status: jobStatus,
+          scheduled_at: jobScheduledAt ?? null,
+          title: jobTitle,
+          customer_name: customerName,
+        },
+      ],
+      new Set([jobId]),
+    );
+  }, [jobId, jobStatus, jobScheduledAt, jobTitle, customerName]);
 
   const handlePhotosChange = useCallback(
     async (photos: string[]) => {
@@ -273,6 +298,36 @@ export default function JobDetail() {
           </View>
           {scheduleEditable ? <Text style={styles.scheduleAction}>Change</Text> : null}
         </Pressable>
+
+        {job.scheduled_at && !cancelled ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add this job to my phone calendar"
+            onPress={() =>
+              void addJobToPhoneCalendar({
+                title: job.title,
+                scheduled_at: job.scheduled_at as string,
+                description: job.description,
+                customerName: customer?.name ?? null,
+                address: customer
+                  ? [customer.address_line1, customer.city, customer.state_code]
+                      .filter(Boolean)
+                      .join(', ') || null
+                  : null,
+              }).catch(() =>
+                Alert.alert(
+                  "Couldn't open your calendar",
+                  'Add it from your calendar app instead.',
+                ),
+              )
+            }
+            hitSlop={8}
+            style={({ pressed }) => [styles.calendarLink, pressed && styles.linkCardPressed]}
+          >
+            <CalendarPlus size={18} color={colors.goldDark} strokeWidth={2} />
+            <Text style={styles.calendarLabel}>Add to my calendar</Text>
+          </Pressable>
+        ) : null}
 
         {customer ? (
           <Card>
@@ -696,6 +751,18 @@ const makeStyles = (colors: Colors) =>
       fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.body,
       color: colors.ink,
+    },
+    calendarLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 44,
+      marginTop: -spacing.sm,
+    },
+    calendarLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
     },
     scheduleAction: {
       fontFamily: typography.fonts.bodyStrong,
