@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -18,11 +18,13 @@ type Props = TextInputProps & {
 };
 
 export const Input = forwardRef<TextInput, Props>(function Input(
-  { label, error, containerStyle, style, ...rest },
+  { label, error, containerStyle, style, onFocus, onBlur, ...rest },
   ref,
 ) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  // A gold border while typing shows which field is active.
+  const [focused, setFocused] = useState(false);
   // Passwords and email addresses must not auto-capitalize or autocorrect.
   // Android keyboards capitalize the first letter of a password field unless
   // told otherwise. A caller can still override any of these.
@@ -35,10 +37,24 @@ export const Input = forwardRef<TextInput, Props>(function Input(
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         ref={ref}
-        style={[styles.input, !!error && styles.inputError, style]}
+        style={[
+          styles.input,
+          focused && styles.inputFocused,
+          !!error && styles.inputError,
+          rest.editable === false && styles.inputDisabled,
+          style,
+        ]}
         placeholderTextColor={colors.ink3}
         {...credentialDefaults}
         {...rest}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -61,13 +77,21 @@ const makeStyles = (colors: Colors) =>
       fontFamily: typography.fonts.body,
       minHeight: 48,
       borderRadius: radii.md,
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
+      // White, like the chips, so it stands out from the off-white page and
+      // reads as ready to type in rather than disabled.
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
       borderColor: colors.divider,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       fontSize: typography.sizes.bodySmall,
       color: colors.ink,
+    },
+    inputFocused: {
+      borderColor: colors.gold,
+    },
+    inputDisabled: {
+      backgroundColor: colors.surface2,
     },
     inputError: {
       borderColor: colors.danger,
