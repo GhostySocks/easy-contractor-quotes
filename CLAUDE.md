@@ -220,7 +220,7 @@ Canonical SQL lives in `/supabase/migrations/`. Table list:
 - `profiles` — business profile, 1:1 with auth user
 - `customers` — CRM customers (PII columns encrypted via pgcrypto)
 - `jobs` — central entity
-- `quotes` — AI-generated, one-to-many with jobs
+- `quotes` — AI-generated, one-to-many with jobs. Also carries `job_type`, `requested_start_at` (the job is created already scheduled for it when the contract is signed) and `photos` (≤ 4 paths in the private `job-photos` storage bucket, `<user_id>/<file>.jpg`, owner-only storage policies)
 - `contracts` — state-specific, AI-generated, e-signed (write-once after signing)
 - `invoices` — auto from quote + actuals
 - `subscriptions` — mirror of RevenueCat, source of truth for entitlement (service_role writes only)

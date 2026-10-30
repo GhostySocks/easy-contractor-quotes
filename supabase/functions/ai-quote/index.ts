@@ -14,6 +14,7 @@ import {
 } from '../_shared/prompts.ts';
 import { normalizeQuote, type QuoteOutput, validateQuote } from '../_shared/quote-validate.ts';
 import { stateNoteFor } from '../_shared/state-notes.ts';
+import { PHOTO_BUCKET, sanitizePhotoPaths } from '../_shared/photo-paths.ts';
 
 type QuoteInput = {
   trade: string;
@@ -27,9 +28,16 @@ type QuoteInput = {
     postal_code?: string;
   } | null;
   photos: string[];
+  requested_start_at?: string | null;
 };
 
 type QuoteToolOutput = QuoteOutput;
+
+type ImageBlock = {
+  type: 'image';
+  source: { type: 'base64'; media_type: 'image/jpeg'; data: string };
+};
+type UserContent = string | Array<ImageBlock | { type: 'text'; text: string }>;
 
 type AnthropicResponse = {
   content: Array<{
@@ -66,17 +74,25 @@ Deno.serve(async (req: Request) => {
 
     const customerHistory = await loadCustomerHistory(supabase, input.customer_id);
 
+    // Only the caller's own uploads; the user-scoped client's storage
+    // policies would refuse anything else anyway.
+    const photoPaths = sanitizePhotoPaths(input.photos, userId);
+    const images = await loadPhotoBlocks(supabase, photoPaths);
+
     const systemPrompt = buildSystemPrompt({
       trade: input.trade,
       state_code: input.state_code,
     });
-    const userMessage = buildUserMessage({
+    const userText = buildUserMessage({
       trade: input.trade,
       state_code: input.state_code,
       scope_text: input.scope_text,
       city: input.address?.city ?? null,
       customer_history: customerHistory,
+      photo_count: images.length,
     });
+    const userMessage: UserContent =
+      images.length > 0 ? [...images, { type: 'text', text: userText }] : userText;
 
     // @ts-expect-error — Deno env access
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -103,6 +119,9 @@ Deno.serve(async (req: Request) => {
         total_low_cents: result.total_low_cents,
         total_high_cents: result.total_high_cents,
         state_notes: stateNotes,
+        job_type: input.trade,
+        requested_start_at: validIsoOrNull(input.requested_start_at),
+        photos: photoPaths,
         status: 'draft',
       })
       .select('id')
@@ -150,7 +169,7 @@ async function loadCustomerHistory(
 async function generateValidatedQuote(
   apiKey: string,
   systemPrompt: string,
-  userMessage: string,
+  userMessage: UserContent,
 ): Promise<QuoteToolOutput> {
   const primary = await callAnthropic(apiKey, MODEL_PRIMARY, systemPrompt, userMessage);
   const primaryCheck = validateQuote(primary);
@@ -173,7 +192,7 @@ async function callAnthropic(
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userMessage: string,
+  userMessage: UserContent,
 ): Promise<QuoteToolOutput> {
   const resp = await fetch(ANTHROPIC_URL, {
     method: 'POST',
@@ -212,4 +231,42 @@ async function callAnthropic(
     throw new HttpError(502, 'Anthropic response did not include the expected tool use');
   }
   return toolUse.input as QuoteToolOutput;
+}
+
+/**
+ * Download each photo with the caller's own client (storage policies limit
+ * it to their folder) and inline it as a base64 image block. A photo that
+ * fails to load is skipped rather than failing the quote.
+ */
+async function loadPhotoBlocks(supabase: SupabaseClient, paths: string[]): Promise<ImageBlock[]> {
+  const blocks = await Promise.all(
+    paths.map(async (path): Promise<ImageBlock | null> => {
+      const { data, error } = await supabase.storage.from(PHOTO_BUCKET).download(path);
+      if (error || !data) {
+        console.warn('[ai-quote] photo download failed', path, error?.message);
+        return null;
+      }
+      const bytes = new Uint8Array(await data.arrayBuffer());
+      return {
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/jpeg', data: toBase64(bytes) },
+      };
+    }),
+  );
+  return blocks.filter((b): b is ImageBlock => b !== null);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function validIsoOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const t = Date.parse(value);
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
 }

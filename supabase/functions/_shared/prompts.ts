@@ -18,6 +18,8 @@ export type QuotePromptInput = {
   scope_text: string;
   city?: string | null;
   customer_history?: CustomerHistory | null;
+  /** Number of job photos attached as image blocks ahead of this text. */
+  photo_count?: number;
 };
 
 export const QUOTE_TOOL_NAME = 'return_quote';
@@ -103,6 +105,13 @@ export function buildSystemPrompt(input: { trade: string; state_code: string }):
 export function buildUserMessage(input: QuotePromptInput): string {
   const parts: string[] = [];
   parts.push(`Job description:\n${input.scope_text.trim()}`);
+  if (input.photo_count && input.photo_count > 0) {
+    parts.push(
+      `\n${input.photo_count === 1 ? 'A photo' : `${input.photo_count} photos`} of the job ` +
+        `${input.photo_count === 1 ? 'is' : 'are'} attached. Use them to judge size, materials ` +
+        'and condition; the written description takes priority if they disagree.',
+    );
+  }
   if (input.city) {
     parts.push(`\nLocation: ${input.city}, ${input.state_code.toUpperCase()}`);
   }

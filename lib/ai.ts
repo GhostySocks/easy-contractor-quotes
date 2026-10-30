@@ -20,7 +20,10 @@ export type QuoteInput = {
     state_code?: string;
     postal_code?: string;
   } | null;
+  /** Storage paths in the job-photos bucket (lib/photos.ts). */
   photos: string[];
+  /** ISO timestamp the customer wants the work to start, or null. */
+  requested_start_at?: string | null;
 };
 
 export type LineItem = {

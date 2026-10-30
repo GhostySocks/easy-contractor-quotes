@@ -1,9 +1,10 @@
 import { router, Stack } from 'expo-router';
-import { X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { CalendarDays, X } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -14,27 +15,45 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CustomerAutocomplete } from '@/components/quote/CustomerAutocomplete';
+import { PhotoStrip, type StripPhoto } from '@/components/quote/PhotoStrip';
+import { Chip } from '@/components/ui/Chip';
+import { DateSheet, isoDay, morningOf } from '@/components/ui/DateSheet';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateQuote } from '@/lib/ai';
 import { useAuth } from '@/lib/auth-store';
 import { createCustomer, rememberCustomerContact, type CustomerRow } from '@/lib/customers';
+import { type TradeCode } from '@/lib/onboarding-store';
+import { MAX_PHOTOS } from '@/lib/photo-math';
+import { deleteJobPhotos, pickPhotos, type PhotoSource, uploadJobPhoto } from '@/lib/photos';
+import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
-import { spacing, typography, type Colors } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
+
+const TRADES: TradeCode[] = ['handyman', 'plumber', 'electrician', 'hvac', 'landscaping', 'other'];
 
 export default function NewQuote() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const user = useAuth((s) => s.user);
-  const [profileTrade, setProfileTrade] = useState<string>('handyman');
   const [profileState, setProfileState] = useState<string>('TX');
+  const [jobType, setJobType] = useState<string>('handyman');
+  const jobTypeTouched = useRef(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
+  const [startAt, setStartAt] = useState<string | null>(null);
+  const [dateOpen, setDateOpen] = useState(false);
+  const [photos, setPhotos] = useState<StripPhoto[]>([]);
   const [generating, setGenerating] = useState(false);
+
+  // Photos uploaded but not attached to a quote are deleted if the user
+  // leaves without generating. Ref so the unmount cleanup sees the latest.
+  const uploadedPaths = useRef<string[]>([]);
+  const submitted = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,12 +63,65 @@ export default function NewQuote() {
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.trade) setProfileTrade(data.trade);
+        if (data?.trade && !jobTypeTouched.current) setJobType(data.trade);
         if (data?.state_code) setProfileState(data.state_code);
       });
   }, [user]);
 
-  const canGenerate = description.trim().length >= 5 && !generating;
+  useEffect(
+    () => () => {
+      if (!submitted.current) void deleteJobPhotos(uploadedPaths.current);
+    },
+    [],
+  );
+
+  const uploading = photos.some((p) => p.path === null && !p.failed);
+  const canGenerate = description.trim().length >= 5 && !generating && !uploading;
+
+  function addPhotos(source: PhotoSource) {
+    if (!user) return;
+    void pickPhotos(source, MAX_PHOTOS - photos.length, () =>
+      Alert.alert(
+        source === 'camera' ? 'Camera access is off' : 'Photo access is off',
+        'Turn it on in Settings to attach photos to quotes.',
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+        ],
+      ),
+    ).then((picked) => {
+      if (picked.length === 0) return;
+      setPhotos((prev) => [...prev, ...picked.map((p) => ({ uri: p.uri, path: null }))]);
+      for (const p of picked) {
+        uploadJobPhoto(p, user.id)
+          .then((path) => {
+            uploadedPaths.current.push(path);
+            setPhotos((prev) => prev.map((x) => (x.uri === p.uri ? { ...x, path } : x)));
+          })
+          .catch((err: unknown) => {
+            console.warn('[new-quote] photo upload failed', err);
+            setPhotos((prev) => prev.map((x) => (x.uri === p.uri ? { ...x, failed: true } : x)));
+          });
+      }
+    });
+  }
+
+  function promptAddPhoto() {
+    Alert.alert('Add a photo', undefined, [
+      { text: 'Take photo', onPress: () => addPhotos('camera') },
+      { text: 'Choose from library', onPress: () => addPhotos('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function removePhoto(index: number) {
+    const target = photos[index];
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    if (target?.path) {
+      uploadedPaths.current = uploadedPaths.current.filter((p) => p !== target.path);
+      void deleteJobPhotos([target.path]);
+    }
+  }
 
   async function handleGenerate() {
     setGenerating(true);
@@ -77,8 +149,9 @@ export default function NewQuote() {
         });
       }
 
+      const photoPaths = photos.flatMap((p) => (p.path ? [p.path] : []));
       const result = await generateQuote({
-        trade: profileTrade,
+        trade: jobType,
         state_code: profileState,
         scope_text: description,
         customer_id: resolvedCustomerId,
@@ -87,8 +160,10 @@ export default function NewQuote() {
           city: city || undefined,
           state_code: profileState,
         },
-        photos: [],
+        photos: photoPaths,
+        requested_start_at: startAt,
       });
+      submitted.current = true;
       router.replace({ pathname: '/quote/[id]', params: { id: result.id } });
     } catch (err) {
       Alert.alert('Could not generate quote', err instanceof Error ? err.message : String(err));
@@ -96,6 +171,8 @@ export default function NewQuote() {
       setGenerating(false);
     }
   }
+
+  const today = isoDay(new Date());
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -119,11 +196,23 @@ export default function NewQuote() {
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.tradePill}>
-            <Text style={styles.tradeLabel}>Trade</Text>
-            <Text style={styles.tradeValue}>
-              {capitalize(profileTrade)} · {profileState}
+          <View style={styles.block}>
+            <Text style={styles.fieldLabel}>
+              Job type <Text style={styles.fieldMeta}>· {profileState}</Text>
             </Text>
+            <View style={styles.chips}>
+              {TRADES.map((t) => (
+                <Chip
+                  key={t}
+                  label={strings.goals.trades[t]}
+                  selected={jobType === t}
+                  onPress={() => {
+                    jobTypeTouched.current = true;
+                    setJobType(t);
+                  }}
+                />
+              ))}
+            </View>
           </View>
 
           <CustomerAutocomplete
@@ -170,23 +259,67 @@ export default function NewQuote() {
             Describe what needs to be done in 2–5 sentences. The more specific you are about
             materials and room size, the better the quote.
           </Text>
+
+          <PhotoStrip photos={photos} onAdd={promptAddPhoto} onRemove={removePhoto} />
+
+          <View style={styles.block}>
+            <Text style={styles.fieldLabel}>
+              Start date <Text style={styles.fieldMeta}>(optional)</Text>
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                startAt ? `Start date ${formatDay(startAt)}. Change` : 'Pick a start date'
+              }
+              onPress={() => setDateOpen(true)}
+              style={({ pressed }) => [styles.dateRow, pressed && styles.pressed]}
+            >
+              <CalendarDays size={20} color={colors.goldDark} strokeWidth={2} />
+              <Text style={[styles.dateValue, !startAt && styles.datePlaceholder]}>
+                {startAt ? formatDay(startAt) : 'Not set — schedule after signing'}
+              </Text>
+            </Pressable>
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>
           <PrimaryButton
-            label={generating ? 'Generating quote…' : 'Generate quote'}
+            label={
+              generating ? 'Generating quote…' : uploading ? 'Uploading photos…' : 'Generate quote'
+            }
             loading={generating}
             disabled={!canGenerate}
             onPress={handleGenerate}
           />
         </View>
       </KeyboardAvoidingView>
+
+      <DateSheet
+        visible={dateOpen}
+        title="Start date"
+        currentIso={startAt}
+        minDate={today}
+        onClose={() => setDateOpen(false)}
+        onPick={(day) => {
+          setStartAt(morningOf(day));
+          setDateOpen(false);
+        }}
+        clearLabel={startAt ? 'Clear start date' : undefined}
+        onClear={() => {
+          setStartAt(null);
+          setDateOpen(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function capitalize(str: string): string {
-  return str.length === 0 ? str : str[0].toUpperCase() + str.slice(1);
+function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 const makeStyles = (colors: Colors) =>
@@ -221,27 +354,22 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: spacing.xxxl,
       gap: spacing.lg,
     },
-    tradePill: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      backgroundColor: colors.goldTint,
-      borderRadius: 999,
-      flexDirection: 'row',
+    block: {
       gap: spacing.sm,
-      alignItems: 'center',
     },
-    tradeLabel: {
-      fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
-      letterSpacing: 0.5,
-      textTransform: 'uppercase',
-      color: colors.ink3,
-    },
-    tradeValue: {
+    fieldLabel: {
       fontFamily: typography.fonts.bodyStrong,
       fontSize: typography.sizes.bodySmall,
-      color: colors.goldDark,
+      color: colors.ink2,
+    },
+    fieldMeta: {
+      fontFamily: typography.fonts.body,
+      color: colors.ink3,
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
     },
     textarea: {
       minHeight: 120,
@@ -252,6 +380,31 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.label,
       color: colors.ink3,
       lineHeight: 16,
+      marginTop: -spacing.sm,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 60,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.surface,
+    },
+    dateValue: {
+      flex: 1,
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+    },
+    datePlaceholder: {
+      fontFamily: typography.fonts.body,
+      color: colors.ink3,
+    },
+    pressed: {
+      opacity: 0.7,
     },
     footer: {
       paddingHorizontal: spacing.xl,
