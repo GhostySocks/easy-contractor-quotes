@@ -96,7 +96,8 @@ export default function TabsLayout() {
 }
 
 const FAB_SIZE = 72;
-const TAB_BAR_HEIGHT = 96;
+// Icon + label + padding. The phone's bottom inset is added on top of this at render.
+const TAB_BAR_HEIGHT = 64;
 // Horizontal pad applied to the inner edge of the two tabs adjacent to the
 // FAB (Jobs on the left, Calendar on the right). Padding biases the centred
 // content toward the outer edge, so the visual shift is roughly half this.
