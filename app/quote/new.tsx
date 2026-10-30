@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateQuote } from '@/lib/ai';
 import { useAuth } from '@/lib/auth-store';
-import { createCustomer, type CustomerRow } from '@/lib/customers';
+import { createCustomer, rememberCustomerContact, type CustomerRow } from '@/lib/customers';
 import { supabase } from '@/lib/supabase';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -67,6 +67,14 @@ export default function NewQuote() {
         }
         resolvedCustomerId = created.id;
         setCustomerId(created.id);
+      }
+
+      // Save the job address onto the customer so the next quote prefills it.
+      if (resolvedCustomerId && (addressLine1.trim() || city.trim())) {
+        void rememberCustomerContact(resolvedCustomerId, {
+          address_line1: addressLine1,
+          city,
+        });
       }
 
       const result = await generateQuote({
