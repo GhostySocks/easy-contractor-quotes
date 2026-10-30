@@ -17,11 +17,14 @@ import {
   type ProfileRow,
 } from '@/lib/profile';
 import { strings } from '@/lib/strings';
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 const EMPTY_MONEY: UnpaidSummary = { totalCents: 0, unpaidCount: 0, overdueCount: 0 };
 
 export default function HomeScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const user = useAuth((s) => s.user);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
@@ -130,6 +133,7 @@ function SectionHeader({
   rightText: string;
   onRightPress?: () => void;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -168,62 +172,64 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  scroll: {
-    padding: spacing.xl,
-    gap: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerText: {
-    gap: 2,
-  },
-  date: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  greeting: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.3,
-  },
-  avatarPressed: {
-    opacity: 0.65,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  sectionLink: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.goldDark,
-    fontWeight: '700',
-  },
-  jobsList: {
-    gap: spacing.md,
-  },
-  emptyState: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    scroll: {
+      padding: spacing.xl,
+      gap: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    headerText: {
+      gap: 2,
+    },
+    date: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    greeting: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: 26,
+      color: colors.ink,
+      letterSpacing: -0.3,
+    },
+    avatarPressed: {
+      opacity: 0.65,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+    },
+    sectionTitle: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h2,
+      color: colors.ink,
+    },
+    sectionLink: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
+    },
+    jobsList: {
+      gap: spacing.md,
+    },
+    emptyState: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.md,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  });

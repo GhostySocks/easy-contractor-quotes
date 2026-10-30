@@ -30,9 +30,12 @@ import {
 } from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
 import { fetchQuote, type QuoteRow } from '@/lib/quotes';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function JobDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [job, setJob] = useState<JobRow | null>(null);
@@ -347,6 +350,8 @@ function ScheduleSheet({
   onPick: (iso: string) => void;
   onUnschedule?: () => void;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const currentDay = currentIso ? isoDay(new Date(currentIso)) : isoDay(new Date());
 
   return (
@@ -384,7 +389,7 @@ function ScheduleSheet({
                   },
                 }}
                 firstDay={0}
-                theme={sheetCalendarTheme}
+                theme={sheetCalendarThemeFor(colors)}
               />
               {onUnschedule ? (
                 <Pressable
@@ -425,19 +430,21 @@ function formatDateWithTime(iso: string): string {
   return `${datePart} · ${timePart}`;
 }
 
-const sheetCalendarTheme = {
+const sheetCalendarThemeFor = (colors: Colors) => ({
   backgroundColor: colors.surface,
   calendarBackground: colors.surface,
-  selectedDayBackgroundColor: colors.ink,
+  selectedDayBackgroundColor: colors.selection,
   selectedDayTextColor: colors.gold,
   todayTextColor: colors.goldDark,
   arrowColor: colors.ink,
   monthTextColor: colors.ink,
   textMonthFontWeight: '800' as const,
-};
+});
 
 function StatusPill({ status }: { status: JobRow['status'] }) {
-  const { label, bg, fg } = pillStyle(status);
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { label, bg, fg } = pillStyle(status, colors);
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
       <Text style={[styles.pillText, { color: fg }]}>{label}</Text>
@@ -445,7 +452,10 @@ function StatusPill({ status }: { status: JobRow['status'] }) {
   );
 }
 
-function pillStyle(status: JobRow['status']): { label: string; bg: string; fg: string } {
+function pillStyle(
+  status: JobRow['status'],
+  colors: Colors,
+): { label: string; bg: string; fg: string } {
   switch (status) {
     case 'in_progress':
       return { label: 'IN PROGRESS', bg: colors.goldTint, fg: colors.goldDark };
@@ -470,193 +480,257 @@ function formatDate(iso: string): string {
   });
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface2 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  jobTitle: {
-    fontSize: typography.sizes.h1,
-    fontWeight: '800',
-    color: colors.ink,
-    marginTop: spacing.sm,
-  },
-  customer: { fontSize: typography.sizes.bodySmall, color: colors.ink2, marginTop: 2 },
-  pill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
-  },
-  pillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  sectionLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-    marginBottom: spacing.sm,
-  },
-  line: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
-  linkCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    padding: spacing.lg,
-  },
-  linkCardPressed: { opacity: 0.75 },
-  linkCardText: { flex: 1 },
-  linkCardTitle: { fontSize: typography.sizes.bodySmall, fontWeight: '700', color: colors.ink },
-  linkCardSub: { fontSize: typography.sizes.label, color: colors.ink3, marginTop: 2 },
-  linkCardChevron: { fontSize: 28, color: colors.ink3, fontWeight: '300' },
-  scopeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  openLink: { fontSize: typography.sizes.label, fontWeight: '700', color: colors.goldDark },
-  scope: { fontSize: typography.sizes.bodySmall, color: colors.ink, lineHeight: 22 },
-  lineItems: { gap: spacing.xs, marginTop: spacing.md },
-  lineItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
-  lineItemLabel: { flex: 1, fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  lineItemAmount: { fontSize: typography.sizes.bodySmall, color: colors.ink, fontWeight: '600' },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
-  },
-  totalLabel: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  totalAmount: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  footer: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerDone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerDoneLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.success,
-    fontWeight: '700',
-  },
-  scheduleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 60,
-  },
-  scheduleCardPressed: { opacity: 0.7 },
-  scheduleIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scheduleBody: { flex: 1, gap: 2 },
-  scheduleLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.ink3,
-  },
-  scheduleValue: {
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  scheduleAction: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    color: colors.goldDark,
-    letterSpacing: 0.4,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(26, 26, 26, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '85%',
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.huge,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-  },
-  sheetTitle: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  sheetClose: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unscheduleAction: {
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    minHeight: 60,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unscheduleActionPressed: { opacity: 0.7 },
-  unscheduleLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.danger,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.surface2 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+    loadingLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.lg,
+    },
+    jobTitle: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h1,
+      color: colors.ink,
+      marginTop: spacing.sm,
+    },
+    customer: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      marginTop: 2,
+    },
+    pill: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radii.sm,
+    },
+    pillText: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+    },
+    sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+      marginBottom: spacing.sm,
+    },
+    line: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    linkCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      padding: spacing.lg,
+    },
+    linkCardPressed: { opacity: 0.75 },
+    linkCardText: { flex: 1 },
+    linkCardTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    linkCardSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      marginTop: 2,
+    },
+    linkCardChevron: {
+      fontFamily: typography.fonts.body,
+      fontSize: 28,
+      color: colors.ink3,
+    },
+    scopeHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    openLink: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      color: colors.goldDark,
+    },
+    scope: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    lineItems: { gap: spacing.xs, marginTop: spacing.md },
+    lineItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
+    lineItemLabel: {
+      fontFamily: typography.fonts.body,
+      flex: 1,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    lineItemAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingTop: spacing.md,
+    },
+    totalLabel: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    totalAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    footer: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerDone: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.lg,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerDoneLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.success,
+    },
+    scheduleCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: 60,
+    },
+    scheduleCardPressed: { opacity: 0.7 },
+    scheduleIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scheduleBody: { flex: 1, gap: 2 },
+    scheduleLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: colors.ink3,
+    },
+    scheduleValue: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+    },
+    scheduleAction: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      color: colors.goldDark,
+      letterSpacing: 0.4,
+    },
+    sheetBackdrop: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      maxHeight: '85%',
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.huge,
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    sheetTitle: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h2,
+      color: colors.ink,
+    },
+    sheetClose: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unscheduleAction: {
+      marginHorizontal: spacing.xl,
+      marginTop: spacing.md,
+      minHeight: 60,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unscheduleActionPressed: { opacity: 0.7 },
+    unscheduleLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.danger,
+    },
+  });

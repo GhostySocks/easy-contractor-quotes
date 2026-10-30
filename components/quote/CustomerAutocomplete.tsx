@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
 import { createCustomer, type CustomerRow, searchCustomers } from '@/lib/customers';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Props = {
   name: string;
@@ -22,6 +23,8 @@ type Props = {
  * be filled later from the customer detail screen (M2).
  */
 export function CustomerAutocomplete({ name, onChangeName, onSelect }: Props) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<CustomerRow[]>([]);
   const [creating, setCreating] = useState(false);
@@ -119,80 +122,83 @@ export function CustomerAutocomplete({ name, onChangeName, onSelect }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  dropdown: {
-    marginTop: spacing.xs,
-    backgroundColor: colors.surface,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomColor: colors.divider,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowBody: {
-    flex: 1,
-    gap: 1,
-  },
-  rowTitle: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  rowSub: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-  },
-  empty: {
-    padding: spacing.md,
-  },
-  emptyLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    textAlign: 'center',
-  },
-  sectionLabelWrap: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: colors.ink3,
-  },
-  createRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surface2,
-  },
-  createRowDivided: {
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  createLabel: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '600',
-    color: colors.ink2,
-    flexShrink: 1,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    dropdown: {
+      marginTop: spacing.xs,
+      backgroundColor: colors.surface,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomColor: colors.divider,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    iconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowBody: {
+      flex: 1,
+      gap: 1,
+    },
+    rowTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    rowSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+    },
+    empty: {
+      padding: spacing.md,
+    },
+    emptyLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      textAlign: 'center',
+    },
+    sectionLabelWrap: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
+    },
+    sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      color: colors.ink3,
+    },
+    createRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      backgroundColor: colors.surface2,
+    },
+    createRowDivided: {
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+    },
+    createLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      flexShrink: 1,
+    },
+  });

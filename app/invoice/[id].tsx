@@ -17,9 +17,12 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { fetchInvoice, sendInvoice, type InvoiceRow, type InvoiceStatus } from '@/lib/invoices';
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function InvoiceDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [invoice, setInvoice] = useState<InvoiceRow | null>(null);
@@ -168,7 +171,9 @@ export default function InvoiceDetail() {
 }
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
-  const { label, bg, fg } = pillStyle(status);
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { label, bg, fg } = pillStyle(status, colors);
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
       <Text style={[styles.pillText, { color: fg }]}>{label}</Text>
@@ -176,7 +181,10 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
-function pillStyle(status: InvoiceStatus): { label: string; bg: string; fg: string } {
+function pillStyle(
+  status: InvoiceStatus,
+  colors: Colors,
+): { label: string; bg: string; fg: string } {
   switch (status) {
     case 'paid':
       return { label: 'PAID', bg: colors.surface2, fg: colors.success };
@@ -202,102 +210,152 @@ function formatDate(iso: string): string {
   });
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface2 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  pill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
-  },
-  pillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  amount: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  amountSub: { fontSize: typography.sizes.bodySmall, color: colors.ink3 },
-  sectionLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-    marginBottom: spacing.sm,
-  },
-  lineItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  lineLabel: { flex: 1, fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  lineAmount: { fontSize: typography.sizes.bodySmall, color: colors.ink, fontWeight: '600' },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.divider,
-    marginVertical: spacing.sm,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  totalLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2 },
-  totalAmount: { fontSize: typography.sizes.bodySmall, color: colors.ink, fontWeight: '600' },
-  grandRow: {
-    marginTop: spacing.sm,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
-  },
-  grandLabel: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  grandAmount: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  inlineBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  sentLabel: { fontSize: typography.sizes.bodySmall, color: colors.ink2, fontWeight: '600' },
-  footer: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerHint: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    textAlign: 'center',
-  },
-  footerDone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderTopColor: colors.divider,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: colors.surface2,
-  },
-  footerDoneLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.success,
-    fontWeight: '700',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.surface2 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+    loadingLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.lg,
+    },
+    pill: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radii.sm,
+    },
+    pillText: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+    },
+    amount: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: 40,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    amountSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+      marginBottom: spacing.sm,
+    },
+    lineItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    lineLabel: {
+      fontFamily: typography.fonts.body,
+      flex: 1,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    lineAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.divider,
+      marginVertical: spacing.sm,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 4,
+    },
+    totalLabel: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    totalAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    grandRow: {
+      marginTop: spacing.sm,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingTop: spacing.md,
+    },
+    grandLabel: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    grandAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    inlineBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    sentLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    footer: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      gap: spacing.sm,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerHint: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      textAlign: 'center',
+    },
+    footerDone: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.lg,
+      borderTopColor: colors.divider,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      backgroundColor: colors.surface2,
+    },
+    footerDoneLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.success,
+    },
+  });

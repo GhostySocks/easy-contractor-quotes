@@ -20,7 +20,8 @@ import {
 import { listAllJobs, type JobWithCustomer, type LibraryStatusFilter } from '@/lib/jobs';
 import { listDraftQuotes, type DraftQuoteWithCustomer } from '@/lib/quotes';
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 // Unified row shape so we can group + render jobs and draft quotes through
 // the same SectionList without separate code paths per source.
@@ -41,6 +42,8 @@ const FILTERS: { key: LibraryStatusFilter; label: string }[] = [
 ];
 
 export default function JobsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [rows, setRows] = useState<LibraryRow[]>([]);
   const [filter, setFilter] = useState<LibraryStatusFilter>('all');
   const [search, setSearch] = useState('');
@@ -144,6 +147,8 @@ function SearchField({
   value: string;
   onChangeText: (v: string) => void;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.search}>
       <Search size={18} color={colors.ink3} strokeWidth={2} />
@@ -180,6 +185,7 @@ function FilterPill({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -319,98 +325,101 @@ function metaForStatus(status: JobWithCustomer['status']): string {
   }
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-    backgroundColor: colors.surface2,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  count: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '600',
-  },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '500',
-    paddingVertical: 0,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  pill: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  pillActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  pillLabel: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.ink2,
-  },
-  pillLabelActive: {
-    color: colors.gold,
-  },
-  listContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-  },
-  sectionHeader: {
-    backgroundColor: colors.surface2,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  sectionHeaderLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '800',
-    color: colors.ink3,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  emptyState: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    paddingVertical: spacing.huge,
-    paddingHorizontal: spacing.lg,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.lg,
+      gap: spacing.md,
+      backgroundColor: colors.surface2,
+    },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.display,
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    count: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingHorizontal: spacing.md,
+      minHeight: 48,
+    },
+    searchInput: {
+      fontFamily: typography.fonts.body,
+      flex: 1,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      paddingVertical: 0,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    pill: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    pillActive: {
+      backgroundColor: colors.selection,
+      borderColor: colors.selectionBorder,
+    },
+    pillLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    pillLabelActive: {
+      color: colors.gold,
+    },
+    listContent: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+    },
+    sectionHeader: {
+      backgroundColor: colors.surface2,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    sectionHeaderLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    emptyState: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      paddingVertical: spacing.huge,
+      paddingHorizontal: spacing.lg,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  });

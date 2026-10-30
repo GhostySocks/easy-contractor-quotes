@@ -1,11 +1,12 @@
 import { X } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
 
 import { GhostButton } from '@/components/ui/GhostButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { lightColors, radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Props = {
   visible: boolean;
@@ -13,14 +14,27 @@ type Props = {
   onSubmit: (signatureSvg: string) => Promise<void>;
 };
 
-const WEBVIEW_STYLE = `
+/**
+ * The signature pad is a WebView, so the active palette has to be passed in
+ * explicitly. The pad itself stays paper-white with an ink-black pen in both
+ * modes: the stored SVG is later rendered on the white contract, and a
+ * cream-on-black stroke would come out invisible there.
+ */
+const pad = { paper: lightColors.surface, pen: lightColors.ink };
+
+function webStyleFor(colors: Colors): string {
+  return `
   .m-signature-pad { box-shadow: none; border: 1px solid ${colors.divider}; border-radius: 14px; }
   .m-signature-pad--body { border: none; }
   .m-signature-pad--footer { display: none; }
-  body, html { background-color: ${colors.surface}; }
+  body, html { background-color: ${pad.paper}; }
 `;
+}
 
 export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const webStyle = useMemo(() => webStyleFor(colors), [colors]);
   const ref = useRef<SignatureViewRef>(null);
   const [submitting, setSubmitting] = useState(false);
   const [empty, setEmpty] = useState(true);
@@ -67,11 +81,11 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
               onOK={handleOK}
               onEmpty={() => setEmpty(true)}
               onBegin={() => setEmpty(false)}
-              webStyle={WEBVIEW_STYLE}
+              webStyle={webStyle}
               dataURL=""
               imageType="image/svg+xml"
-              backgroundColor={colors.surface}
-              penColor={colors.ink}
+              backgroundColor={pad.paper}
+              penColor={pad.pen}
             />
           </View>
 
@@ -101,54 +115,60 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  closeButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  canvasWrap: {
-    height: 260,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  hint: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  footerButton: { flex: 1 },
-  submittingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h3,
+      color: colors.ink,
+    },
+    closeButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    canvasWrap: {
+      height: 260,
+      borderRadius: radii.md,
+      overflow: 'hidden',
+      backgroundColor: pad.paper,
+    },
+    hint: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    footerButton: { flex: 1 },
+    submittingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.veil,
+    },
+  });

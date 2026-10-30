@@ -1,14 +1,22 @@
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { InterTight_700Bold, InterTight_800ExtraBold } from '@expo-google-fonts/inter-tight';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+  type Theme as NavigationTheme,
+} from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import * as SystemUI from 'expo-system-ui';
+import { useEffect, useMemo } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { useSessionBootstrap } from '@/lib/session-bootstrap';
+import { ThemeProvider, useTheme } from '@/lib/theme-context';
 
 // Hold the native splash until the brand fonts are in, so nothing flashes in
 // the system font. The names here must match typography.fonts in lib/theme.ts.
@@ -36,8 +44,47 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F5EF' } }}>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <ThemedNavigation />
+      </SafeAreaProvider>
+    </ThemeProvider>
+  );
+}
+
+/**
+ * Everything below the ThemeProvider: native-stack backgrounds, the React
+ * Navigation theme (header / card colors), the status bar and the root view
+ * colour behind modals and during screen transitions all follow the palette.
+ */
+function ThemedNavigation() {
+  const { colors, isDark } = useTheme();
+
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.surface2);
+  }, [colors.surface2]);
+
+  const navigationTheme = useMemo<NavigationTheme>(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.gold,
+        background: colors.surface2,
+        card: colors.surface,
+        text: colors.ink,
+        border: colors.divider,
+        notification: colors.danger,
+      },
+    };
+  }, [colors, isDark]);
+
+  return (
+    <NavigationThemeProvider value={navigationTheme}>
+      <Stack
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface2 } }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
@@ -52,7 +99,7 @@ export default function RootLayout() {
         <Stack.Screen name="contract/[id]" />
         <Stack.Screen name="settings" />
       </Stack>
-      <StatusBar style="light" />
-    </SafeAreaProvider>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </NavigationThemeProvider>
   );
 }

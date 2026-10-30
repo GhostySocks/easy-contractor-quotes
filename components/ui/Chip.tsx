@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
-import { colors, radii, spacing } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 type Props = {
   label: string;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function Chip({ label, selected, onPress, style }: Props) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -27,31 +29,32 @@ export function Chip({ label, selected, onPress, style }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  chip: {
-    minHeight: 44,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipSelected: {
-    backgroundColor: colors.goldTint,
-    borderColor: colors.gold,
-  },
-  chipPressed: {
-    opacity: 0.85,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  labelSelected: {
-    color: colors.goldDark,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    chip: {
+      minHeight: 44,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipSelected: {
+      backgroundColor: colors.goldTint,
+      borderColor: colors.gold,
+    },
+    chipPressed: {
+      opacity: 0.85,
+    },
+    label: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 14,
+      color: colors.ink,
+    },
+    labelSelected: {
+      color: colors.goldDark,
+    },
+  });

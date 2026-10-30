@@ -12,7 +12,7 @@ import Animated, {
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { strings } from '@/lib/strings';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { lightColors, radii, spacing, typography } from '@/lib/theme';
 
 /**
  * Splash brand lockup. Shown while the root guard bootstraps auth + sub.
@@ -22,7 +22,13 @@ import { colors, radii, spacing, typography } from '@/lib/theme';
  * - "Easy Contractor / Quotes" stack + "PRO" eyebrow
  * - White tagline
  * - Animated gold loading bar + helper copy at the bottom
+ *
+ * This screen is deliberately NOT themed: it must match the native splash
+ * (#1A1A1A, see app.json) pixel-for-pixel in both modes, so it reads the
+ * light palette's ink/surface directly rather than the active theme.
  */
+const brand = lightColors;
+
 export function SplashBrand() {
   const barProgress = useSharedValue(0);
 
@@ -72,12 +78,12 @@ function IconBadge() {
     <View style={styles.iconShadow}>
       <View style={styles.iconBadge}>
         <LinearGradient
-          colors={['#F2CD5B', '#D4AF37', '#A88828']}
+          colors={[brand.goldLight, brand.gold, brand.goldDark]}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        <TrendingUp size={56} color={colors.ink} strokeWidth={2.5} />
+        <TrendingUp size={56} color={brand.onGold} strokeWidth={2.5} />
       </View>
     </View>
   );
@@ -98,9 +104,9 @@ function RadialGlow() {
     >
       <Defs>
         <RadialGradient id="glow" cx="50%" cy="25%" rx="80%" ry="60%">
-          <Stop offset="0%" stopColor="#D4AF37" stopOpacity="0.28" />
-          <Stop offset="55%" stopColor="#D4AF37" stopOpacity="0.06" />
-          <Stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
+          <Stop offset="0%" stopColor={brand.gold} stopOpacity="0.28" />
+          <Stop offset="55%" stopColor={brand.gold} stopOpacity="0.06" />
+          <Stop offset="100%" stopColor={brand.gold} stopOpacity="0" />
         </RadialGradient>
       </Defs>
       <Rect x="0" y="0" width="100" height="100" fill="url(#glow)" />
@@ -116,7 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     alignSelf: 'stretch',
-    backgroundColor: colors.ink,
+    backgroundColor: brand.ink,
   },
   inner: {
     flex: 1,
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   iconShadow: {
-    shadowColor: colors.goldDark,
+    shadowColor: brand.goldDark,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.5,
     shadowRadius: 24,
@@ -148,27 +154,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
+    fontFamily: typography.fonts.displayHeavy,
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '800',
-    color: colors.surface,
+    color: brand.surface,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   proBadge: {
+    fontFamily: typography.fonts.bodyStrong,
     fontSize: typography.sizes.label,
-    fontWeight: '800',
-    color: colors.gold,
+    color: brand.gold,
     letterSpacing: 6,
     marginTop: spacing.sm,
   },
   tagline: {
+    fontFamily: typography.fonts.body,
     marginTop: spacing.lg,
     fontSize: typography.sizes.bodySmall,
-    color: colors.surface,
+    color: brand.surface,
     opacity: 0.8,
     textAlign: 'center',
-    fontWeight: '500',
   },
   footer: {
     alignItems: 'center',
@@ -186,13 +192,13 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH,
     height: 3,
     borderRadius: radii.sm,
-    backgroundColor: colors.gold,
+    backgroundColor: brand.gold,
   },
   loading: {
+    fontFamily: typography.fonts.bodyStrong,
     fontSize: typography.sizes.label,
-    color: colors.goldDark,
+    color: brand.goldDark,
     opacity: 0.6,
-    fontWeight: '600',
     letterSpacing: 0.4,
   },
 });

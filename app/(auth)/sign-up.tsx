@@ -9,9 +9,11 @@ import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
 import { commitOnboardingProfile } from '@/lib/onboarding-commit';
 import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 export default function SignUp() {
+  const styles = useStyles(makeStyles);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -88,42 +90,44 @@ export default function SignUp() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-    paddingHorizontal: spacing.xl,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  title: {
-    fontSize: typography.sizes.h1,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  subtitle: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-  },
-  form: {
-    gap: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  footer: {
-    paddingVertical: spacing.xl,
-    gap: spacing.md,
-  },
-  link: {
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  linkLabel: {
-    color: colors.ink2,
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.xl,
+    },
+    body: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: spacing.lg,
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h1,
+      color: colors.ink,
+    },
+    subtitle: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    form: {
+      gap: spacing.lg,
+      paddingTop: spacing.md,
+    },
+    footer: {
+      paddingVertical: spacing.xl,
+      gap: spacing.md,
+    },
+    link: {
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    linkLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      color: colors.ink2,
+      fontSize: typography.sizes.bodySmall,
+    },
+  });

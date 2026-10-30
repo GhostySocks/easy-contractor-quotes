@@ -25,9 +25,12 @@ import {
   type JobWithCustomer,
 } from '@/lib/jobs';
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function CalendarScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [visibleMonth, setVisibleMonth] = useState(() => firstOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => isoDay(new Date()));
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
@@ -63,7 +66,10 @@ export default function CalendarScreen() {
     }
   }
 
-  const markedDates = useMemo(() => buildMarkedDates(jobs, selectedDay), [jobs, selectedDay]);
+  const markedDates = useMemo(
+    () => buildMarkedDates(jobs, selectedDay, colors),
+    [jobs, selectedDay, colors],
+  );
   const dayJobs = useMemo(() => jobs.filter((j) => dayOf(j) === selectedDay), [jobs, selectedDay]);
 
   const selectedDate = new Date(`${selectedDay}T00:00:00`);
@@ -84,7 +90,7 @@ export default function CalendarScreen() {
             firstDay={0}
             enableSwipeMonths
             markedDates={markedDates}
-            theme={calendarTheme}
+            theme={calendarThemeFor(colors)}
           />
         </View>
 
@@ -140,6 +146,8 @@ function UnscheduledPickerSheet({
   onClose: () => void;
   onPick: (job: JobWithCustomer) => void | Promise<void>;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -219,6 +227,7 @@ function UnscheduledPickerSheet({
 function buildMarkedDates(
   jobs: JobWithCustomer[],
   selectedDay: string,
+  colors: Colors,
 ): Record<string, MarkedDate> {
   const marks: Record<string, MarkedDate> = {};
   for (const job of jobs) {
@@ -229,7 +238,7 @@ function buildMarkedDates(
   marks[selectedDay] = {
     ...(marks[selectedDay] ?? {}),
     selected: true,
-    selectedColor: colors.ink,
+    selectedColor: colors.selection,
     selectedTextColor: colors.gold,
   };
   return marks;
@@ -307,11 +316,11 @@ function toTodayJob(row: JobWithCustomer): TodayJob {
   };
 }
 
-const calendarTheme = {
+const calendarThemeFor = (colors: Colors) => ({
   backgroundColor: colors.surface,
   calendarBackground: colors.surface,
   textSectionTitleColor: colors.ink3,
-  selectedDayBackgroundColor: colors.ink,
+  selectedDayBackgroundColor: colors.selection,
   selectedDayTextColor: colors.gold,
   todayTextColor: colors.goldDark,
   dayTextColor: colors.ink,
@@ -324,185 +333,189 @@ const calendarTheme = {
   textMonthFontSize: 18,
   textDayFontSize: 16,
   textDayHeaderFontSize: 12,
-};
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  scroll: {
-    padding: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-    gap: spacing.xl,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  calendarCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    overflow: 'hidden',
-  },
-  daySection: {
-    gap: spacing.md,
-  },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  dayLabel: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-    flexShrink: 1,
-  },
-  dayCount: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '600',
-  },
-  jobsList: {
-    gap: spacing.md,
-  },
-  emptyState: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    paddingVertical: spacing.lg,
-    textAlign: 'center',
-  },
-  scheduleCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 56,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderStyle: 'dashed',
-    backgroundColor: colors.surface,
-  },
-  scheduleCtaPressed: {
-    backgroundColor: colors.goldTint,
-  },
-  scheduleCtaLabel: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.goldDark,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(26, 26, 26, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '85%',
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.huge,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.divider,
-  },
-  sheetTitle: {
-    fontSize: typography.sizes.h2,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  sheetClose: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetScroll: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  sheetEmpty: {
-    paddingVertical: spacing.huge,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  sheetEmptyTitle: {
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  sheetEmptySub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    textAlign: 'center',
-  },
-  pickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    minHeight: 60,
-    backgroundColor: colors.surface,
-  },
-  pickRowPressed: {
-    backgroundColor: colors.surface2,
-  },
-  pickIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickBody: {
-    flex: 1,
-    gap: 2,
-  },
-  pickTitle: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.ink,
-  },
-  pickSub: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  pickAmount: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
 });
+
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    scroll: {
+      padding: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+      gap: spacing.xl,
+    },
+    header: {
+      gap: spacing.xs,
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.display,
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    calendarCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      overflow: 'hidden',
+    },
+    daySection: {
+      gap: spacing.md,
+    },
+    dayHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+    },
+    dayLabel: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h2,
+      color: colors.ink,
+      flexShrink: 1,
+    },
+    dayCount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    jobsList: {
+      gap: spacing.md,
+    },
+    emptyState: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      paddingVertical: spacing.lg,
+      textAlign: 'center',
+    },
+    scheduleCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: 56,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      borderStyle: 'dashed',
+      backgroundColor: colors.surface,
+    },
+    scheduleCtaPressed: {
+      backgroundColor: colors.goldTint,
+    },
+    scheduleCtaLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
+    },
+    sheetBackdrop: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      maxHeight: '85%',
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.huge,
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+    },
+    sheetTitle: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.h2,
+      color: colors.ink,
+    },
+    sheetClose: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sheetScroll: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+    },
+    sheetEmpty: {
+      paddingVertical: spacing.huge,
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    sheetEmptyTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+    },
+    sheetEmptySub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      textAlign: 'center',
+    },
+    pickRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      minHeight: 60,
+      backgroundColor: colors.surface,
+    },
+    pickRowPressed: {
+      backgroundColor: colors.surface2,
+    },
+    pickIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pickBody: {
+      flex: 1,
+      gap: 2,
+    },
+    pickTitle: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+    },
+    pickSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+    },
+    pickAmount: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+  });

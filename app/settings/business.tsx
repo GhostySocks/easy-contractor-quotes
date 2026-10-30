@@ -20,11 +20,13 @@ import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { fetchProfile, updateProfile } from '@/lib/profile';
 import { strings } from '@/lib/strings';
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 const TRADES: TradeCode[] = ['handyman', 'plumber', 'electrician', 'hvac', 'landscaping', 'other'];
 
 export default function BusinessSettings() {
+  const styles = useStyles(makeStyles);
   const user = useAuth((s) => s.user);
   const [businessName, setBusinessName] = useState('');
   const [stateCode, setStateCode] = useState('');
@@ -164,6 +166,8 @@ export default function BusinessSettings() {
 }
 
 function BackButton() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -178,74 +182,75 @@ function BackButton() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-    gap: spacing.lg,
-  },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginLeft: -spacing.xs,
-    minHeight: 44,
-  },
-  backPressed: {
-    opacity: 0.6,
-  },
-  backLabel: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  titleBlock: {
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  tradeBlock: {
-    gap: spacing.sm,
-  },
-  fieldLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: colors.ink2,
-  },
-  tradeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  tradeItem: {
-    flexBasis: '47%',
-    paddingVertical: spacing.md,
-  },
-  footer: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.divider,
-    backgroundColor: colors.surface2,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    flex: {
+      flex: 1,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+      gap: spacing.lg,
+    },
+    back: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginLeft: -spacing.xs,
+      minHeight: 44,
+    },
+    backPressed: {
+      opacity: 0.6,
+    },
+    backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      marginLeft: 2,
+    },
+    titleBlock: {
+      gap: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.display,
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    tradeBlock: {
+      gap: spacing.sm,
+    },
+    fieldLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      letterSpacing: 0.5,
+      color: colors.ink2,
+    },
+    tradeGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    tradeItem: {
+      flexBasis: '47%',
+      paddingVertical: spacing.md,
+    },
+    footer: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.divider,
+      backgroundColor: colors.surface2,
+    },
+  });

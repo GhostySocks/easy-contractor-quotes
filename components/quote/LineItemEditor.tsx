@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { LineItem } from '@/lib/ai';
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Props = {
   items: LineItem[];
@@ -11,6 +12,8 @@ type Props = {
 };
 
 export function LineItemEditor({ items, onChange }: Props) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   function updateItem(index: number, patch: Partial<LineItem>) {
     const next = items.map((item, i) => {
       if (i !== index) return item;
@@ -111,102 +114,108 @@ function dollarInputToCents(text: string): number {
   return Math.round(dollars * 100);
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-  },
-  sectionLabel: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  labelField: {
-    backgroundColor: colors.surface2,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: typography.sizes.body,
-    fontWeight: '600',
-    color: colors.ink,
-    minHeight: 44,
-  },
-  numberRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-  },
-  numberGroup: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  totalGroup: {
-    gap: spacing.xs,
-    alignItems: 'flex-end',
-    minWidth: 80,
-  },
-  numberLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.ink3,
-  },
-  numberField: {
-    backgroundColor: colors.surface2,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-    minHeight: 40,
-  },
-  qtyField: {
-    textAlign: 'center',
-  },
-  priceField: {
-    textAlign: 'right',
-  },
-  total: {
-    fontSize: typography.sizes.body,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-    paddingVertical: spacing.sm,
-  },
-  trash: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  addButton: {
-    marginTop: spacing.xs,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    borderRadius: radii.md,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-  },
-  addLabel: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '700',
-    color: colors.goldDark,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+    },
+    sectionLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    labelField: {
+      fontFamily: typography.fonts.bodyStrong,
+      backgroundColor: colors.surface2,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      minHeight: 44,
+    },
+    numberRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+    },
+    numberGroup: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    totalGroup: {
+      gap: spacing.xs,
+      alignItems: 'flex-end',
+      minWidth: 80,
+    },
+    numberLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: colors.ink3,
+    },
+    numberField: {
+      fontFamily: typography.fonts.numeric,
+      backgroundColor: colors.surface2,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+      minHeight: 40,
+    },
+    qtyField: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      textAlign: 'center',
+    },
+    priceField: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      textAlign: 'right',
+    },
+    total: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+      paddingVertical: spacing.sm,
+    },
+    trash: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
+    },
+    addButton: {
+      marginTop: spacing.xs,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      borderRadius: radii.md,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+    },
+    addLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.goldDark,
+    },
+  });

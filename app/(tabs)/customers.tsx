@@ -14,9 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listCustomers, type CustomerWithJobs } from '@/lib/customers';
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function CustomersScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [customers, setCustomers] = useState<CustomerWithJobs[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -94,6 +97,7 @@ function CustomerListItem({
   customer: CustomerWithJobs;
   onPress: () => void;
 }) {
+  const styles = useStyles(makeStyles);
   const subtitle = customer.phone ?? customer.email ?? 'No contact info yet';
   const isRepeat = customer.job_count >= 2;
 
@@ -125,6 +129,7 @@ function CustomerListItem({
 }
 
 function RepeatBadge() {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.repeatBadge}>
       <Text style={styles.repeatBadgeLabel}>REPEAT</Text>
@@ -139,6 +144,8 @@ function SearchField({
   value: string;
   onChangeText: (v: string) => void;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.search}>
       <Search size={18} color={colors.ink3} strokeWidth={2} />
@@ -166,125 +173,128 @@ function SearchField({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-    backgroundColor: colors.surface2,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  count: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '600',
-  },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '500',
-    paddingVertical: 0,
-  },
-  listContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge + spacing.huge,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  rowPressed: {
-    opacity: 0.75,
-  },
-  middleCol: {
-    flex: 1,
-    gap: 4,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  name: {
-    flexShrink: 1,
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.ink,
-    lineHeight: 22,
-  },
-  sub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  rightCol: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  ltv: {
-    fontSize: typography.sizes.body,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  ltvLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.ink3,
-  },
-  repeatBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
-    backgroundColor: colors.goldTint,
-  },
-  repeatBadgeLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    color: colors.goldDark,
-  },
-  emptyState: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    paddingVertical: spacing.huge,
-    paddingHorizontal: spacing.lg,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.lg,
+      gap: spacing.md,
+      backgroundColor: colors.surface2,
+    },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.display,
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    count: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingHorizontal: spacing.md,
+      minHeight: 48,
+    },
+    searchInput: {
+      fontFamily: typography.fonts.body,
+      flex: 1,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      paddingVertical: 0,
+    },
+    listContent: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge + spacing.huge,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    rowPressed: {
+      opacity: 0.75,
+    },
+    middleCol: {
+      flex: 1,
+      gap: 4,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    name: {
+      fontFamily: typography.fonts.bodyStrong,
+      flexShrink: 1,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    sub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    rightCol: {
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    ltv: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    ltvLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: colors.ink3,
+    },
+    repeatBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldTint,
+    },
+    repeatBadgeLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: colors.goldDark,
+    },
+    emptyState: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+      paddingVertical: spacing.huge,
+      paddingHorizontal: spacing.lg,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  });

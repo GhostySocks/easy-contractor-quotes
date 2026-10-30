@@ -8,9 +8,12 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { DEV_BYPASS_PAYWALL } from '@/lib/dev-flags';
 import { type SubscriptionRow } from '@/lib/entitlement';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export default function SubscriptionSettings() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const subscription = useAuth((s) => s.subscription);
 
   const state = describeState(subscription);
@@ -84,6 +87,8 @@ export default function SubscriptionSettings() {
 }
 
 function BackButton() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -99,6 +104,7 @@ function BackButton() {
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -162,127 +168,130 @@ function formatLongDate(iso: string): string {
   });
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-  },
-  scroll: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.huge,
-    gap: spacing.lg,
-  },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginLeft: -spacing.xs,
-    minHeight: 44,
-  },
-  backPressed: {
-    opacity: 0.6,
-  },
-  backLabel: {
-    fontSize: typography.sizes.body,
-    color: colors.ink,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  titleBlock: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.sizes.display,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  hero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.ink,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  heroBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroBody: {
-    flex: 1,
-    gap: 2,
-  },
-  heroLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: '800',
-    color: colors.gold,
-  },
-  heroSub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.goldTint,
-    opacity: 0.85,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.divider,
-  },
-  detailLabel: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '600',
-  },
-  detailValue: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink,
-    fontWeight: '700',
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  devCallout: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.warn,
-    backgroundColor: 'rgba(200, 138, 0, 0.08)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  devLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: colors.warn,
-  },
-  devBody: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-    lineHeight: 22,
-  },
-  actions: {
-    gap: spacing.sm,
-    paddingTop: spacing.md,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+    },
+    scroll: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.huge,
+      gap: spacing.lg,
+    },
+    back: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginLeft: -spacing.xs,
+      minHeight: 44,
+    },
+    backPressed: {
+      opacity: 0.6,
+    },
+    backLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      marginLeft: 2,
+    },
+    titleBlock: {
+      gap: spacing.xs,
+    },
+    title: {
+      fontFamily: typography.fonts.displayHeavy,
+      fontSize: typography.sizes.display,
+      color: colors.ink,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    hero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.inverseSurface,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+    },
+    heroBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: radii.sm,
+      backgroundColor: colors.goldWash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroBody: {
+      flex: 1,
+      gap: 2,
+    },
+    heroLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.gold,
+    },
+    heroSub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.onInverseMuted,
+      opacity: 0.85,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+    },
+    detailLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    detailValue: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink,
+      flexShrink: 1,
+      textAlign: 'right',
+    },
+    devCallout: {
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.warn,
+      backgroundColor: colors.warnWash,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    devLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      color: colors.warn,
+    },
+    devBody: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      lineHeight: 22,
+    },
+    actions: {
+      gap: spacing.sm,
+      paddingTop: spacing.md,
+    },
+  });

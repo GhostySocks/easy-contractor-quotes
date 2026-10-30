@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 type Stat = {
   count: number;
@@ -21,6 +22,7 @@ export function MoneyPendingCard({
   unsignedContracts,
   overdueCount,
 }: Props) {
+  const styles = useStyles(makeStyles);
   const { dollars, cents } = splitCents(totalCents);
 
   const stats: Stat[] = [
@@ -63,87 +65,89 @@ function splitCents(total: number): { dollars: string; cents: string } {
   return { dollars, cents };
 }
 
-const STAT_BG = 'rgba(255,255,255,0.05)';
-const STAT_BORDER = 'rgba(255,255,255,0.08)';
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.ink,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.gold,
-  },
-  eyebrow: {
-    color: colors.gold,
-    fontSize: typography.sizes.label,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  amountSymbol: {
-    color: colors.gold,
-    fontSize: 40,
-    lineHeight: 48,
-    fontWeight: '800',
-    marginRight: 2,
-  },
-  amountDollars: {
-    color: colors.surface,
-    fontSize: 44,
-    lineHeight: 48,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  amountCents: {
-    color: colors.ink3,
-    fontSize: 22,
-    lineHeight: 26,
-    fontWeight: '700',
-    marginTop: 6,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  stat: {
-    flex: 1,
-    backgroundColor: STAT_BG,
-    borderWidth: 1,
-    borderColor: STAT_BORDER,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  statCount: {
-    color: colors.gold,
-    fontSize: 20,
-    fontWeight: '800',
-    lineHeight: 24,
-  },
-  statCountDanger: {
-    color: colors.danger,
-  },
-  statLabel: {
-    color: colors.surface,
-    opacity: 0.85,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 16,
-    marginTop: 2,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.inverseSurface,
+      borderRadius: radii.lg,
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    eyebrowRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.gold,
+    },
+    eyebrow: {
+      fontFamily: typography.fonts.bodyStrong,
+      color: colors.gold,
+      fontSize: typography.sizes.label,
+      letterSpacing: 1.2,
+    },
+    amountRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    amountSymbol: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      color: colors.gold,
+      fontSize: 40,
+      lineHeight: 48,
+      marginRight: 2,
+    },
+    amountDollars: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      color: colors.onInverse,
+      fontSize: 44,
+      lineHeight: 48,
+      letterSpacing: -0.5,
+    },
+    amountCents: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      color: colors.ink3,
+      fontSize: 22,
+      lineHeight: 26,
+      marginTop: 6,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    stat: {
+      flex: 1,
+      backgroundColor: colors.inverseTint,
+      borderWidth: 1,
+      borderColor: colors.inverseDivider,
+      borderRadius: radii.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    statCount: {
+      fontFamily: typography.fonts.numeric,
+      fontVariant: ['tabular-nums'],
+      color: colors.gold,
+      fontSize: 20,
+      lineHeight: 24,
+    },
+    statCountDanger: {
+      color: colors.danger,
+    },
+    statLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      color: colors.onInverse,
+      opacity: 0.85,
+      fontSize: 13,
+      lineHeight: 16,
+      marginTop: 2,
+    },
+  });

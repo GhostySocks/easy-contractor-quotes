@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export type JobStatus = 'in_progress' | 'scheduled' | 'completed' | 'draft';
 
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function TodayJobRow({ job, onPress, style }: Props) {
+  const styles = useStyles(makeStyles);
   const hasTime = !!job.time;
   return (
     <Pressable
@@ -60,7 +62,9 @@ export function TodayJobRow({ job, onPress, style }: Props) {
 }
 
 function StatusPill({ status }: { status: JobStatus }) {
-  const { label, bg, fg } = pillStyle(status);
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { label, bg, fg } = pillStyle(status, colors);
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
       <Text style={[styles.pillText, { color: fg }]}>{label}</Text>
@@ -68,7 +72,7 @@ function StatusPill({ status }: { status: JobStatus }) {
   );
 }
 
-function pillStyle(status: JobStatus): { label: string; bg: string; fg: string } {
+function pillStyle(status: JobStatus, colors: Colors): { label: string; bg: string; fg: string } {
   switch (status) {
     case 'in_progress':
       return { label: 'IN PROGRESS', bg: colors.goldTint, fg: colors.goldDark };
@@ -86,70 +90,71 @@ function formatCentsShort(cents: number): string {
   return `$${whole.toLocaleString('en-US')}`;
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  rowPressed: {
-    opacity: 0.75,
-  },
-  timeCol: {
-    width: 52,
-    alignItems: 'flex-start',
-  },
-  time: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  meridiem: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    color: colors.ink3,
-    letterSpacing: 0.6,
-  },
-  middleCol: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontSize: typography.sizes.body,
-    fontWeight: '700',
-    color: colors.ink,
-    lineHeight: 22,
-  },
-  sub: {
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink3,
-    fontWeight: '500',
-  },
-  rightCol: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  pill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
-  },
-  pillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  amount: {
-    fontSize: typography.sizes.body,
-    fontWeight: '800',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    rowPressed: {
+      opacity: 0.75,
+    },
+    timeCol: {
+      width: 52,
+      alignItems: 'flex-start',
+    },
+    time: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: 18,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    meridiem: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      letterSpacing: 0.6,
+    },
+    middleCol: {
+      flex: 1,
+      gap: 2,
+    },
+    title: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      lineHeight: 22,
+    },
+    sub: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
+    rightCol: {
+      alignItems: 'flex-end',
+      gap: spacing.xs,
+    },
+    pill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radii.sm,
+    },
+    pillText: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: 10,
+      letterSpacing: 0.6,
+    },
+    amount: {
+      fontFamily: typography.fonts.numeric,
+      fontSize: typography.sizes.body,
+      color: colors.ink,
+      fontVariant: ['tabular-nums'],
+    },
+  });
