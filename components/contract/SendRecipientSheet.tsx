@@ -13,7 +13,8 @@ import {
 import { GhostButton } from '@/components/ui/GhostButton';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 export type Recipient = {
   name: string;
@@ -34,6 +35,8 @@ type Props = {
 };
 
 export function SendRecipientSheet({ visible, initialRecipient, onCancel, onSend }: Props) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const [name, setName] = useState(initialRecipient.name);
   const [email, setEmail] = useState(initialRecipient.email);
   const [phone, setPhone] = useState(initialRecipient.phone);
@@ -164,6 +167,8 @@ function ChannelToggle({
   on: boolean;
   onToggle: () => void;
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const Icon = icon === 'mail' ? Mail : MessageSquare;
   return (
     <Pressable
@@ -197,75 +202,76 @@ function validate(input: { email: string; phone: string; emailOn: boolean; smsOn
   return { email, phone };
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-end',
-  },
-  sheetWrap: {
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
-  closeButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  channels: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  channel: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    minHeight: 48,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  channelOn: {
-    backgroundColor: colors.goldTint,
-    borderColor: colors.gold,
-  },
-  channelLabel: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: '600',
-    color: colors.ink2,
-  },
-  channelLabelOn: {
-    color: colors.ink,
-    fontWeight: '700',
-  },
-  hint: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    lineHeight: 18,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  footerButton: { flex: 1 },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: 'flex-end',
+    },
+    sheetWrap: {
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: { fontSize: typography.sizes.h3, fontWeight: '800', color: colors.ink },
+    closeButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    channels: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    channel: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      minHeight: 48,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    channelOn: {
+      backgroundColor: colors.goldTint,
+      borderColor: colors.gold,
+    },
+    channelLabel: {
+      fontSize: typography.sizes.bodySmall,
+      fontWeight: '600',
+      color: colors.ink2,
+    },
+    channelLabelOn: {
+      color: colors.ink,
+      fontWeight: '700',
+    },
+    hint: {
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      lineHeight: 18,
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    footerButton: { flex: 1 },
+  });

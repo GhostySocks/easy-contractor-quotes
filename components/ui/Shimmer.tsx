@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, motion } from '@/lib/theme';
+import { motion } from '@/lib/theme';
 
 type Props = {
   children: React.ReactNode;
@@ -51,9 +51,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
-export const shimmerColors = {
-  ink: colors.ink,
-  gold: colors.gold,
-  goldTint: colors.goldTint,
-};

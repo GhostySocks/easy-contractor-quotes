@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radii } from '@/lib/theme';
+import { radii, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 type Props = {
   /** 0 to 1 */
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function ProgressBar({ value }: Props) {
+  const styles = useStyles(makeStyles);
   const clamped = Math.max(0, Math.min(1, value));
   const percent = `${clamped * 100}%` as const;
   return (
@@ -21,16 +23,17 @@ export function ProgressBar({ value }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  track: {
-    height: 6,
-    backgroundColor: colors.divider,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: 6,
-    backgroundColor: colors.gold,
-    borderRadius: radii.sm,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    track: {
+      height: 6,
+      backgroundColor: colors.divider,
+      borderRadius: radii.sm,
+      overflow: 'hidden',
+    },
+    fill: {
+      height: 6,
+      backgroundColor: colors.gold,
+      borderRadius: radii.sm,
+    },
+  });

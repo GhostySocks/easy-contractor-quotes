@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatCents } from '@/lib/pricing';
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 export type PriceBucket = 'low' | 'most_likely' | 'high';
 
@@ -26,6 +27,7 @@ export function PriceRangeChips({
   selected,
   onSelect,
 }: Props) {
+  const styles = useStyles(makeStyles);
   const options: { key: PriceBucket; cents: number }[] = [
     { key: 'low', cents: low_cents },
     { key: 'most_likely', cents: most_likely_cents },
@@ -57,41 +59,42 @@ export function PriceRangeChips({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  chip: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderColor: colors.divider,
-    borderWidth: 1,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    gap: 2,
-  },
-  chipSelected: {
-    backgroundColor: colors.goldTint,
-    borderColor: colors.gold,
-  },
-  label: {
-    fontSize: typography.sizes.label,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  labelSelected: {
-    color: colors.goldDark,
-  },
-  amount: {
-    fontSize: typography.sizes.h3,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  amountSelected: {
-    color: colors.goldDark,
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    chip: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.md,
+      padding: spacing.md,
+      alignItems: 'center',
+      gap: 2,
+    },
+    chipSelected: {
+      backgroundColor: colors.goldTint,
+      borderColor: colors.gold,
+    },
+    label: {
+      fontSize: typography.sizes.label,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+      color: colors.ink3,
+    },
+    labelSelected: {
+      color: colors.goldDark,
+    },
+    amount: {
+      fontSize: typography.sizes.h3,
+      fontWeight: '800',
+      color: colors.ink,
+    },
+    amountSelected: {
+      color: colors.goldDark,
+    },
+  });

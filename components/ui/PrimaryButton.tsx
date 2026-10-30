@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Props = {
   label: string;
@@ -19,6 +20,8 @@ export function PrimaryButton({
   style,
   accessibilityLabel,
 }: Props) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -35,7 +38,7 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.ink} />
+        <ActivityIndicator color={colors.onGold} />
       ) : (
         <Text style={styles.label}>{label}</Text>
       )}
@@ -43,32 +46,33 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    minHeight: typography.minTouchTarget,
-    borderRadius: radii.lg,
-    backgroundColor: colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    shadowColor: colors.goldDark,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 4,
-  },
-  pressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.94,
-  },
-  disabled: {
-    opacity: 0.5,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  label: {
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    button: {
+      minHeight: typography.minTouchTarget,
+      borderRadius: radii.lg,
+      backgroundColor: colors.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+      shadowColor: colors.goldDark,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.4,
+      shadowRadius: 24,
+      elevation: 4,
+    },
+    pressed: {
+      transform: [{ scale: 0.98 }],
+      opacity: 0.94,
+    },
+    disabled: {
+      opacity: 0.5,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    label: {
+      color: colors.onGold,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+  });

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 type Props = {
   label: string;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function GhostButton({ label, onPress, disabled, style, accessibilityLabel }: Props) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -29,26 +31,27 @@ export function GhostButton({ label, onPress, disabled, style, accessibilityLabe
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    minHeight: typography.minTouchTarget,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    button: {
+      minHeight: typography.minTouchTarget,
+      borderRadius: radii.lg,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    label: {
+      color: colors.ink,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+  });

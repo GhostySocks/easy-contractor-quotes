@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '@/lib/theme';
+import { spacing, typography, type Colors } from '@/lib/theme';
+import { useStyles } from '@/lib/theme-context';
 
 type Props = {
   name: string;
@@ -12,6 +13,7 @@ type Props = {
  * Replaces with the real screen as each feature lands.
  */
 export function ScreenStub({ name, subtitle }: Props) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Route</Text>
@@ -21,31 +23,32 @@ export function ScreenStub({ name, subtitle }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface2,
-    padding: spacing.xl,
-  },
-  label: {
-    fontSize: typography.sizes.label,
-    color: colors.ink3,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
-  name: {
-    fontSize: typography.sizes.h1,
-    fontWeight: '800',
-    color: colors.ink,
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: spacing.md,
-    fontSize: typography.sizes.bodySmall,
-    color: colors.ink2,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface2,
+      padding: spacing.xl,
+    },
+    label: {
+      fontSize: typography.sizes.label,
+      color: colors.ink3,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      marginBottom: spacing.sm,
+    },
+    name: {
+      fontSize: typography.sizes.h1,
+      fontWeight: '800',
+      color: colors.ink,
+      textAlign: 'center',
+    },
+    subtitle: {
+      marginTop: spacing.md,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+      textAlign: 'center',
+    },
+  });
