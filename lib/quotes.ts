@@ -49,6 +49,9 @@ export type QuoteRow = {
   total_low_cents: number | null;
   total_high_cents: number | null;
   state_notes: string | null;
+  job_type: string | null;
+  requested_start_at: string | null;
+  photos: string[];
   status: QuoteStatus;
   sent_at: string | null;
   accepted_at: string | null;
