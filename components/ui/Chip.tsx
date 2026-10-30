@@ -17,6 +17,7 @@ export function Chip({ label, selected, onPress, style }: Props) {
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
       onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8 }}
       style={({ pressed }) => [
         styles.chip,
         selected && styles.chipSelected,

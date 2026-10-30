@@ -70,6 +70,7 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
               accessibilityLabel="Cancel"
               onPress={onCancel}
               style={styles.closeButton}
+              hitSlop={10}
             >
               <X size={22} color={colors.ink2} strokeWidth={2} />
             </Pressable>
@@ -155,7 +156,7 @@ const makeStyles = (colors: Colors) =>
     },
     hint: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textAlign: 'center',
     },

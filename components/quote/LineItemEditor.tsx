@@ -81,7 +81,7 @@ export function LineItemEditor({ items, onChange }: Props) {
               accessibilityRole="button"
               accessibilityLabel={`Remove ${item.label || 'line item'}`}
               onPress={() => removeItem(index)}
-              hitSlop={8}
+              hitSlop={10}
               style={styles.trash}
             >
               <Trash2 size={18} color={colors.ink3} strokeWidth={2} />
@@ -212,6 +212,7 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.divider,
       borderWidth: 1,
       borderStyle: 'dashed',
+      minHeight: typography.minTouchTarget,
     },
     addLabel: {
       fontFamily: typography.fonts.bodyStrong,

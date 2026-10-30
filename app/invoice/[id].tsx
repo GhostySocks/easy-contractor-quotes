@@ -181,6 +181,7 @@ export default function InvoiceDetail() {
           accessibilityLabel="Back"
           onPress={() => router.back()}
           style={styles.back}
+          hitSlop={10}
         >
           <ChevronLeft size={22} color={colors.ink2} strokeWidth={2} />
         </Pressable>
@@ -208,7 +209,7 @@ export default function InvoiceDetail() {
                   accessibilityRole="button"
                   accessibilityLabel="Edit line items to actual costs"
                   onPress={startEdit}
-                  hitSlop={8}
+                  hitSlop={14}
                   style={styles.editLink}
                 >
                   <Pencil size={16} color={colors.goldDark} strokeWidth={2} />
@@ -522,7 +523,7 @@ const makeStyles = (colors: Colors) =>
     },
     footerHint: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
       textAlign: 'center',
     },

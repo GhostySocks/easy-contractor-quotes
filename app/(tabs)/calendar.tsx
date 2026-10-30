@@ -490,7 +490,7 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.sm,
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
-      minHeight: 56,
+      minHeight: typography.minTouchTarget,
       borderRadius: radii.lg,
       borderWidth: 1,
       borderColor: colors.divider,
@@ -509,7 +509,7 @@ const makeStyles = (colors: Colors) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      minHeight: 48,
+      minHeight: typography.minTouchTarget,
       paddingHorizontal: spacing.lg,
       borderRadius: radii.md,
       backgroundColor: colors.surface,
@@ -527,7 +527,7 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.sm,
-      minHeight: 48,
+      minHeight: typography.minTouchTarget,
     },
     blockCtaLabel: {
       fontFamily: typography.fonts.bodyStrong,
@@ -624,7 +624,7 @@ const makeStyles = (colors: Colors) =>
     },
     pickSub: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
     },
     pickAmount: {

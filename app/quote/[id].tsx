@@ -184,6 +184,7 @@ export default function QuoteDetail() {
           accessibilityRole="button"
           accessibilityLabel="Back"
           style={styles.back}
+          hitSlop={10}
           onPress={() => router.replace('/(tabs)/home')}
         >
           <ChevronLeft size={22} color={colors.ink2} strokeWidth={2} />

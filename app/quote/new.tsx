@@ -273,6 +273,7 @@ export default function NewQuote() {
           accessibilityRole="button"
           accessibilityLabel="Close"
           style={styles.close}
+          hitSlop={10}
           onPress={() => router.back()}
         >
           <X size={22} color={colors.ink2} strokeWidth={2} />
@@ -487,9 +488,9 @@ const makeStyles = (colors: Colors) =>
     },
     hint: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      lineHeight: 16,
+      lineHeight: 20,
       marginTop: -spacing.sm,
     },
     dateRow: {

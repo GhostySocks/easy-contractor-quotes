@@ -124,7 +124,7 @@ export default function JobsScreen() {
               accessibilityState={{ selected: sort === o.key }}
               accessibilityLabel={`Sort by ${o.label}`}
               onPress={() => setSort(o.key)}
-              hitSlop={8}
+              hitSlop={{ top: 14, bottom: 14, left: 6, right: 6 }}
               style={styles.sortOption}
             >
               <Text style={[styles.sortOptionLabel, sort === o.key && styles.sortOptionActive]}>

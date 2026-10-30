@@ -239,7 +239,7 @@ const makeStyles = (colors: Colors) =>
     },
     slot: {
       width: SLOT_WIDTH,
-      minHeight: 48,
+      minHeight: typography.minTouchTarget,
       borderRadius: radii.md,
       borderWidth: 1,
       borderColor: colors.divider,

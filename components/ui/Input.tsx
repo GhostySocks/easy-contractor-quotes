@@ -44,7 +44,7 @@ const makeStyles = (colors: Colors) =>
     },
     label: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: colors.ink3,
@@ -66,7 +66,7 @@ const makeStyles = (colors: Colors) =>
     },
     error: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.danger,
     },
   });

@@ -88,6 +88,7 @@ export function SendRecipientSheet({ visible, initialRecipient, onCancel, onSend
                 accessibilityLabel="Cancel"
                 onPress={onCancel}
                 style={styles.closeButton}
+                hitSlop={10}
               >
                 <X size={22} color={colors.ink2} strokeWidth={2} />
               </Pressable>
@@ -248,7 +249,7 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.sm,
-      minHeight: 48,
+      minHeight: typography.minTouchTarget,
       borderRadius: radii.md,
       backgroundColor: colors.surface2,
       borderWidth: 1,
@@ -269,9 +270,9 @@ const makeStyles = (colors: Colors) =>
     },
     hint: {
       fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.label,
+      fontSize: typography.sizes.bodySmall,
       color: colors.ink3,
-      lineHeight: 18,
+      lineHeight: 20,
     },
     footer: {
       flexDirection: 'row',
