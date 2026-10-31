@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState, Platform } from 'react-native';
 
 /**
  * Supabase client.
@@ -44,6 +45,18 @@ export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
     detectSessionInUrl: false,
   },
 });
+
+// Renew the login only while the app is in the foreground, and restart the
+// renewal every time it comes back. Without this a phone that sat in the
+// background overnight can wake up with a stuck refresh, and every request
+// waits on it (Generate spun forever). Supabase's recommended React Native
+// setup; web keeps its own timers.
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') void supabase.auth.startAutoRefresh();
+    else void supabase.auth.stopAutoRefresh();
+  });
+}
 
 export type SupabaseClient = typeof supabase;
 
