@@ -41,6 +41,10 @@ import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
+import { withTimeout } from '@/lib/with-timeout';
+
+// The customer save runs before the AI call, which has its own 30 s limit.
+const CUSTOMER_SAVE_TIMEOUT_MS = 15_000;
 
 const TRADES: TradeCode[] = ['handyman', 'plumber', 'electrician', 'hvac', 'landscaping', 'other'];
 
@@ -228,7 +232,11 @@ export default function NewQuote() {
       // duplicate of an existing customer.
       let resolvedCustomerId = customerId;
       if (!resolvedCustomerId && customerName.trim()) {
-        const created = await createCustomer({ name: customerName });
+        const created = await withTimeout(
+          createCustomer({ name: customerName }),
+          CUSTOMER_SAVE_TIMEOUT_MS,
+          'Saving the customer',
+        );
         if (!created) {
           Alert.alert("Couldn't link customer", 'Try picking a customer from the list.');
           return;
