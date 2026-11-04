@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
+
+import { parseStoredSession } from './session-restore';
 
 /**
  * Supabase client.
@@ -61,17 +63,17 @@ if (Platform.OS !== 'web') {
 export type SupabaseClient = typeof supabase;
 
 /**
- * Whether a login is saved on this device, checked locally with no network.
- * supabase-js stores the session under `sb-<project ref>-auth-token`. Used at
- * startup to tell "restoring a login on a slow network" (keep waiting) apart
- * from "never signed in" (go to Welcome).
+ * The login saved on this device, read locally with no network. supabase-js
+ * stores the session under `sb-<project ref>-auth-token`. Used at startup to
+ * tell "restoring a login on a slow network" (keep it) apart from "never signed
+ * in" (go to Welcome).
  */
-export async function hasStoredSession(): Promise<boolean> {
-  if (!supabaseUrl) return false;
+export async function readStoredSession(): Promise<Session | null> {
+  if (!supabaseUrl) return null;
   try {
     const ref = new URL(supabaseUrl).hostname.split('.')[0];
-    return (await storage.getItem(`sb-${ref}-auth-token`)) !== null;
+    return parseStoredSession(await storage.getItem(`sb-${ref}-auth-token`));
   } catch {
-    return false;
+    return null;
   }
 }

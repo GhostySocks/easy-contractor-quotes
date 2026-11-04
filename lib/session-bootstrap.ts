@@ -1,9 +1,12 @@
+import type { Session } from '@supabase/supabase-js';
+import { router } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useAuth } from './auth-store';
 import type { SubscriptionRow } from './entitlement';
 import { initRevenueCat } from './revenuecat';
-import { hasStoredSession, supabase } from './supabase';
+import { sessionAtStartup } from './session-restore';
+import { readStoredSession, supabase } from './supabase';
 
 /**
  * Bootstrap the auth + subscription state on app launch.
@@ -23,17 +26,36 @@ export function useSessionBootstrap(): void {
 
   useEffect(() => {
     let cancelled = false;
+    // Opened with the saved login because renewing it hasn't worked yet. The
+    // auto-refresh keeps trying; the listener below hears how it turns out.
+    let openedFromSaved = false;
+
+    function openFromSaved(saved: Session) {
+      openedFromSaved = true;
+      setSession(saved);
+      initRevenueCat(saved.user.id);
+    }
 
     async function init() {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         if (cancelled) return;
-        setSession(data.session ?? null);
+        const session = sessionAtStartup(
+          { session: data.session, error },
+          await readStoredSession(),
+        );
+        if (cancelled) return;
 
-        if (data.session?.user.id) {
-          await refreshSubscription(data.session.user.id, setSubscription);
-          initRevenueCat(data.session.user.id);
+        if (session && !data.session) {
+          // No point asking for the subscription: renewal just failed, so the
+          // request wouldn't carry a login. TOKEN_REFRESHED loads it.
+          openFromSaved(session);
+        } else if (session) {
+          setSession(session);
+          await refreshSubscription(session.user.id, setSubscription);
+          initRevenueCat(session.user.id);
         } else {
+          setSession(null);
           initRevenueCat(null);
         }
       } catch (err) {
@@ -46,14 +68,18 @@ export function useSessionBootstrap(): void {
     // Safety net: if a network call hangs (paused Supabase project, offline,
     // unreachable URL), still release the splash so nobody stares at the
     // loading bar forever. With a saved login, restoring it can mean a token
-    // refresh over a slow mobile connection; giving up at 4 s sent signed-in
-    // people to Welcome as if logged out, so they get much longer.
+    // refresh over a slow mobile connection, so it gets longer, and giving up
+    // opens the app with that login instead of sending them to Welcome.
     let failsafe: ReturnType<typeof setTimeout> | undefined;
-    void hasStoredSession().then((stored) => {
+    void readStoredSession().then((stored) => {
       if (cancelled) return;
       failsafe = setTimeout(
         () => {
-          if (!cancelled) setBootstrapped(true);
+          void readStoredSession().then((saved) => {
+            if (cancelled || useAuth.getState().bootstrapped) return;
+            if (saved) openFromSaved(saved);
+            setBootstrapped(true);
+          });
         },
         stored ? 20_000 : 4_000,
       );
@@ -61,9 +87,20 @@ export function useSessionBootstrap(): void {
 
     void init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
+      // init() handles startup. This event arrives as null when renewal fails
+      // on the network, which would undo keeping the saved login.
+      if (event === 'INITIAL_SESSION') return;
       setSession(session);
+      if (event === 'SIGNED_OUT' && openedFromSaved) {
+        // The server turned down the saved login we opened with; nothing on
+        // screen will work, so go back through the root guard to Welcome.
+        openedFromSaved = false;
+        router.replace('/');
+      } else if (session) {
+        openedFromSaved = false;
+      }
       if (session?.user.id) {
         await refreshSubscription(session.user.id, setSubscription);
         initRevenueCat(session.user.id);
