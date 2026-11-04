@@ -43,8 +43,8 @@
           ]
         }
       ],
+      "expo-calendar",
       [
-        "expo-calendar",
         "expo-notifications",
         {
           "color": "#D4AF37"
