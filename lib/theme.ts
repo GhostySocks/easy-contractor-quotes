@@ -11,11 +11,11 @@
 /** Light palette — the §4 table verbatim, plus a few semantic helpers. */
 export const lightColors = {
   gold: '#D4AF37',
-  goldDark: '#A88828',
+  goldDark: '#7F6519',
   goldTint: '#FBF4D9',
   ink: '#1A1A1A',
   ink2: '#4A4A4A',
-  ink3: '#8A8A8A',
+  ink3: '#6E6E6E',
   surface: '#FFFFFF',
   surface2: '#F7F5EF',
   divider: '#E8E4D7',
@@ -66,7 +66,7 @@ export type Colors = Readonly<Record<ColorToken, string>>;
  */
 export const darkColors: Colors = {
   gold: '#D4AF37',
-  // Emphasis gold reads brighter on dark; #A88828 only clears ~5.6:1 on
+  // Emphasis gold reads brighter on dark; the old light value #A88828 only cleared ~5.6:1 on
   // #121212 and 4.5:1 on gold-tint, so lift it to keep headings/links crisp.
   goldDark: '#E0BF4F',
   goldTint: '#2A2515',
