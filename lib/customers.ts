@@ -144,9 +144,12 @@ export async function createCustomer(input: {
   phone?: string;
   email?: string;
 }): Promise<CustomerRow | null> {
+  // getSession, not getUser: the phone already knows who's signed in, and on a
+  // weak signal an extra trip to the server is what makes this time out.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) {
     console.warn('[customers] cannot create without a session');
     return null;
