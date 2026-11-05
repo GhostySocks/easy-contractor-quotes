@@ -211,7 +211,7 @@ export async function isSubscribed(): Promise<boolean> {
 }
 ```
 
-**Always server-verify.** Before returning AI output or e-sign contract URLs, the Edge Function re-checks `subscriptions.status = 'active'` for the caller's `user_id`. RevenueCat's webhook is the source of truth for writes to that table.
+**Always server-verify.** Before returning AI output or e-sign contract URLs, the Edge Function re-checks `subscriptions.status = 'active'` for the caller's `user_id`. RevenueCat's webhook is the source of truth for writes to that table. The app remembers the last status on the phone (`lib/subscription-cache.ts`) so a failed lookup doesn't show a paying user App paused; that is UI only and never reaches the edge functions' check.
 
 ---
 
