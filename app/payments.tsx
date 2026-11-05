@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailedNotice } from '@/components/ui/LoadFailed';
 import { listInvoices, type InvoiceWithCustomer } from '@/lib/invoices';
 import { daysOverdue, groupInvoices } from '@/lib/payments-math';
 import { formatCents } from '@/lib/pricing';
@@ -33,9 +34,15 @@ export default function PaymentsScreen() {
   const [rows, setRows] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
-    setRows(await listInvoices());
+    try {
+      setRows(await listInvoices());
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    }
   }, []);
 
   useFocusEffect(
@@ -79,6 +86,8 @@ export default function PaymentsScreen() {
         <View style={styles.back} />
       </View>
 
+      {loadFailed ? <LoadFailedNotice onRetry={() => void load()} /> : null}
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.gold} />
@@ -90,10 +99,13 @@ export default function PaymentsScreen() {
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
           ListHeaderComponent={
-            <View style={styles.summary}>
-              <Text style={styles.summaryLabel}>OUTSTANDING</Text>
-              <Text style={styles.summaryAmount}>{formatCents(outstanding)}</Text>
-            </View>
+            // Don't state $0 owed when the invoices never loaded.
+            loadFailed && rows.length === 0 ? null : (
+              <View style={styles.summary}>
+                <Text style={styles.summaryLabel}>OUTSTANDING</Text>
+                <Text style={styles.summaryAmount}>{formatCents(outstanding)}</Text>
+              </View>
+            )
           }
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
@@ -118,9 +130,11 @@ export default function PaymentsScreen() {
             />
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>
-              No invoices yet. Mark a job completed and its invoice shows up here.
-            </Text>
+            loadFailed ? null : (
+              <Text style={styles.empty}>
+                No invoices yet. Mark a job completed and its invoice shows up here.
+              </Text>
+            )
           }
         />
       )}

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GhostButton } from '@/components/ui/GhostButton';
-import { spacing, typography, type Colors } from '@/lib/theme';
+import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Props = {
@@ -38,6 +38,18 @@ export function LoadFailed({ what, onRetry }: Props) {
         <GhostButton label="Try again" onPress={onRetry} style={styles.retry} />
       </View>
     </SafeAreaView>
+  );
+}
+
+/** Inline version for lists and Home, where the rest of the screen still works. */
+export function LoadFailedNotice({ onRetry }: { onRetry: () => void }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <View style={styles.notice} accessibilityRole="alert">
+      <Text style={styles.title}>Couldn&apos;t load the latest</Text>
+      <Text style={styles.body}>Check your signal. Your data is safe.</Text>
+      <GhostButton label="Try again" onPress={onRetry} style={styles.noticeRetry} />
+    </View>
   );
 }
 
@@ -75,5 +87,17 @@ const makeStyles = (colors: Colors) =>
     retry: {
       marginTop: spacing.lg,
       alignSelf: 'stretch',
+    },
+    notice: {
+      gap: spacing.xs,
+      margin: spacing.md,
+      padding: spacing.lg,
+      backgroundColor: colors.surface2,
+      borderColor: colors.divider,
+      borderWidth: 1,
+      borderRadius: radii.md,
+    },
+    noticeRetry: {
+      marginTop: spacing.sm,
     },
   });

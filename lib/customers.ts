@@ -129,7 +129,7 @@ export async function listCustomers(opts?: {
   const { data, error } = await query;
   if (error) {
     console.warn('[customers] list failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map(toCustomerWithJobs);
 }

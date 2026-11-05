@@ -31,7 +31,7 @@ export async function fetchUnsignedContractCount(): Promise<number> {
     .is('signed_at', null);
   if (error) {
     console.warn('[contracts] unsigned-count failed', error.message);
-    return 0;
+    throw new Error(error.message);
   }
   return count ?? 0;
 }

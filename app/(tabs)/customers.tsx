@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailedNotice } from '@/components/ui/LoadFailed';
 import { Chip } from '@/components/ui/Chip';
 import { collectTags, hasTag } from '@/lib/customer-form';
 import { listCustomers, type CustomerWithJobs } from '@/lib/customers';
@@ -28,10 +29,15 @@ export default function CustomersScreen() {
   const [tag, setTag] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async (query: string) => {
-    const rows = await listCustomers({ search: query });
-    setCustomers(rows);
+    try {
+      setCustomers(await listCustomers({ search: query }));
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -98,6 +104,8 @@ export default function CustomersScreen() {
         ) : null}
       </View>
 
+      {loadFailed ? <LoadFailedNotice onRetry={() => void load(search)} /> : null}
+
       <FlatList
         data={visible}
         keyExtractor={(c) => c.id}
@@ -121,7 +129,7 @@ export default function CustomersScreen() {
           />
         }
         ListEmptyComponent={
-          loading ? null : (
+          loading || loadFailed ? null : (
             <Text style={styles.emptyState}>
               {search || activeTag
                 ? 'No customers match this search.'

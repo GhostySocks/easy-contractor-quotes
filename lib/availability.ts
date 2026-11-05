@@ -18,7 +18,7 @@ export async function listBlocks(fromIso: string, toIso: string): Promise<Block[
     .order('starts_at', { ascending: true });
   if (error) {
     console.warn('[availability] list failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []) as Block[];
 }
