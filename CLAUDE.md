@@ -65,11 +65,11 @@ Locked. Do not change colors, fonts, or spacing without a PRD update.
 | Token         | Hex       | Use                                              |
 | ------------- | --------- | ------------------------------------------------ |
 | `--gold`      | `#D4AF37` | Primary brand, main CTA, active tab, key numbers |
-| `--gold-dark` | `#A88828` | Pressed state, headings on light backgrounds     |
+| `--gold-dark` | `#7F6519` | Pressed state, headings on light backgrounds     |
 | `--gold-tint` | `#FBF4D9` | Soft backgrounds, cards on dark                  |
 | `--ink`       | `#1A1A1A` | Primary text                                     |
 | `--ink-2`     | `#4A4A4A` | Secondary text                                   |
-| `--ink-3`     | `#8A8A8A` | Tertiary text, placeholders                      |
+| `--ink-3`     | `#6E6E6E` | Tertiary text, placeholders                      |
 | `--surface`   | `#FFFFFF` | Default surface                                  |
 | `--surface-2` | `#F7F5EF` | Off-white section backgrounds                    |
 | `--divider`   | `#E8E4D7` | Hairlines                                        |
@@ -78,7 +78,7 @@ Locked. Do not change colors, fonts, or spacing without a PRD update.
 | `--danger`    | `#B3261E` | Unpaid past due, destructive                     |
 | `--sky`       | `#E6F0FA` | Info badges                                      |
 
-Dark mode: invert ink/surface pairs, keep gold identical.
+Dark mode: invert ink/surface pairs, keep gold identical. Dark mode keeps `--ink-3` at `#8A8A8A` and uses a brighter `--gold-dark`; the light values above were darkened to pass WCAG AA on every light surface.
 
 ### Typography
 
@@ -211,7 +211,7 @@ export async function isSubscribed(): Promise<boolean> {
 }
 ```
 
-**Always server-verify.** Before returning AI output or e-sign contract URLs, the Edge Function re-checks `subscriptions.status = 'active'` for the caller's `user_id`. RevenueCat's webhook is the source of truth for writes to that table.
+**Always server-verify.** Before returning AI output or e-sign contract URLs, the Edge Function re-checks `subscriptions.status = 'active'` for the caller's `user_id`. RevenueCat's webhook is the source of truth for writes to that table. The app remembers the last status on the phone (`lib/subscription-cache.ts`) so a failed lookup doesn't show a paying user App paused; that is UI only and never reaches the edge functions' check.
 
 ---
 

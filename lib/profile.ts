@@ -14,7 +14,8 @@ export type ProfileRow = {
   created_at: string;
 };
 
-export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
+/** Null means no profile yet; a failed lookup rejects, so the two can't be confused. */
+export async function loadProfile(userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -22,9 +23,14 @@ export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
     .maybeSingle();
   if (error) {
     console.warn('[profile] fetch failed', error.message);
-    return null;
+    throw new Error(error.message);
   }
   return (data as ProfileRow) ?? null;
+}
+
+/** For callers that carry on without a profile either way. */
+export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
+  return loadProfile(userId).catch(() => null);
 }
 
 export type UpdateProfileResult =

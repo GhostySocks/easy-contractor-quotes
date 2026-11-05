@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
 import { LogoPicker } from '@/components/ui/LogoPicker';
@@ -21,7 +22,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { deleteJobPhotos, promptForPhotos, signedPhotoUrls, uploadLogo } from '@/lib/photos';
-import { fetchProfile, updateProfile } from '@/lib/profile';
+import { loadProfile, updateProfile } from '@/lib/profile';
 import { TRAVEL_BUFFER_OPTIONS } from '@/lib/schedule-conflicts';
 import { strings } from '@/lib/strings';
 import { spacing, typography, type Colors } from '@/lib/theme';
@@ -38,6 +39,8 @@ export default function BusinessSettings() {
   const [taxRate, setTaxRate] = useState('');
   const [travelBuffer, setTravelBuffer] = useState<number>(30);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoUri, setLogoUri] = useState<string | null>(null);
@@ -45,25 +48,30 @@ export default function BusinessSettings() {
 
   useEffect(() => {
     if (!user) return;
-    void fetchProfile(user.id).then((profile) => {
-      if (profile) {
-        setBusinessName(profile.business_name);
-        setStateCode(profile.state_code);
-        setTrade((profile.trade as TradeCode | null) ?? null);
-        setTaxRate(
-          Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
-        );
-        setTravelBuffer(profile.travel_buffer_minutes ?? 30);
-        if (profile.logo_url) {
-          setLogoPath(profile.logo_url);
-          void signedPhotoUrls([profile.logo_url]).then((u) =>
-            setLogoUri(u[profile.logo_url as string] ?? null),
+    void loadProfile(user.id)
+      .then((profile) => {
+        if (profile) {
+          setBusinessName(profile.business_name);
+          setStateCode(profile.state_code);
+          setTrade((profile.trade as TradeCode | null) ?? null);
+          setTaxRate(
+            Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
           );
+          setTravelBuffer(profile.travel_buffer_minutes ?? 30);
+          if (profile.logo_url) {
+            setLogoPath(profile.logo_url);
+            void signedPhotoUrls([profile.logo_url]).then((u) =>
+              setLogoUri(u[profile.logo_url as string] ?? null),
+            );
+          }
         }
-      }
-      setLoading(false);
-    });
-  }, [user]);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoadFailed(true);
+        setLoading(false);
+      });
+  }, [user, attempt]);
 
   // The logo saves on its own, immediately, separate from the Save button.
   async function handlePickLogo() {
@@ -138,6 +146,19 @@ export default function BusinessSettings() {
     } else {
       Alert.alert("Couldn't save", result.message);
     }
+  }
+
+  if (loadFailed) {
+    return (
+      <LoadFailed
+        what="profile"
+        onRetry={() => {
+          setLoadFailed(false);
+          setLoading(true);
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
   }
 
   return (

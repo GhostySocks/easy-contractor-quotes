@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { JobNotes } from '@/components/job/JobNotes';
 import { JobPhotos } from '@/components/job/JobPhotos';
 import { JobTimeline } from '@/components/job/JobTimeline';
@@ -59,6 +60,7 @@ export default function JobDetail() {
   const [quote, setQuote] = useState<QuoteRow | null>(null);
   const [invoice, setInvoice] = useState<InvoiceRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [starting, setStarting] = useState(false);
   const [schedulerOpen, setSchedulerOpen] = useState(false);
@@ -86,7 +88,9 @@ export default function JobDetail() {
 
         setLoading(false);
       })();
-    }, [id]),
+      // attempt: "Try again" re-runs the load.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, attempt]),
   );
 
   const jobId = job?.id;
@@ -240,11 +244,13 @@ export default function JobDetail() {
 
   if (!job) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.center}>
-          <Text style={styles.loadingLabel}>Job not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="job"
+        onRetry={() => {
+          setLoading(true);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

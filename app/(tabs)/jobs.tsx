@@ -17,6 +17,7 @@ import {
   type JobStatus as RowStatus,
   type TodayJob,
 } from '@/components/ui/TodayJobRow';
+import { LoadFailedNotice } from '@/components/ui/LoadFailed';
 import { listAllJobs, type JobWithCustomer, type LibraryStatusFilter } from '@/lib/jobs';
 import {
   flatSectionTitle,
@@ -57,8 +58,18 @@ export default function JobsScreen() {
   const [sort, setSort] = useState<LibrarySort>('recent');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async (status: LibraryStatusFilter, query: string) => {
+    try {
+      await fetchRows(status, query);
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    }
+  }, []);
+
+  const fetchRows = async (status: LibraryStatusFilter, query: string) => {
     if (status === 'drafts') {
       const drafts = await listDraftQuotes();
       const filtered = query
@@ -73,7 +84,7 @@ export default function JobsScreen() {
       const jobs = await listAllJobs({ status, search: query });
       setRows(jobs.map(jobToRow));
     }
-  }, []);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +146,8 @@ export default function JobsScreen() {
         </View>
       </View>
 
+      {loadFailed ? <LoadFailedNotice onRetry={() => void load(filter, search)} /> : null}
+
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
@@ -164,7 +177,9 @@ export default function JobsScreen() {
           />
         }
         ListEmptyComponent={
-          loading ? null : <Text style={styles.emptyState}>{emptyLabel(filter, search)}</Text>
+          loading || loadFailed ? null : (
+            <Text style={styles.emptyState}>{emptyLabel(filter, search)}</Text>
+          )
         }
       />
     </SafeAreaView>

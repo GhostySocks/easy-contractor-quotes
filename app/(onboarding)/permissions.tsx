@@ -1,20 +1,21 @@
 import { router } from 'expo-router';
 import { Bell, Calendar, MapPin, type LucideIcon } from 'lucide-react-native';
-import { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, AppState, Linking, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { OnboardingFrame } from '@/components/ui/OnboardingFrame';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { toggleAction } from '@/lib/permission-toggle';
+import { askPermission, checkPermission, type PermissionKey } from '@/lib/permissions';
 import { strings } from '@/lib/strings';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
 type Row = {
-  key: 'location' | 'notifications' | 'calendar';
+  key: PermissionKey;
   Icon: LucideIcon;
   title: string;
   body: string;
-  defaultOn: boolean;
 };
 
 const rows: Row[] = [
@@ -23,38 +24,65 @@ const rows: Row[] = [
     Icon: MapPin,
     title: strings.permissions.location.title,
     body: strings.permissions.location.body,
-    defaultOn: true,
   },
   {
     key: 'notifications',
     Icon: Bell,
     title: strings.permissions.notifications.title,
     body: strings.permissions.notifications.body,
-    defaultOn: true,
   },
   {
     key: 'calendar',
     Icon: Calendar,
     title: strings.permissions.calendar.title,
     body: strings.permissions.calendar.body,
-    defaultOn: false,
   },
 ];
 
 /**
- * Design handoff §4.6: don't pre-request any OS permissions on mount. Call the
- * expo-location / expo-notifications / expo-calendar APIs only when the user
- * flips each toggle. For M1a the toggles only update local state; the actual
- * native prompts will be wired up in M1b once we need location auto-fill.
+ * Design handoff §4.6: don't pre-request any OS permissions on mount. The phone
+ * prompts only when the user flips a toggle, and each toggle shows what the
+ * phone actually allows, so they start off unless already granted.
  */
 export default function Permissions() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
-  const [state, setState] = useState<Record<Row['key'], boolean>>({
-    location: true,
-    notifications: true,
+  const [state, setState] = useState<Record<PermissionKey, boolean>>({
+    location: false,
+    notifications: false,
     calendar: false,
   });
+
+  const refresh = useCallback(() => {
+    for (const { key } of rows) {
+      void checkPermission(key).then(({ granted }) =>
+        setState((prev) => ({ ...prev, [key]: granted })),
+      );
+    }
+  }, []);
+
+  // On open, and on coming back from the phone's Settings.
+  useEffect(() => {
+    refresh();
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
+
+  async function handleToggle(row: Row, turningOn: boolean) {
+    const current = await checkPermission(row.key);
+    if (toggleAction(turningOn, current) === 'ask') {
+      const { granted } = await askPermission(row.key);
+      setState((prev) => ({ ...prev, [row.key]: granted }));
+      return;
+    }
+    setState((prev) => ({ ...prev, [row.key]: current.granted }));
+    Alert.alert(row.title, "You can change this in your phone's Settings.", [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+    ]);
+  }
 
   return (
     <OnboardingFrame
@@ -81,7 +109,7 @@ export default function Permissions() {
             </View>
             <Switch
               value={state[row.key]}
-              onValueChange={(value) => setState((prev) => ({ ...prev, [row.key]: value }))}
+              onValueChange={(value) => void handleToggle(row, value)}
               accessibilityLabel={`${row.title} toggle`}
               trackColor={{ false: colors.divider, true: colors.gold }}
             />

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type Session } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
+import { fetchWithTimeout } from './fetch-timeout';
 import { parseStoredSession } from './session-restore';
 
 /**
@@ -46,6 +47,7 @@ export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
     persistSession: true,
     detectSessionInUrl: false,
   },
+  global: { fetch: fetchWithTimeout() },
 });
 
 // Renew the login only while the app is in the foreground, and restart the

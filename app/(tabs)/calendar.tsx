@@ -14,6 +14,7 @@ import {
 import { Calendar, type DateData } from 'react-native-calendars';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoadFailedNotice } from '@/components/ui/LoadFailed';
 import { BlockTimeSheet } from '@/components/calendar/BlockTimeSheet';
 import {
   TodayJobRow,
@@ -42,18 +43,24 @@ export default function CalendarScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // Fetch a buffered window around the visible month so navigation between
   // adjacent months is instant after the first paint of the new range.
   const load = useCallback(async (month: Date) => {
     const from = new Date(month.getFullYear(), month.getMonth() - 1, 1);
     const to = new Date(month.getFullYear(), month.getMonth() + 2, 0, 23, 59, 59);
-    const [rows, blockRows] = await Promise.all([
-      listJobsByDateRange(from.toISOString(), to.toISOString()),
-      listBlocks(from.toISOString(), to.toISOString()),
-    ]);
-    setJobs(rows);
-    setBlocks(blockRows);
+    try {
+      const [rows, blockRows] = await Promise.all([
+        listJobsByDateRange(from.toISOString(), to.toISOString()),
+        listBlocks(from.toISOString(), to.toISOString()),
+      ]);
+      setJobs(rows);
+      setBlocks(blockRows);
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -121,6 +128,8 @@ export default function CalendarScreen() {
           <Text style={styles.title}>Journal</Text>
           <Text style={styles.subtitle}>Tap a day to see what&apos;s scheduled.</Text>
         </View>
+
+        {loadFailed ? <LoadFailedNotice onRetry={() => void load(visibleMonth)} /> : null}
 
         <View style={styles.calendarCard}>
           <Calendar

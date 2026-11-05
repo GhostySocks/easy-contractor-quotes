@@ -39,7 +39,7 @@ export async function fetchUnpaidSummary(): Promise<UnpaidSummary> {
     .in('status', ['unpaid', 'partial']);
   if (error) {
     console.warn('[invoices] unpaid-summary failed', error.message);
-    return { totalCents: 0, unpaidCount: 0, overdueCount: 0 };
+    throw new Error(error.message);
   }
   let totalCents = 0;
   let overdueCount = 0;
@@ -61,7 +61,7 @@ export async function listInvoices(limit = 300): Promise<InvoiceWithCustomer[]> 
     .limit(limit);
   if (error) {
     console.warn('[invoices] list failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map((row: unknown) => {
     const r = row as InvoiceRow & { customer?: { name?: string } | null };

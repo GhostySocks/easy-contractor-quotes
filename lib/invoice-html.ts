@@ -74,18 +74,18 @@ export function invoiceHtml(d: InvoiceDocInput): string {
   .meta { color: #4A4A4A; text-align: right; }
   .badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
   .badge.paid { background: #E3F2E8; color: #0A7E3A; }
-  .badge.due { background: #FBF4D9; color: #A88828; }
+  .badge.due { background: #FBF4D9; color: #7F6519; }
   .cols { display: flex; gap: 32px; margin: 24px 0; }
-  .label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A8A8A; margin-bottom: 4px; }
+  .label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6E6E; margin-bottom: 4px; }
   .scope { background: #F7F5EF; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; }
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A8A8A; border-bottom: 1px solid #E8E4D7; padding: 8px 0; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6E6E; border-bottom: 1px solid #E8E4D7; padding: 8px 0; }
   td { border-bottom: 1px solid #E8E4D7; padding: 10px 0; vertical-align: top; }
   .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
   .totals { margin-left: auto; width: 260px; margin-top: 12px; }
   .totals div { display: flex; justify-content: space-between; padding: 4px 0; font-variant-numeric: tabular-nums; }
   .totals .grand { border-top: 2px solid #1A1A1A; margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 800; }
-  .foot { margin-top: 40px; color: #8A8A8A; font-size: 11px; }
+  .foot { margin-top: 40px; color: #6E6E6E; font-size: 11px; }
 </style></head>
 <body>
   <div class="top">

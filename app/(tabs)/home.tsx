@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailedNotice } from '@/components/ui/LoadFailed';
 import { MoneyPendingCard } from '@/components/ui/MoneyPendingCard';
 import { TodayJobRow, type JobStatus, type TodayJob } from '@/components/ui/TodayJobRow';
 import { useAuth } from '@/lib/auth-store';
@@ -11,7 +12,7 @@ import { fetchUnsignedContractCount } from '@/lib/contracts';
 import { fetchUnpaidSummary, type UnpaidSummary } from '@/lib/invoices';
 import { listActiveJobs, listUpcomingScheduledJobs, type JobWithCustomer } from '@/lib/jobs';
 import { syncJobReminders } from '@/lib/notifications';
-import { fetchProfile, firstNameFromProfile, type ProfileRow } from '@/lib/profile';
+import { firstNameFromProfile, loadProfile, type ProfileRow } from '@/lib/profile';
 import { strings } from '@/lib/strings';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -29,20 +30,29 @@ export default function HomeScreen() {
   const [money, setMoney] = useState<UnpaidSummary>(EMPTY_MONEY);
   const [unsignedContracts, setUnsignedContracts] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Until something has loaded, a failure must not show $0 and "no jobs".
+  const [loadedOnce, setLoadedOnce] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [profileRow, jobRows, moneyRow, unsigned] = await Promise.all([
-      fetchProfile(user.id),
-      listActiveJobs(5),
-      fetchUnpaidSummary(),
-      fetchUnsignedContractCount(),
-    ]);
-    setProfile(profileRow);
-    setProfileLoaded(true);
-    setJobs(jobRows);
-    setMoney(moneyRow);
-    setUnsignedContracts(unsigned);
+    try {
+      const [profileRow, jobRows, moneyRow, unsigned] = await Promise.all([
+        loadProfile(user.id),
+        listActiveJobs(5),
+        fetchUnpaidSummary(),
+        fetchUnsignedContractCount(),
+      ]);
+      setProfile(profileRow);
+      setProfileLoaded(true);
+      setJobs(jobRows);
+      setMoney(moneyRow);
+      setUnsignedContracts(unsigned);
+      setLoadFailed(false);
+      setLoadedOnce(true);
+    } catch {
+      setLoadFailed(true);
+    }
   }, [user]);
 
   // Reload whenever Home is shown, so money and today's jobs are current after
@@ -95,6 +105,8 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {loadFailed ? <LoadFailedNotice onRetry={() => void load()} /> : null}
+
         {profileLoaded && !profile ? (
           <Pressable
             accessibilityRole="button"
@@ -112,33 +124,37 @@ export default function HomeScreen() {
           </Pressable>
         ) : null}
 
-        <MoneyPendingCard
-          totalCents={money.totalCents}
-          unpaidInvoices={money.unpaidCount}
-          unsignedContracts={unsignedContracts}
-          overdueCount={money.overdueCount}
-          onPress={() => router.push('/payments')}
-        />
+        {loadFailed && !loadedOnce ? null : (
+          <>
+            <MoneyPendingCard
+              totalCents={money.totalCents}
+              unpaidInvoices={money.unpaidCount}
+              unsignedContracts={unsignedContracts}
+              overdueCount={money.overdueCount}
+              onPress={() => router.push('/payments')}
+            />
 
-        <SectionHeader
-          title="Active jobs"
-          rightText={jobs.length > 0 ? `${jobs.length} in flight →` : 'All jobs →'}
-          onRightPress={() => router.push('/(tabs)/jobs')}
-        />
+            <SectionHeader
+              title="Active jobs"
+              rightText={jobs.length > 0 ? `${jobs.length} in flight →` : 'All jobs →'}
+              onRightPress={() => router.push('/(tabs)/jobs')}
+            />
 
-        <View style={styles.jobsList}>
-          {jobs.length === 0 ? (
-            <Text style={styles.emptyState}>{strings.locked.emptyJobs}</Text>
-          ) : (
-            jobs.map((row) => (
-              <TodayJobRow
-                key={row.id}
-                job={toTodayJob(row)}
-                onPress={() => router.push({ pathname: '/job/[id]', params: { id: row.id } })}
-              />
-            ))
-          )}
-        </View>
+            <View style={styles.jobsList}>
+              {jobs.length === 0 ? (
+                <Text style={styles.emptyState}>{strings.locked.emptyJobs}</Text>
+              ) : (
+                jobs.map((row) => (
+                  <TodayJobRow
+                    key={row.id}
+                    job={toTodayJob(row)}
+                    onPress={() => router.push({ pathname: '/job/[id]', params: { id: row.id } })}
+                  />
+                ))
+              )}
+            </View>
+          </>
+        )}
 
         <SectionHeader
           title="This week"
