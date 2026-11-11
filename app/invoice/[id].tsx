@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { LineItemEditor } from '@/components/quote/LineItemEditor';
 import { Card } from '@/components/ui/Card';
 import { GhostButton } from '@/components/ui/GhostButton';
@@ -44,6 +45,7 @@ export default function InvoiceDetail() {
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [scope, setScope] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [sending, setSending] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [marking, setMarking] = useState(false);
@@ -66,7 +68,7 @@ export default function InvoiceDetail() {
       }
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, attempt]);
 
   // Keep the tax rate the quote was priced at when actuals change.
   const taxRate = useMemo(
@@ -87,11 +89,13 @@ export default function InvoiceDetail() {
   }
   if (!invoice) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.center}>
-          <Text style={styles.loadingLabel}>Invoice not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="invoice"
+        onRetry={() => {
+          setLoading(true);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

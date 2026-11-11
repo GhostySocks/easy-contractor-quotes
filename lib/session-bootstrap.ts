@@ -6,6 +6,7 @@ import { useAuth } from './auth-store';
 import type { SubscriptionRow } from './entitlement';
 import { initRevenueCat } from './revenuecat';
 import { sessionAtStartup } from './session-restore';
+import { readCachedSubscription, saveCachedSubscription } from './subscription-cache';
 import { readStoredSession, supabase } from './supabase';
 
 /**
@@ -30,8 +31,9 @@ export function useSessionBootstrap(): void {
     // auto-refresh keeps trying; the listener below hears how it turns out.
     let openedFromSaved = false;
 
-    function openFromSaved(saved: Session) {
+    async function openFromSaved(saved: Session) {
       openedFromSaved = true;
+      setSubscription(await readCachedSubscription(saved.user.id));
       setSession(saved);
       initRevenueCat(saved.user.id);
     }
@@ -49,7 +51,7 @@ export function useSessionBootstrap(): void {
         if (session && !data.session) {
           // No point asking for the subscription: renewal just failed, so the
           // request wouldn't carry a login. TOKEN_REFRESHED loads it.
-          openFromSaved(session);
+          await openFromSaved(session);
         } else if (session) {
           setSession(session);
           await refreshSubscription(session.user.id, setSubscription);
@@ -75,9 +77,9 @@ export function useSessionBootstrap(): void {
       if (cancelled) return;
       failsafe = setTimeout(
         () => {
-          void readStoredSession().then((saved) => {
+          void readStoredSession().then(async (saved) => {
             if (cancelled || useAuth.getState().bootstrapped) return;
-            if (saved) openFromSaved(saved);
+            if (saved) await openFromSaved(saved);
             setBootstrapped(true);
           });
         },
@@ -127,9 +129,12 @@ async function refreshSubscription(
     .eq('user_id', userId)
     .maybeSingle();
   if (error) {
+    // A failed lookup says nothing about the subscription; don't call it paused.
     console.warn('[subscriptions] fetch failed', error.message);
-    set(null);
+    if (!useAuth.getState().subscription) set(await readCachedSubscription(userId));
     return;
   }
-  set((data as SubscriptionRow) ?? null);
+  const row = (data as SubscriptionRow) ?? null;
+  set(row);
+  void saveCachedSubscription(userId, row);
 }

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { LineItemEditor } from '@/components/quote/LineItemEditor';
 import { PriceRangeChips } from '@/components/quote/PriceRangeChips';
 import { Card } from '@/components/ui/Card';
@@ -46,6 +47,7 @@ export default function QuoteDetail() {
 
   const [quote, setQuote] = useState<QuoteRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [scope, setScope] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [bucket, setBucket] = useState<PriceBucket>('most_likely');
@@ -73,7 +75,7 @@ export default function QuoteDetail() {
         baseItems.current = row.line_items;
       }
     });
-  }, [id]);
+  }, [id, attempt]);
 
   useEffect(() => {
     if (!user) return;
@@ -169,11 +171,13 @@ export default function QuoteDetail() {
 
   if (!quote) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.center}>
-          <Text style={styles.loadingLabel}>Quote not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="quote"
+        onRetry={() => {
+          setLoading(true);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

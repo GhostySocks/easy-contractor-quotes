@@ -42,7 +42,7 @@ export async function listActiveJobs(limit = 8): Promise<JobWithCustomer[]> {
     .limit(limit);
   if (error) {
     console.warn('[jobs] list failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map(toJobWithCustomer);
 }
@@ -122,7 +122,7 @@ export async function listAllJobs(opts?: {
   const { data, error } = await query;
   if (error) {
     console.warn('[jobs] listAll failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map(toJobWithCustomer);
 }
@@ -155,7 +155,7 @@ export async function listJobsByDateRange(
     .limit(limit);
   if (error) {
     console.warn('[jobs] list-by-range failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map(toJobWithCustomer);
 }

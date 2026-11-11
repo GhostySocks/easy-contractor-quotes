@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   TodayJobRow,
@@ -61,12 +62,13 @@ export default function CustomerDetail() {
 
   if (!customer) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <BackButton />
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Customer not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="customer"
+        onRetry={() => {
+          setLoading(true);
+          void load().finally(() => setLoading(false));
+        }}
+      />
     );
   }
 

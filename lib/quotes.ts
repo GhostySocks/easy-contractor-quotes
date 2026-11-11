@@ -76,7 +76,7 @@ export async function listDraftQuotes(limit = 200): Promise<DraftQuoteWithCustom
     .limit(limit);
   if (error) {
     console.warn('[quotes] list-drafts failed', error.message);
-    return [];
+    throw new Error(error.message);
   }
   return (data ?? []).map((row) => {
     const r = row as QuoteRow & { customer?: { name?: string } };

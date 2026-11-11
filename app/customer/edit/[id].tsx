@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
@@ -41,6 +42,7 @@ export default function EditCustomer() {
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerFormValues, boolean>>>({});
   const [saving, setSaving] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   // The contractor's own state, shown as the hint for a customer's state.
   const [homeState, setHomeState] = useState<string | null>(null);
   const userId = useAuth((s) => s.user?.id);
@@ -55,7 +57,7 @@ export default function EditCustomer() {
       if (c) setValues(formValuesFromCustomer(c));
       else setMissing(true);
     });
-  }, [id]);
+  }, [id, attempt]);
 
   const errors = useMemo(() => (values ? validateCustomerForm(values) : {}), [values]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -88,12 +90,13 @@ export default function EditCustomer() {
 
   if (missing) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <BackButton />
-        <View style={styles.center}>
-          <Text style={styles.muted}>Customer not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="customer"
+        onRetry={() => {
+          setMissing(false);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadFailed } from '@/components/ui/LoadFailed';
 import { SendRecipientSheet, type Recipient } from '@/components/contract/SendRecipientSheet';
 import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
@@ -43,6 +44,7 @@ export default function ContractDetail() {
 
   const [contract, setContract] = useState<ContractRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [body, setBody] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -69,7 +71,7 @@ export default function ContractDetail() {
         }
       }
     });
-  }, [id]);
+  }, [id, attempt]);
 
   const signed = !!contract?.signed_at;
   const [amending, setAmending] = useState(false);
@@ -246,11 +248,13 @@ export default function ContractDetail() {
 
   if (!contract) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.center}>
-          <Text style={styles.loadingLabel}>Contract not found.</Text>
-        </View>
-      </SafeAreaView>
+      <LoadFailed
+        what="contract"
+        onRetry={() => {
+          setLoading(true);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 
