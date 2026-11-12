@@ -15,18 +15,29 @@ import { useEffect, useMemo } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
+import * as Sentry from '@sentry/react-native';
+
 import { BiometricGate } from '@/components/BiometricGate';
+import { useAuth } from '@/lib/auth-store';
+import { initErrorReporting, setErrorReportingUser } from '@/lib/error-reporting';
 import { useNotificationRouting } from '@/lib/notifications';
 import { useSessionBootstrap } from '@/lib/session-bootstrap';
 import { ThemeProvider, useTheme } from '@/lib/theme-context';
+
+initErrorReporting();
 
 // Hold the native splash until the brand fonts are in, so nothing flashes in
 // the system font. The names here must match typography.fonts in lib/theme.ts.
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default Sentry.wrap(RootLayout);
+
+function RootLayout() {
   useSessionBootstrap();
   useNotificationRouting();
+
+  const userId = useAuth((s) => s.session?.user.id ?? null);
+  useEffect(() => setErrorReportingUser(userId), [userId]);
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_500Medium,
