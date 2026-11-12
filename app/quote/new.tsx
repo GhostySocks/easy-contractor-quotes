@@ -33,6 +33,7 @@ import {
   type CustomerRow,
 } from '@/lib/customers';
 import { fetchJob } from '@/lib/jobs';
+import { reportError } from '@/lib/error-reporting';
 import { currentAddress } from '@/lib/location';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { MAX_PHOTOS } from '@/lib/photo-math';
@@ -177,6 +178,31 @@ export default function NewQuote() {
       if (result.kind === 'ok') {
         if (result.line1) setAddressLine1(result.line1);
         if (result.city) setCity(result.city);
+      } else if (result.kind === 'approximate') {
+        const guess = [result.line1, result.city].filter(Boolean).join(', ');
+        const within = result.accuracyM
+          ? ` (GPS is only accurate to about ${Math.round(result.accuracyM)} m here)`
+          : '';
+        const fix = result.precisionOff
+          ? '\n\nThis phone only shares an approximate location with the app. Turn on Precise location for Easy Contractor Quotes in Settings.'
+          : '';
+        Alert.alert(
+          "Couldn't pin down the exact address",
+          `This might be a neighbor's address${within}:\n\n${guess}${fix}`,
+          [
+            { text: 'Type it in', style: 'cancel' },
+            ...(result.precisionOff
+              ? [{ text: 'Open Settings', onPress: () => void Linking.openSettings() }]
+              : []),
+            {
+              text: 'Use it',
+              onPress: () => {
+                if (result.line1) setAddressLine1(result.line1);
+                if (result.city) setCity(result.city);
+              },
+            },
+          ],
+        );
       } else if (result.kind === 'denied') {
         Alert.alert(
           'Location access is off',
@@ -187,7 +213,7 @@ export default function NewQuote() {
           ],
         );
       } else {
-        Alert.alert("Couldn't find an address here", 'Type it in instead.');
+        Alert.alert("Couldn't find an address here", 'Check your signal, or type it in instead.');
       }
     } finally {
       setLocating(false);
@@ -279,6 +305,7 @@ export default function NewQuote() {
         ]);
         return;
       }
+      reportError(err, 'quote.generate');
       Alert.alert('Could not generate quote', err instanceof Error ? err.message : String(err));
     } finally {
       setGenerating(false);
