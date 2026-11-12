@@ -33,6 +33,7 @@ import {
   type CustomerRow,
 } from '@/lib/customers';
 import { fetchJob } from '@/lib/jobs';
+import { reportError } from '@/lib/error-reporting';
 import { currentAddress } from '@/lib/location';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { MAX_PHOTOS } from '@/lib/photo-math';
@@ -279,6 +280,7 @@ export default function NewQuote() {
         ]);
         return;
       }
+      reportError(err, 'quote.generate');
       Alert.alert('Could not generate quote', err instanceof Error ? err.message : String(err));
     } finally {
       setGenerating(false);
