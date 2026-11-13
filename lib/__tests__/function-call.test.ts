@@ -2,8 +2,33 @@ import {
   callWithRetry,
   loginExpiresSoon,
   OfflineError,
+  queryOutcome,
   type InvokeOutcome,
 } from '../function-call';
+
+describe('queryOutcome', () => {
+  it('passes the rows through', () => {
+    expect(queryOutcome({ data: [{ id: 'c1' }], error: null, status: 200 })).toEqual({
+      ok: true,
+      data: [{ id: 'c1' }],
+    });
+  });
+
+  it('calls a request that never reached Supabase a network failure, so it is retried', () => {
+    // supabase-js reports a dropped or timed-out request as status 0.
+    const dropped = { data: null, error: { message: 'AbortError: Aborted' }, status: 0 };
+    expect(queryOutcome(dropped)).toMatchObject({ ok: false, kind: 'network' });
+  });
+
+  it('calls an error the database sent back a server error, so it is not retried', () => {
+    const refused = { data: null, error: { message: 'violates row-level security' }, status: 403 };
+    expect(queryOutcome(refused)).toEqual({
+      ok: false,
+      kind: 'server',
+      message: 'violates row-level security',
+    });
+  });
+});
 
 const NOW = Date.parse('2026-11-12T13:00:00Z');
 const nowSec = NOW / 1000;

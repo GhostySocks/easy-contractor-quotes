@@ -3,8 +3,13 @@
  * indefinitely on a bad connection, which left screens spinning forever and
  * could hold up the login renewal every other request waits on. A timed-out
  * request fails like any other network error, so existing handling applies.
+ *
+ * Kept short on purpose: after the app sits in the background, Android can
+ * hand the first request a connection that has gone dead. Failing it quickly
+ * lets the retry (or the next login renewal attempt) open a fresh one, instead
+ * of everything queued behind it timing out too.
  */
-export const REQUEST_TIMEOUT_MS = 20_000;
+export const REQUEST_TIMEOUT_MS = 10_000;
 /** Photo uploads and edge functions (the AI) legitimately take longer. */
 export const LONG_REQUEST_TIMEOUT_MS = 60_000;
 

@@ -27,9 +27,9 @@ import { notifyQuoteReady } from '@/lib/notifications';
 import { useAuth } from '@/lib/auth-store';
 import { usePaused } from '@/lib/use-paused';
 import {
-  createCustomer,
   fetchCustomer,
   rememberCustomerContact,
+  saveCustomerForQuote,
   type CustomerRow,
 } from '@/lib/customers';
 import { fetchJob } from '@/lib/jobs';
@@ -44,8 +44,9 @@ import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 import { withTimeout } from '@/lib/with-timeout';
 
-// The customer save runs before the AI call, which has its own 30 s limit.
-const CUSTOMER_SAVE_TIMEOUT_MS = 15_000;
+// The customer save runs before the AI call. It limits and retries its own
+// requests; this is only the backstop for one that never settles at all.
+const CUSTOMER_SAVE_TIMEOUT_MS = 45_000;
 
 const TRADES: TradeCode[] = ['handyman', 'plumber', 'electrician', 'hvac', 'landscaping', 'other'];
 
@@ -253,20 +254,16 @@ export default function NewQuote() {
     const startedAt = new Date().toISOString();
     try {
       // If the user typed a customer name but never picked from the dropdown
-      // (or never tapped 'Create new'), auto-create on the fly. createCustomer
-      // dedupes server-side by normalized name so this can't produce a fresh
-      // duplicate of an existing customer.
+      // (or never tapped 'Create new'), auto-create on the fly. The save
+      // dedupes by normalized name so this can't produce a fresh duplicate of
+      // an existing customer, and throws a message to show when it fails.
       let resolvedCustomerId = customerId;
       if (!resolvedCustomerId && customerName.trim()) {
         const created = await withTimeout(
-          createCustomer({ name: customerName }),
+          saveCustomerForQuote({ name: customerName }),
           CUSTOMER_SAVE_TIMEOUT_MS,
           'Saving the customer',
         );
-        if (!created) {
-          Alert.alert("Couldn't link customer", 'Try picking a customer from the list.');
-          return;
-        }
         resolvedCustomerId = created.id;
         setCustomerId(created.id);
       }

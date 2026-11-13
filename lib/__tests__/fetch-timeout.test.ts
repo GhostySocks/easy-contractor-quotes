@@ -31,6 +31,12 @@ describe('fetchWithTimeout', () => {
     await expect(pending).rejects.toThrow('aborted');
   });
 
+  it('gives up on an ordinary request within 10 seconds, so a retry gets a fresh connection', async () => {
+    const pending = fetchWithTimeout(never as typeof fetch)('https://x.supabase.co/auth/v1/token');
+    jest.advanceTimersByTime(10_000);
+    await expect(pending).rejects.toThrow('aborted');
+  });
+
   it('passes a response through and stops the timer', async () => {
     const ok = { ok: true } as Response;
     const res = await fetchWithTimeout((async () => ok) as typeof fetch)('https://x/rest/v1/q');
