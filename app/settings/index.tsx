@@ -1,6 +1,8 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
   Briefcase,
+  Bug,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +23,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth-store';
 import { useBiometricPref } from '@/lib/biometric-lock';
+import { IS_INTERNAL_BUILD } from '@/lib/dev-flags';
+import { sendTestReport } from '@/lib/error-reporting';
 import { syncJobReminders, useReminderPref } from '@/lib/notifications';
 import { exportCustomersCSV } from '@/lib/customers-export';
 import { supabase } from '@/lib/supabase';
@@ -34,11 +38,19 @@ const APPEARANCE_OPTIONS: { mode: ThemeMode; label: string; sub: string; Icon: L
   { mode: 'system', label: 'System', sub: 'Match your phone’s setting.', Icon: Smartphone },
 ];
 
+/** The commit this build was made from, so a tester can say which build they have. */
+const BUILD_COMMIT: unknown = Constants.expoConfig?.extra?.buildCommit;
+const BUILD_LABEL =
+  typeof BUILD_COMMIT === 'string' && BUILD_COMMIT
+    ? `Build ${BUILD_COMMIT.slice(0, 7)}`
+    : 'Local build';
+
 export default function Settings() {
   const styles = useStyles(makeStyles);
   const { colors, mode, setMode } = useTheme();
   const user = useAuth((s) => s.user);
   const [exporting, setExporting] = useState(false);
+  const [testing, setTesting] = useState(false);
   const biometricOn = useBiometricPref((s) => s.enabled);
   const setBiometricOn = useBiometricPref((s) => s.setEnabled);
   const remindersOn = useReminderPref((s) => s.enabled);
@@ -60,6 +72,22 @@ export default function Settings() {
     }
     // 'shared' and 'cancelled' both fall through silently — the share sheet
     // is its own feedback.
+  }
+
+  // Tester builds: confirms errors from this phone reach us, and says why not.
+  async function handleTestReport() {
+    if (testing) return;
+    setTesting(true);
+    const result = await sendTestReport();
+    setTesting(false);
+    const sdk =
+      result.sdkSent === null ? 'off in this build' : result.sdkSent ? 'sent' : 'not sent';
+    Alert.alert(
+      result.sdkSent && result.direct === 'ok' ? 'Test report sent' : 'Test report had a problem',
+      `${BUILD_LABEL}
+Error reporting: ${sdk}
+Direct check: ${result.direct}`,
+    );
   }
 
   async function handleSignOut() {
@@ -166,6 +194,18 @@ export default function Settings() {
             disabled={exporting}
           />
         </Section>
+
+        {IS_INTERNAL_BUILD ? (
+          <Section title="Tester tools">
+            <Row
+              icon={<Bug size={20} color={colors.goldDark} strokeWidth={2} />}
+              label={testing ? 'Sending…' : 'Send test report'}
+              sub={`${BUILD_LABEL}. Checks that errors from this phone reach us.`}
+              onPress={handleTestReport}
+              disabled={testing}
+            />
+          </Section>
+        ) : null}
 
         <Section title="Account">
           <Row

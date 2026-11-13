@@ -28,6 +28,28 @@ export type InvokeOutcome<T> =
   | { ok: true; data: T }
   | { ok: false; kind: 'network' | 'server'; message: string };
 
+/**
+ * The same verdict for a database read or write. supabase-js doesn't throw
+ * when a request is dropped or times out; it reports status 0. Anything else
+ * with an error is the database's own answer.
+ */
+export function queryOutcome<T>(result: {
+  data: T | null;
+  error: { message: string } | null;
+  status: number;
+}): InvokeOutcome<T> {
+  if (result.error) {
+    return {
+      ok: false,
+      kind: result.status === 0 ? 'network' : 'server',
+      message: result.error.message,
+    };
+  }
+  return result.data === null
+    ? { ok: false, kind: 'server', message: 'No data came back' }
+    : { ok: true, data: result.data };
+}
+
 type Deps<T> = {
   /** Resolves once the login is good to use; throws a user-facing error otherwise. */
   ensureLogin: () => Promise<void>;

@@ -1,4 +1,7 @@
 import { contactBackfill, type CustomerPatch } from './customer-form';
+import { reportError } from './error-reporting';
+import { callWithRetry, type InvokeOutcome, queryOutcome } from './function-call';
+import { ensureLogin } from './login-check';
 import { supabase } from './supabase';
 
 export type CustomerRow = {
@@ -139,56 +142,81 @@ function toCustomerWithJobs(row: unknown): CustomerWithJobs {
   return { ...r, job_count: r.jobs?.[0]?.count ?? 0 };
 }
 
-export async function createCustomer(input: {
-  name: string;
-  phone?: string;
-  email?: string;
-}): Promise<CustomerRow | null> {
+type NewCustomer = { name: string; phone?: string; email?: string };
+
+const SAVE_FAILED_MESSAGE = "Couldn't save the customer. Try picking one from the list.";
+
+/** One try at finding or creating the customer, with why when it fails. */
+async function tryCreateCustomer(input: NewCustomer): Promise<InvokeOutcome<CustomerRow>> {
   // getSession, not getUser: the phone already knows who's signed in, and on a
   // weak signal an extra trip to the server is what makes this time out.
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const user = session?.user;
-  if (!user) {
-    console.warn('[customers] cannot create without a session');
-    return null;
-  }
+  if (!user) return { ok: false, kind: 'server', message: 'no session' };
 
   const trimmed = input.name.trim();
-  if (!trimmed) return null;
+  if (!trimmed) return { ok: false, kind: 'server', message: 'empty name' };
 
   // Dedupe safety net — if a row already exists with the same normalized
   // name for this user, return that one instead of inserting. ILIKE makes
   // the comparison case-insensitive ('John Smith' === 'john smith'). Trim
   // collapses leading/trailing whitespace; we accept that 'John  Smith'
   // (double space) would still create a new row, which is fine for MVP.
-  const { data: existing } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('user_id', user.id)
-    .ilike('name', escapeLikeWildcards(trimmed))
-    .order('created_at', { ascending: true })
-    .limit(1);
-  if (existing && existing.length > 0) {
-    return existing[0] as CustomerRow;
-  }
+  // It also makes a retry safe: an insert that got through before the
+  // connection dropped is found here instead of being inserted twice.
+  const existing = queryOutcome<CustomerRow[]>(
+    await supabase
+      .from('customers')
+      .select('*')
+      .eq('user_id', user.id)
+      .ilike('name', escapeLikeWildcards(trimmed))
+      .order('created_at', { ascending: true })
+      .limit(1),
+  );
+  if (!existing.ok) return existing;
+  if (existing.data.length > 0) return { ok: true, data: existing.data[0] };
 
-  const { data, error } = await supabase
-    .from('customers')
-    .insert({
-      user_id: user.id,
-      name: trimmed,
-      phone: input.phone?.trim() || null,
-      email: input.email?.trim() || null,
-    })
-    .select('*')
-    .single();
-  if (error) {
-    console.warn('[customers] create failed', error.message);
-    return null;
-  }
-  return data as CustomerRow;
+  return queryOutcome<CustomerRow>(
+    await supabase
+      .from('customers')
+      .insert({
+        user_id: user.id,
+        name: trimmed,
+        phone: input.phone?.trim() || null,
+        email: input.email?.trim() || null,
+      })
+      .select('*')
+      .single(),
+  );
+}
+
+export async function createCustomer(input: NewCustomer): Promise<CustomerRow | null> {
+  const outcome = await tryCreateCustomer(input);
+  if (outcome.ok) return outcome.data;
+  console.warn('[customers] create failed', outcome.message);
+  return null;
+}
+
+/**
+ * Find or create the customer typed into New Quote, on the way to Generate.
+ * Checks the login first and retries once on a dropped connection, like the
+ * quote request itself (lib/function-call.ts): this save runs first, so a
+ * connection gone dead in the background used to fail here.
+ * Throws a message the screen can show.
+ */
+export async function saveCustomerForQuote(input: NewCustomer): Promise<CustomerRow> {
+  return await callWithRetry<CustomerRow>({
+    ensureLogin,
+    invoke: async () => {
+      const outcome = await tryCreateCustomer(input);
+      if (outcome.ok || outcome.kind === 'network') return outcome;
+      reportError(new Error(`customer save: ${outcome.message}`), 'customer.save');
+      return { ...outcome, message: SAVE_FAILED_MESSAGE };
+    },
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  });
 }
 
 // Escape the % and _ characters that Postgres LIKE treats as wildcards, so
