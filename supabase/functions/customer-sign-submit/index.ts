@@ -5,17 +5,34 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { onContractSigned } from '../_shared/post-sign.ts';
+import { sendSignedEmails } from '../_shared/signed-notice.ts';
+import {
+  cleanSignerName,
+  cleanUserAgent,
+  isAcceptableSignatureSvg,
+  sha256Hex,
+  typedSignatureSvg,
+} from '../_shared/signing-record.ts';
 
 /**
  * Public (unauthenticated) signature submission. Twin of the authenticated
  * /sign-contract function — auth here is by signing token, not JWT. Same
  * service-role pattern: bypass RLS for the post-sign write, re-verify the
  * token against the row before writing.
+ *
+ * The signer must type their full name and agree to sign electronically.
+ * Along with the signature, time and IP, this saves that name and consent,
+ * their device, and a fingerprint of the exact text they signed, then emails
+ * the customer a signed copy and tells the contractor.
  */
 
 type SubmitInput = {
   token: string;
-  signature_svg: string;
+  signer_name?: unknown;
+  consent?: unknown;
+  /** 'drawn' sends signature_svg; 'typed' has the server draw the name. */
+  method?: unknown;
+  signature_svg?: unknown;
 };
 
 const JSON_HEADERS = { ...corsHeaders, 'Content-Type': 'application/json' };
@@ -33,9 +50,25 @@ Deno.serve(async (req: Request) => {
     if (!input.token || typeof input.token !== 'string') {
       return new Response('token is required', { status: 400, headers: corsHeaders });
     }
-    if (!input.signature_svg || input.signature_svg.length < 20) {
-      return new Response('signature_svg is required', { status: 400, headers: corsHeaders });
+    const signerName = cleanSignerName(input.signer_name);
+    if (!signerName) {
+      return new Response('Type your full name to sign.', { status: 400, headers: corsHeaders });
     }
+    if (input.consent !== true) {
+      return new Response('Tick the box to agree to sign electronically.', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+    const method = input.method === 'typed' ? 'typed' : 'drawn';
+    if (method === 'drawn' && !isAcceptableSignatureSvg(input.signature_svg)) {
+      return new Response('Draw your signature, or choose to use your typed name.', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+    const signatureSvg =
+      method === 'typed' ? typedSignatureSvg(signerName) : (input.signature_svg as string);
 
     // @ts-expect-error — Deno env access
     const serviceUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -53,7 +86,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing, error: fetchErr } = await admin
       .from('contracts')
-      .select('id, signed_at, signing_token_expires_at')
+      .select('id, signed_at, signing_token_expires_at, body_markdown')
       .eq('signing_token', input.token)
       .maybeSingle();
     if (fetchErr || !existing) {
@@ -71,17 +104,34 @@ Deno.serve(async (req: Request) => {
 
     const signedIp = firstForwardedIp(req.headers.get('x-forwarded-for'));
 
-    const { error: updateErr } = await admin
+    // One update, guarded on still being unsigned: two taps can't both sign,
+    // and the fingerprint is of the text this request read and showed.
+    const signedAt = new Date().toISOString();
+    const { data: signedRows, error: updateErr } = await admin
       .from('contracts')
       .update({
-        signature_svg: input.signature_svg,
-        signed_at: new Date().toISOString(),
+        signature_svg: signatureSvg,
+        signed_at: signedAt,
         signed_ip: signedIp,
+        signer_name: signerName,
+        signed_consent_at: signedAt,
+        signed_user_agent: cleanUserAgent(req.headers.get('user-agent')),
+        signature_method: method,
+        body_sha256: await sha256Hex(existing.body_markdown),
       })
-      .eq('id', existing.id);
+      .eq('id', existing.id)
+      .is('signed_at', null)
+      .select('id');
     if (updateErr) {
       return new Response(`sign failed: ${updateErr.message}`, {
         status: 500,
+        headers: corsHeaders,
+      });
+    }
+
+    if (!signedRows || signedRows.length === 0) {
+      return new Response('This agreement was just signed or changed. Reload the page.', {
+        status: 409,
         headers: corsHeaders,
       });
     }
@@ -90,7 +140,19 @@ Deno.serve(async (req: Request) => {
     // logged but don't block the 200 response.
     await onContractSigned(admin, existing.id);
 
-    return new Response(JSON.stringify({ signed: true }), { headers: JSON_HEADERS });
+    // The same link now shows the signed copy.
+    const url = new URL(req.url);
+    const signBase: string =
+      // @ts-expect-error — Deno env access
+      Deno.env.get('CUSTOMER_SIGN_BASE_URL') ??
+      `${url.origin}${url.pathname.replace('/customer-sign-submit', '/customer-sign')}`;
+    const viewUrl = `${signBase}?token=${encodeURIComponent(input.token)}`;
+    const emailed = await sendSignedEmails(admin, existing.id, viewUrl);
+
+    return new Response(
+      JSON.stringify({ signed: true, customer_emailed: emailed.customer_emailed }),
+      { headers: JSON_HEADERS },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';
     return new Response(message, { status: 500, headers: corsHeaders });

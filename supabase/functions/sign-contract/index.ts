@@ -6,6 +6,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
 import { onContractSigned } from '../_shared/post-sign.ts';
+import { sendSignedEmails } from '../_shared/signed-notice.ts';
+import { cleanUserAgent, isAcceptableSignatureSvg, sha256Hex } from '../_shared/signing-record.ts';
 
 type SignInput = {
   contract_id: string;
@@ -24,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const input = (await req.json()) as SignInput;
 
     if (!input.contract_id) throw new HttpError(400, 'contract_id is required');
-    if (!input.signature_svg || input.signature_svg.length < 20) {
+    if (!isAcceptableSignatureSvg(input.signature_svg)) {
       throw new HttpError(400, 'signature_svg is required');
     }
 
@@ -45,7 +47,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing, error: fetchErr } = await admin
       .from('contracts')
-      .select('id, user_id, signed_at')
+      .select('id, user_id, signed_at, body_markdown, signing_token')
       .eq('id', input.contract_id)
       .maybeSingle();
     if (fetchErr || !existing) {
@@ -66,8 +68,14 @@ Deno.serve(async (req: Request) => {
         signature_svg: input.signature_svg,
         signed_at: new Date().toISOString(),
         signed_ip: signedIp,
+        // Signed in person on the contractor's phone: the device and IP are
+        // the contractor's, and there is no typed name or consent tick.
+        signed_user_agent: cleanUserAgent(req.headers.get('user-agent')),
+        signature_method: 'drawn',
+        body_sha256: await sha256Hex(existing.body_markdown),
       })
       .eq('id', input.contract_id)
+      .is('signed_at', null)
       .select('*')
       .single();
     if (updateErr || !updated) {
@@ -78,6 +86,20 @@ Deno.serve(async (req: Request) => {
     // logged but don't block the 200 response — the signature itself is
     // the contractually meaningful event; a missing job can be reconciled.
     const { job_id } = await onContractSigned(admin, updated.id);
+
+    // Email the customer their copy and the contractor the record.
+    if (existing.signing_token) {
+      const url = new URL(req.url);
+      const signBase =
+        // @ts-expect-error — Deno env access
+        Deno.env.get('CUSTOMER_SIGN_BASE_URL') ??
+        `${url.origin}${url.pathname.replace('/sign-contract', '/customer-sign')}`;
+      await sendSignedEmails(
+        admin,
+        updated.id,
+        `${signBase}?token=${encodeURIComponent(existing.signing_token)}`,
+      );
+    }
 
     return new Response(JSON.stringify({ ...updated, job_id: job_id ?? updated.job_id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

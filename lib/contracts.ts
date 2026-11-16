@@ -14,6 +14,12 @@ export type ContractRow = {
   signature_svg: string | null;
   signed_at: string | null;
   signed_ip: string | null;
+  /** The signing record (supabase/functions/_shared/signing-record.ts). */
+  signer_name: string | null;
+  signed_consent_at: string | null;
+  signed_user_agent: string | null;
+  signature_method: 'drawn' | 'typed' | null;
+  body_sha256: string | null;
   signing_token: string | null;
   signing_token_expires_at: string | null;
   version: number;
