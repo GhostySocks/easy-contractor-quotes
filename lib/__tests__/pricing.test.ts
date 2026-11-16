@@ -5,6 +5,7 @@ import {
   computeTotalCents,
   deriveRange,
   formatCents,
+  formatDollarsShort,
   scaleLineItems,
 } from '../pricing';
 
@@ -74,6 +75,22 @@ describe('formatCents', () => {
     [-500, '-$5.00'],
   ])('formats %i as %s', (input, expected) => {
     expect(formatCents(input)).toBe(expected);
+  });
+});
+
+describe('formatDollarsShort', () => {
+  it.each([
+    [0, '$0'],
+    [491130, '$4,911'],
+    [491150, '$4,912'],
+    [12540000, '$125,400'],
+    [99999900, '$999,999'],
+    [100000000, '$1M'],
+    [125000000, '$1.25M'],
+    [120000000, '$1.2M'],
+    [-500, '-$5'],
+  ])('formats %i as %s', (input, expected) => {
+    expect(formatDollarsShort(input)).toBe(expected);
   });
 });
 

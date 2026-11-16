@@ -81,3 +81,17 @@ export function formatCents(cents: number): string {
   const cash = `${dollarsFormatted}.${remainder.toString().padStart(2, '0')}`;
   return `${sign}$${cash}`;
 }
+
+/**
+ * A short amount for tight spots (the price range boxes): whole dollars, and
+ * millions as "$1.25M". The exact figure is always shown elsewhere on screen.
+ */
+export function formatDollarsShort(cents: number): string {
+  const sign = cents < 0 ? '-' : '';
+  const dollars = Math.round(Math.abs(cents) / 100);
+  if (dollars >= 1_000_000) {
+    const millions = (dollars / 1_000_000).toFixed(2).replace(/\.?0+$/, '');
+    return `${sign}$${millions}M`;
+  }
+  return `${sign}$${dollars.toLocaleString('en-US')}`;
+}
