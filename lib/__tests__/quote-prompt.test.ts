@@ -134,3 +134,22 @@ describe('QUOTE_TOOL_INPUT_SCHEMA', () => {
     );
   });
 });
+
+describe('travel and ZIP', () => {
+  it('tells the model never to price travel, since the app adds it', () => {
+    const prompt = buildSystemPrompt({ trade: 'handyman', state_code: 'OH' });
+    expect(prompt).toContain('Never include a travel');
+    expect(prompt).not.toContain('Travel & disposal');
+  });
+
+  it('includes the ZIP in the location when there is one', () => {
+    const m = buildUserMessage({
+      trade: 'handyman',
+      state_code: 'oh',
+      scope_text: 'Fix a fence gate',
+      city: 'Ashland',
+      postal_code: '44805',
+    });
+    expect(m).toContain('Location: Ashland, OH 44805');
+  });
+});

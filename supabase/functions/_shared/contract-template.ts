@@ -85,6 +85,15 @@ function customerLine(input: ContractTemplateInput): string {
   return loc ? `${input.customer.name}, ${loc}` : input.customer.name;
 }
 
+/** A "Job site" line when the quote recorded where the work happens. */
+function jobSiteLines(input: ContractTemplateInput): string[] {
+  const s = input.job_site;
+  if (!s || (!s.address_line1 && !s.city)) return [];
+  const stateZip = [s.state_code?.toUpperCase(), s.postal_code].filter(Boolean).join(' ');
+  const where = [s.address_line1, s.city, stateZip].filter(Boolean).join(', ');
+  return ['', `**Job site:** ${where}`];
+}
+
 function lineItemsTable(input: ContractTemplateInput): string[] {
   const rows = ['| Item | Qty | Unit price | Total |', '| --- | ---: | ---: | ---: |'];
   for (const item of input.quote.line_items) {
@@ -124,6 +133,7 @@ export function renderWorkAgreement(input: ContractTemplateInput): string {
       `**${input.contractor.business_name}** (the "Contractor") and ` +
       `**${customerLine(input)}** (the "Customer") for work in the state of ${state}.`,
   );
+  out.push(...jobSiteLines(input));
   out.push('');
   out.push('## Scope of Work');
   out.push('');
@@ -202,6 +212,7 @@ export function renderReleaseOfLiability(input: ContractTemplateInput): string {
       `**${input.contractor.business_name}** (the "Contractor") to perform the following work ` +
       `in the state of ${state}:`,
   );
+  out.push(...jobSiteLines(input));
   out.push('');
   out.push(input.quote.scope_of_work.trim());
   out.push('');

@@ -3,6 +3,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { callWithRetry, type InvokeOutcome } from './function-call';
 import { ensureLogin } from './login-check';
 import { supabase } from './supabase';
+import type { TravelInput } from '../supabase/functions/_shared/travel';
 
 export { OfflineError } from './function-call';
 
@@ -30,6 +31,8 @@ export type QuoteInput = {
   photos: string[];
   /** ISO timestamp the customer wants the work to start, or null. */
   requested_start_at?: string | null;
+  /** The travel charge the contractor chose, or null for none. */
+  travel?: TravelInput | null;
 };
 
 export type LineItem = {
@@ -37,6 +40,8 @@ export type LineItem = {
   qty: number;
   unit_price_cents: number;
   total_cents: number;
+  /** A set charge (travel): the Low / High price buckets leave it alone. */
+  fixed?: boolean;
 };
 
 export type QuoteInsertResult = {

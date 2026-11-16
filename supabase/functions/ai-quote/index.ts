@@ -15,6 +15,7 @@ import {
 import { normalizeQuote, type QuoteOutput, validateQuote } from '../_shared/quote-validate.ts';
 import { stateNoteFor } from '../_shared/state-notes.ts';
 import { PHOTO_BUCKET, sanitizePhotoPaths } from '../_shared/photo-paths.ts';
+import { addTravel, sanitizeTravel } from '../_shared/travel.ts';
 
 type QuoteInput = {
   trade: string;
@@ -29,6 +30,8 @@ type QuoteInput = {
   } | null;
   photos: string[];
   requested_start_at?: string | null;
+  /** The contractor's travel choice for this quote; absent or null for none. */
+  travel?: unknown;
 };
 
 type QuoteToolOutput = QuoteOutput;
@@ -88,6 +91,7 @@ Deno.serve(async (req: Request) => {
       state_code: input.state_code,
       scope_text: input.scope_text,
       city: input.address?.city ?? null,
+      postal_code: input.address?.postal_code ?? null,
       customer_history: customerHistory,
       photo_count: images.length,
     });
@@ -101,7 +105,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const startedAt = Date.now();
-    const result = await generateValidatedQuote(apiKey, systemPrompt, userMessage);
+    // Travel is the contractor's own rate times the distance, added after the
+    // model's quote has passed its checks; the model never prices it.
+    const travel = sanitizeTravel(input.travel);
+    const result = addTravel(
+      await generateValidatedQuote(apiKey, systemPrompt, userMessage),
+      travel,
+    );
     const aiMs = Date.now() - startedAt;
     const stateNotes = stateNoteFor(input.state_code);
 
@@ -122,6 +132,13 @@ Deno.serve(async (req: Request) => {
         job_type: input.trade,
         requested_start_at: validIsoOrNull(input.requested_start_at),
         photos: photoPaths,
+        // input.state_code is the job site's state: it prices the quote above
+        // and decides the contract terms later (ai-contract).
+        site_address_line1: cleanText(input.address?.line1),
+        site_city: cleanText(input.address?.city),
+        site_state_code: stateOrNull(input.state_code),
+        site_postal_code: cleanText(input.address?.postal_code),
+        travel,
         status: 'draft',
       })
       .select('id')
@@ -263,6 +280,18 @@ function toBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(binary);
+}
+
+function cleanText(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const t = value.trim().slice(0, 200);
+  return t ? t : null;
+}
+
+function stateOrNull(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Za-z]{2}$/.test(value.trim())
+    ? value.trim().toUpperCase()
+    : null;
 }
 
 function validIsoOrNull(value: unknown): string | null {

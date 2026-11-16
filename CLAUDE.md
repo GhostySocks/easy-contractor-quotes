@@ -221,10 +221,10 @@ All tables have `id uuid default gen_random_uuid() primary key`, `user_id uuid r
 
 Canonical SQL lives in `/supabase/migrations/`. Table list:
 
-- `profiles` — business profile, 1:1 with auth user. `travel_buffer_minutes` (0/15/30/60, default 30) is the travel time kept clear around jobs when scheduling
+- `profiles` — business profile, 1:1 with auth user. `travel_buffer_minutes` (0/15/30/60, default 30) is the travel time kept clear around jobs when scheduling. `address_line1`, `city`, `postal_code` are where the business is based, and `base_lat` / `base_lng` its map point (looked up on the phone when saved), the starting point for travel on a quote
 - `customers` — CRM customers (PII columns encrypted via pgcrypto)
-- `jobs` — central entity
-- `quotes` — AI-generated, one-to-many with jobs. Also carries `job_type`, `requested_start_at` (the job is created already scheduled for it when the contract is signed) and `photos` (≤ 4 paths in the private `job-photos` storage bucket, `<user_id>/<file>.jpg`, owner-only storage policies)
+- `jobs` — central entity. `site_address_line1`, `site_city`, `site_state_code`, `site_postal_code` are the job site, copied from the quote when its contract is signed
+- `quotes` — AI-generated, one-to-many with jobs. Also carries `job_type`, `requested_start_at` (the job is created already scheduled for it when the contract is signed) and `photos` (≤ 4 paths in the private `job-photos` storage bucket, `<user_id>/<file>.jpg`, owner-only storage policies). `site_*` (the same four columns as jobs) is where the work happens: its state prices the quote and decides the contract terms, and it can differ from the customer's own address. `travel` (jsonb, null for none) is the travel charge the contractor chose on New Quote; the Travel line item is computed from it in `_shared/travel.ts`, never by the model
 - `contracts` — state-specific, AI-generated, e-signed (write-once after signing)
 - `invoices` — auto from quote + actuals
 - `subscriptions` — mirror of RevenueCat, source of truth for entitlement (service_role writes only)

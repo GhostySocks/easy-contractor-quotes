@@ -38,7 +38,10 @@ export async function onContractSigned(
 
   const { data: quote } = await admin
     .from('quotes')
-    .select('id, scope_of_work, total_cents, status, requested_start_at, photos')
+    .select(
+      'id, scope_of_work, total_cents, status, requested_start_at, photos, ' +
+        'site_address_line1, site_city, site_state_code, site_postal_code',
+    )
     .eq('id', contract.quote_id)
     .maybeSingle();
   if (!quote) return { job_id: null };

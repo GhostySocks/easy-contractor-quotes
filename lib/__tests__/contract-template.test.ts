@@ -120,3 +120,25 @@ describe('amendmentBody', () => {
     expect(v3).toContain('**Amendment 2**');
   });
 });
+
+describe('job site', () => {
+  it('names where the work happens when the quote recorded it', () => {
+    const body = renderWorkAgreement({
+      ...base,
+      job_site: {
+        address_line1: '9 Lake Rd',
+        city: 'Mansfield',
+        state_code: 'oh',
+        postal_code: '44903',
+      },
+    });
+    expect(body).toContain('**Job site:** 9 Lake Rd, Mansfield, OH 44903');
+  });
+
+  it('says nothing about a job site on older quotes without one', () => {
+    expect(renderWorkAgreement(base)).not.toContain('Job site');
+    expect(renderWorkAgreement({ ...base, job_site: { state_code: 'TX' } })).not.toContain(
+      'Job site',
+    );
+  });
+});

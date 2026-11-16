@@ -77,6 +77,26 @@ describe('jobFieldsFromQuote', () => {
       scheduled_at: start,
       total_cents: 21400,
       photos: ['u/a.jpg'],
+      site_address_line1: null,
+      site_city: null,
+      site_state_code: null,
+      site_postal_code: null,
+    });
+  });
+
+  it('carries the job site onto the job, so it knows where to go', () => {
+    const fields = jobFieldsFromQuote({
+      ...quote,
+      site_address_line1: '9 Lake Rd',
+      site_city: 'Mansfield',
+      site_state_code: 'OH',
+      site_postal_code: '44903',
+    });
+    expect(fields).toMatchObject({
+      site_address_line1: '9 Lake Rd',
+      site_city: 'Mansfield',
+      site_state_code: 'OH',
+      site_postal_code: '44903',
     });
   });
 
