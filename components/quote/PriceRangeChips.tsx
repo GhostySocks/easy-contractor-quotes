@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { formatCents, type PriceBucket } from '@/lib/pricing';
+import { formatCents, formatDollarsShort, type PriceBucket } from '@/lib/pricing';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles } from '@/lib/theme-context';
 
@@ -49,8 +49,16 @@ export function PriceRangeChips({
             <Text style={[styles.label, isSelected && styles.labelSelected]}>
               {labels[opt.key]}
             </Text>
-            <Text style={[styles.amount, isSelected && styles.amountSelected]}>
-              {formatCents(opt.cents)}
+            {/* Whole dollars on one line, shrinking a little for six figures.
+                The exact amount is in the Total line above and read aloud. */}
+            <Text
+              style={[styles.amount, isSelected && styles.amountSelected]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              accessibilityLabel={formatCents(opt.cents)}
+            >
+              {formatDollarsShort(opt.cents)}
             </Text>
           </Pressable>
         );
@@ -71,7 +79,8 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.divider,
       borderWidth: 1,
       borderRadius: radii.md,
-      padding: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
       alignItems: 'center',
       gap: 2,
     },
@@ -94,6 +103,9 @@ const makeStyles = (colors: Colors) =>
       fontVariant: ['tabular-nums'],
       fontSize: typography.sizes.h3,
       color: colors.ink,
+      // adjustsFontSizeToFit needs a width to fit into.
+      alignSelf: 'stretch',
+      textAlign: 'center',
     },
     amountSelected: {
       color: colors.goldDark,
