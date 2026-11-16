@@ -176,3 +176,17 @@ describe('work agreement carries the release', () => {
     expect(md.indexOf('## Cancellation')).toBeLessThan(md.indexOf('## Signatures'));
   });
 });
+
+describe('signature section', () => {
+  const md = renderWorkAgreement(base);
+
+  it('names both parties and how each one agrees', () => {
+    expect(md).toContain('**Contractor:** Mike’s Handyman Service, by sending this agreement');
+    expect(md).toContain('**Customer:** Jane Doe, by electronic signature.');
+  });
+
+  it('has no blank paper signature lines, since it is signed electronically', () => {
+    expect(md).not.toContain('____');
+    expect(renderReleaseOfLiability(base)).not.toContain('____');
+  });
+});

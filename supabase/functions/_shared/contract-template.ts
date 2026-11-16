@@ -111,13 +111,10 @@ function signatureBlocks(input: ContractTemplateInput): string[] {
     '',
     'By signing, each party agrees to everything in this document.',
     '',
-    `**Contractor:** ${input.contractor.business_name}`,
+    `**Contractor:** ${input.contractor.business_name}, by sending this agreement for signature.`,
     '',
-    'Signature: ____________________________  Date: ______________',
-    '',
-    `**Customer:** ${input.customer.name}`,
-    '',
-    'Signature: ____________________________  Date: ______________',
+    `**Customer:** ${input.customer.name}, by electronic signature. The signature, the date and ` +
+      'time it was made, and its signing record are kept with this agreement.',
   ];
 }
 
