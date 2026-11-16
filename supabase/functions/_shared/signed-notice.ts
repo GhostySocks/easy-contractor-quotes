@@ -23,7 +23,7 @@ export async function sendSignedEmails(
       .from('contracts')
       .select(
         'id, user_id, customer_id, quote_id, kind, body_markdown, signed_at, signed_ip, ' +
-          'signer_name, signed_user_agent, signature_method, body_sha256',
+          'signer_name, signed_consent_at, signed_user_agent, signature_method, body_sha256',
       )
       .eq('id', contractId)
       .maybeSingle();
@@ -33,7 +33,7 @@ export async function sendSignedEmails(
       await Promise.all([
         admin
           .from('profiles')
-          .select('business_name, logo_url')
+          .select('business_name, logo_url, business_phone, business_email')
           .eq('id', contract.user_id)
           .maybeSingle(),
         contract.customer_id
@@ -52,6 +52,10 @@ export async function sendSignedEmails(
     const input = {
       businessName: (profile?.business_name as string | undefined) ?? 'Your contractor',
       logoUrl: await logoUrlFor(admin, profile?.logo_url as string | null | undefined),
+      contact: {
+        phone: profile?.business_phone as string | null | undefined,
+        email: profile?.business_email as string | null | undefined,
+      },
       customerName:
         (contract.signer_name as string | null) ??
         (customer?.name as string | undefined) ??
@@ -61,6 +65,7 @@ export async function sendSignedEmails(
       totalCents: typeof quote?.total_cents === 'number' ? quote.total_cents : null,
       record: {
         signer_name: contract.signer_name,
+        signed_consent_at: contract.signed_consent_at ?? null,
         signed_at: contract.signed_at,
         signed_ip: contract.signed_ip,
         signed_user_agent: contract.signed_user_agent,
@@ -77,7 +82,7 @@ export async function sendSignedEmails(
         await sendEmail({
           to: customerEmail,
           toName: customer?.name as string | undefined,
-          replyTo: contractorEmail,
+          replyTo: (profile?.business_email as string | null | undefined) || contractorEmail,
           ...customerSignedEmail(input),
         });
         result.customer_emailed = true;

@@ -1,4 +1,13 @@
-import { button, emailLayout, EMAIL_COLORS, factsPanel, heading, paragraph } from './email.ts';
+import {
+  button,
+  type BusinessContact,
+  contactLine,
+  emailLayout,
+  EMAIL_COLORS,
+  factsPanel,
+  heading,
+  paragraph,
+} from './email.ts';
 import { escapeHtml } from './markdown.ts';
 
 /**
@@ -62,6 +71,7 @@ export function jobSummary(scope: string | null | undefined): string | null {
 export type QuoteEmailInput = {
   businessName: string;
   logoUrl?: string | null;
+  contact?: BusinessContact | null;
   customerName: string | null;
   totalCents: number;
   scopeOfWork: string | null;
@@ -102,6 +112,7 @@ export function quoteEmail(input: QuoteEmailInput): BuiltEmail {
     html: emailLayout({
       businessName: input.businessName,
       logoUrl: input.logoUrl,
+      contact: contactLine(input.businessName, input.contact),
       preheader: `${money(input.totalCents)}. Review the details and sign online.`,
       bodyHtml: body,
       footer: `${input.businessName} sent you this quote using Easy Contractor Quotes.`,
@@ -114,6 +125,7 @@ export type InvoiceLine = { label: string; total_cents: number };
 export type InvoiceEmailInput = {
   businessName: string;
   logoUrl?: string | null;
+  contact?: BusinessContact | null;
   customerName: string | null;
   /** Short reference shown to the customer, e.g. "A1B2C3D4". */
   shortId: string;
@@ -154,6 +166,7 @@ export function invoiceEmail(input: InvoiceEmailInput): BuiltEmail {
     html: emailLayout({
       businessName: input.businessName,
       logoUrl: input.logoUrl,
+      contact: contactLine(input.businessName, input.contact),
       preheader: `${money(input.totalCents)} due for the work completed.`,
       bodyHtml: body,
       footer: `${input.businessName} sent you this invoice using Easy Contractor Quotes.`,

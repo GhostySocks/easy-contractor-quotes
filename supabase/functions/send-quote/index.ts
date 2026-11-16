@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('business_name, logo_url')
+      .select('business_name, logo_url, business_phone, business_email')
       .eq('id', userId)
       .maybeSingle();
     const businessName = profile?.business_name ?? 'Your contractor';
@@ -120,10 +120,11 @@ Deno.serve(async (req: Request) => {
         await sendEmail({
           to: input.recipient.email as string,
           toName: input.recipient.name,
-          replyTo: me?.user?.email ?? null,
+          replyTo: profile?.business_email || me?.user?.email || null,
           ...quoteEmail({
             businessName,
             logoUrl: await logoUrlFor(supabase, profile?.logo_url),
+            contact: { phone: profile?.business_phone, email: profile?.business_email },
             customerName: input.recipient.name,
             totalCents: quote.total_cents,
             scopeOfWork: quote.scope_of_work,

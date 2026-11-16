@@ -33,6 +33,8 @@ export type EmailLayoutInput = {
   preheader: string;
   /** Already-safe HTML for the body. Build it with the helpers below. */
   bodyHtml: string;
+  /** How to reach the contractor, from contactLine(); shown above the footer. */
+  contact?: string | null;
   /** Plain-text footer line, e.g. why they got this email. */
   footer: string;
 };
@@ -61,6 +63,7 @@ ${logo}<span style="font-size:20px;font-weight:700;color:${c.goldTint};vertical-
 ${input.bodyHtml}
 </td></tr>
 <tr><td style="padding:16px 28px;font-size:13px;line-height:1.5;color:${c.ink3};text-align:center;">
+${input.contact ? `<div style="font-size:15px;font-weight:600;color:${c.ink2};margin:0 0 6px;">${escapeHtml(input.contact)}</div>` : ''}
 ${escapeHtml(input.footer)}
 </td></tr>
 </table>
@@ -68,6 +71,14 @@ ${escapeHtml(input.footer)}
 </table>
 </body>
 </html>`;
+}
+
+export type BusinessContact = { phone?: string | null; email?: string | null };
+
+/** "Motter Handyman · 555 123 4567 · mike@example.com", or null with nothing to show. */
+export function contactLine(businessName: string, contact?: BusinessContact | null): string | null {
+  const parts = [contact?.phone?.trim(), contact?.email?.trim()].filter(Boolean);
+  return parts.length ? [businessName, ...parts].join(' · ') : null;
 }
 
 export function paragraph(text: string): string {

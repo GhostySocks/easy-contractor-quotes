@@ -22,6 +22,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { deleteJobPhotos, promptForPhotos, signedPhotoUrls, uploadLogo } from '@/lib/photos';
+import { EMAIL_RE, PHONE_RE } from '@/lib/customer-form';
 import { geocodeAddress } from '@/lib/location';
 import { loadProfile, updateProfile } from '@/lib/profile';
 import { TRAVEL_BUFFER_OPTIONS } from '@/lib/schedule-conflicts';
@@ -40,6 +41,8 @@ export default function BusinessSettings() {
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
   // The saved address and its map point, so an unchanged address isn't looked up again.
   const savedBase = useRef<{ query: string | null; lat: number | null; lng: number | null }>({
     query: null,
@@ -67,6 +70,8 @@ export default function BusinessSettings() {
           setAddressLine1(profile.address_line1 ?? '');
           setCity(profile.city ?? '');
           setPostalCode(profile.postal_code ?? '');
+          setBusinessPhone(profile.business_phone ?? '');
+          setBusinessEmail(profile.business_email ?? '');
           savedBase.current = {
             query: addressQuery({
               line1: profile.address_line1 ?? '',
@@ -155,6 +160,16 @@ export default function BusinessSettings() {
       return;
     }
 
+    const phone = businessPhone.trim();
+    if (phone && !PHONE_RE.test(phone)) {
+      Alert.alert('Check the business phone', 'It looks incomplete. Fix it or clear it.');
+      return;
+    }
+    const email = businessEmail.trim().toLowerCase();
+    if (email && !EMAIL_RE.test(email)) {
+      Alert.alert('Check the business email', 'It looks incomplete. Fix it or clear it.');
+      return;
+    }
     const zip = postalCode.trim();
     if (zip && !/^\d{5}(-\d{4})?$/.test(zip)) {
       Alert.alert('ZIP code must be 5 digits', 'e.g. 44805');
@@ -186,6 +201,8 @@ export default function BusinessSettings() {
       postal_code: zip || null,
       base_lat: base.lat,
       base_lng: base.lng,
+      business_phone: phone || null,
+      business_email: email || null,
       trade,
       default_tax_rate: Math.round(parsedTax * 100) / 100,
       travel_buffer_minutes: travelBuffer,
@@ -245,6 +262,30 @@ export default function BusinessSettings() {
                 autoCapitalize="words"
                 returnKeyType="next"
               />
+
+              <Input
+                label="Business phone"
+                value={businessPhone}
+                onChangeText={setBusinessPhone}
+                placeholder="555 123 4567"
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                returnKeyType="next"
+              />
+
+              <Input
+                label="Business email"
+                value={businessEmail}
+                onChangeText={setBusinessEmail}
+                placeholder="you@yourbusiness.com"
+                keyboardType="email-address"
+                autoComplete="email"
+                returnKeyType="next"
+              />
+              <Text style={styles.travelHint}>
+                Shown to customers on quotes, signed agreements and invoices. Their replies go to
+                this email, or to your login email if you leave it blank.
+              </Text>
 
               <Input
                 label="Business address"

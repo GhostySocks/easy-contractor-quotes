@@ -1,4 +1,13 @@
-import { button, documentBlock, emailLayout, factsPanel, heading, paragraph } from './email.ts';
+import {
+  button,
+  type BusinessContact,
+  contactLine,
+  documentBlock,
+  emailLayout,
+  factsPanel,
+  heading,
+  paragraph,
+} from './email.ts';
 import { markdownToHtml } from './markdown.ts';
 import { recordRows, type SigningRecord } from './signing-record.ts';
 
@@ -11,6 +20,7 @@ import { recordRows, type SigningRecord } from './signing-record.ts';
 export type SignedEmailInput = {
   businessName: string;
   logoUrl?: string | null;
+  contact?: BusinessContact | null;
   customerName: string;
   /** "Work agreement" or "Release of liability". */
   kindTitle: string;
@@ -57,6 +67,7 @@ export function customerSignedEmail(input: SignedEmailInput): BuiltEmail {
     html: emailLayout({
       businessName: input.businessName,
       logoUrl: input.logoUrl,
+      contact: contactLine(input.businessName, input.contact),
       preheader: `Your signed copy. ${invoiceNote(input.businessName)}`,
       bodyHtml: body,
       footer: `You are receiving this because you signed an agreement with ${input.businessName}. Sent with Easy Contractor Quotes.`,

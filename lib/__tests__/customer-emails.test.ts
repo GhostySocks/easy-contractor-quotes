@@ -6,7 +6,7 @@ import {
   type InvoiceEmailInput,
   type QuoteEmailInput,
 } from '../../supabase/functions/_shared/customer-emails';
-import { emailLayout } from '../../supabase/functions/_shared/email';
+import { contactLine, emailLayout } from '../../supabase/functions/_shared/email';
 
 const quote: QuoteEmailInput = {
   businessName: 'Motter Handyman',
@@ -148,5 +148,27 @@ describe('emailLayout', () => {
 
   it('shows the name alone without a logo', () => {
     expect(emailLayout(base)).not.toContain('<img');
+  });
+});
+
+describe('business contact', () => {
+  it('puts the phone and email in the footer when the contractor set them', () => {
+    const html = quoteEmail({
+      ...quote,
+      contact: { phone: '555 123 4567', email: 'mike@example.com' },
+    }).html;
+    expect(html).toContain('Motter Handyman · 555 123 4567 · mike@example.com');
+  });
+
+  it('shows just the one that is set', () => {
+    expect(contactLine('Motter Handyman', { phone: '555 123 4567', email: ' ' })).toBe(
+      'Motter Handyman · 555 123 4567',
+    );
+  });
+
+  it('adds nothing when neither is set', () => {
+    expect(contactLine('Motter Handyman', { phone: null, email: null })).toBeNull();
+    expect(contactLine('Motter Handyman', null)).toBeNull();
+    expect(quoteEmail(quote).html).not.toContain('·');
   });
 });
