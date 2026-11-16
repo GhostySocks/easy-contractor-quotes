@@ -14,6 +14,15 @@ export type SendQuoteInput = {
   };
 };
 
+/** The phone's time zone, so the start date in the email is the contractor's day. */
+function deviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 export type SendQuoteResult = {
   email_sent: boolean;
   email_error: string | null;
@@ -23,7 +32,7 @@ export type SendQuoteResult = {
 
 export async function sendQuote(input: SendQuoteInput): Promise<SendQuoteResult> {
   const { data, error } = await supabase.functions.invoke<SendQuoteResult>('send-quote', {
-    body: input,
+    body: { ...input, time_zone: deviceTimeZone() },
   });
   if (error) {
     throw new Error(`send-quote failed: ${error.message}`);

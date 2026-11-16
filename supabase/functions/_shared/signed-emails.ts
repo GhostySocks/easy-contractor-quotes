@@ -10,6 +10,7 @@ import { recordRows, type SigningRecord } from './signing-record.ts';
 
 export type SignedEmailInput = {
   businessName: string;
+  logoUrl?: string | null;
   customerName: string;
   /** "Work agreement" or "Release of liability". */
   kindTitle: string;
@@ -55,6 +56,7 @@ export function customerSignedEmail(input: SignedEmailInput): BuiltEmail {
     subject: `Your signed ${kind} with ${input.businessName}`,
     html: emailLayout({
       businessName: input.businessName,
+      logoUrl: input.logoUrl,
       preheader: `Your signed copy. ${invoiceNote(input.businessName)}`,
       bodyHtml: body,
       footer: `You are receiving this because you signed an agreement with ${input.businessName}. Sent with Easy Contractor Quotes.`,

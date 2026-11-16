@@ -1,7 +1,7 @@
 // @ts-expect-error — Deno-only import resolved by the Supabase edge runtime
 import { type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
-import { sendEmail } from './email.ts';
+import { logoUrlFor, sendEmail } from './email.ts';
 import { contractorSignedEmail, customerSignedEmail } from './signed-emails.ts';
 
 /**
@@ -31,7 +31,11 @@ export async function sendSignedEmails(
 
     const [{ data: profile }, { data: customer }, { data: quote }, { data: owner }] =
       await Promise.all([
-        admin.from('profiles').select('business_name').eq('id', contract.user_id).maybeSingle(),
+        admin
+          .from('profiles')
+          .select('business_name, logo_url')
+          .eq('id', contract.user_id)
+          .maybeSingle(),
         contract.customer_id
           ? admin
               .from('customers')
@@ -47,6 +51,7 @@ export async function sendSignedEmails(
 
     const input = {
       businessName: (profile?.business_name as string | undefined) ?? 'Your contractor',
+      logoUrl: await logoUrlFor(admin, profile?.logo_url as string | null | undefined),
       customerName:
         (contract.signer_name as string | null) ??
         (customer?.name as string | undefined) ??
@@ -65,12 +70,14 @@ export async function sendSignedEmails(
       viewUrl,
     };
 
+    const contractorEmail = owner?.user?.email?.trim();
     const customerEmail = (customer?.email as string | null | undefined)?.trim();
     if (customerEmail) {
       try {
         await sendEmail({
           to: customerEmail,
           toName: customer?.name as string | undefined,
+          replyTo: contractorEmail,
           ...customerSignedEmail(input),
         });
         result.customer_emailed = true;
@@ -79,7 +86,6 @@ export async function sendSignedEmails(
       }
     }
 
-    const contractorEmail = owner?.user?.email?.trim();
     if (contractorEmail) {
       try {
         await sendEmail({ to: contractorEmail, ...contractorSignedEmail(input) });

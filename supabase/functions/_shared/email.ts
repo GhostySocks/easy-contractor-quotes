@@ -27,6 +27,8 @@ const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-ser
 export type EmailLayoutInput = {
   /** Shown in the dark header band: the contractor's business. */
   businessName: string;
+  /** The contractor's logo, shown beside the name when there is one. */
+  logoUrl?: string | null;
   /** Short line of preview text some inboxes show after the subject. */
   preheader: string;
   /** Already-safe HTML for the body. Build it with the helpers below. */
@@ -37,6 +39,9 @@ export type EmailLayoutInput = {
 
 export function emailLayout(input: EmailLayoutInput): string {
   const c = EMAIL_COLORS;
+  const logo = input.logoUrl
+    ? `<img src="${escapeHtml(input.logoUrl)}" alt="" height="40" style="height:40px;width:auto;max-width:120px;border-radius:8px;vertical-align:middle;margin-right:12px;border:0;" />`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,7 +54,7 @@ export function emailLayout(input: EmailLayoutInput): string {
 <tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
 <tr><td style="background:${c.ink};border-radius:14px 14px 0 0;padding:20px 28px;">
-<span style="font-size:20px;font-weight:700;color:${c.goldTint};">${escapeHtml(input.businessName)}</span>
+${logo}<span style="font-size:20px;font-weight:700;color:${c.goldTint};vertical-align:middle;">${escapeHtml(input.businessName)}</span>
 </td></tr>
 <tr><td style="background:${c.gold};height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>
 <tr><td style="background:${c.surface};border-radius:0 0 14px 14px;padding:28px;font-size:17px;line-height:1.55;">
@@ -133,12 +138,38 @@ export function documentBlock(html: string): string {
 const RESEND_URL = 'https://api.resend.com/emails';
 const DEFAULT_FROM = 'Easy Contractor Quotes <no-reply@easycontractorquotes.com>';
 
+const LOGO_BUCKET = 'job-photos';
+const LOGO_URL_SECONDS = 365 * 24 * 60 * 60;
+
+/**
+ * A link to the contractor's logo that an email client can load. The bucket
+ * is private, so this is a signed link, good for a year; after that the
+ * email shows the business name alone. Null when there is no logo.
+ */
+export async function logoUrlFor(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  logoPath: string | null | undefined,
+): Promise<string | null> {
+  if (!logoPath) return null;
+  try {
+    const { data } = await supabase.storage
+      .from(LOGO_BUCKET)
+      .createSignedUrl(logoPath, LOGO_URL_SECONDS);
+    return (data?.signedUrl as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Send one email through Resend. Throws with Resend's reason when it refuses. */
 export async function sendEmail(input: {
   to: string;
   toName?: string | null;
   subject: string;
   html: string;
+  /** Where a reply goes. The From address is no-reply, so set this when the email invites one. */
+  replyTo?: string | null;
 }): Promise<void> {
   // @ts-expect-error — Deno env access
   const apiKey = Deno.env.get('RESEND_API_KEY');
@@ -156,6 +187,7 @@ export async function sendEmail(input: {
       to: name ? `${name} <${input.to}>` : input.to,
       subject: input.subject,
       html: input.html,
+      ...(input.replyTo ? { reply_to: input.replyTo } : {}),
     }),
   });
   if (!resp.ok) {
