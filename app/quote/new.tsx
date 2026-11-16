@@ -32,6 +32,7 @@ import {
   saveCustomerForQuote,
   type CustomerRow,
 } from '@/lib/customers';
+import { quoteContactErrors, type ContactErrors } from '@/lib/customer-form';
 import { fetchJob } from '@/lib/jobs';
 import { reportError } from '@/lib/error-reporting';
 import { currentAddress } from '@/lib/location';
@@ -72,6 +73,9 @@ export default function NewQuote() {
   const jobTypeTouched = useRef(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [contactErrors, setContactErrors] = useState<ContactErrors>({});
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
@@ -130,6 +134,8 @@ export default function NewQuote() {
         if (!c) return;
         setCustomerId(c.id);
         setCustomerName(c.name);
+        setPhone(c.phone ?? '');
+        setEmail(c.email ?? '');
         if (c.address_line1) setAddressLine1(c.address_line1);
         if (c.city) setCity(c.city);
       });
@@ -250,6 +256,15 @@ export default function NewQuote() {
       );
       return;
     }
+    const errors = quoteContactErrors({ phone, email });
+    setContactErrors(errors);
+    if (errors.phone || errors.email) {
+      Alert.alert(
+        'Check the contact details',
+        'The phone or email looks incomplete. Fix it or clear it, then generate.',
+      );
+      return;
+    }
     setGenerating(true);
     const startedAt = new Date().toISOString();
     try {
@@ -260,7 +275,7 @@ export default function NewQuote() {
       let resolvedCustomerId = customerId;
       if (!resolvedCustomerId && customerName.trim()) {
         const created = await withTimeout(
-          saveCustomerForQuote({ name: customerName }),
+          saveCustomerForQuote({ name: customerName, phone, email }),
           CUSTOMER_SAVE_TIMEOUT_MS,
           'Saving the customer',
         );
@@ -268,11 +283,17 @@ export default function NewQuote() {
         setCustomerId(created.id);
       }
 
-      // Save the job address onto the customer so the next quote prefills it.
-      if (resolvedCustomerId && (addressLine1.trim() || city.trim())) {
+      // Save the address and contact details onto the customer so the next
+      // quote and the Send screen prefill them.
+      if (
+        resolvedCustomerId &&
+        (addressLine1.trim() || city.trim() || phone.trim() || email.trim())
+      ) {
         void rememberCustomerContact(resolvedCustomerId, {
           address_line1: addressLine1,
           city,
+          phone,
+          email,
         });
       }
 
@@ -363,9 +384,39 @@ export default function NewQuote() {
             onSelect={(c: CustomerRow) => {
               setCustomerId(c.id);
               setCustomerName(c.name);
+              setPhone(c.phone ?? '');
+              setEmail(c.email ?? '');
+              setContactErrors({});
               if (c.address_line1) setAddressLine1(c.address_line1);
               if (c.city) setCity(c.city);
             }}
+          />
+
+          {/* Optional here, but it's what Send Quote needs later, so it's
+              asked while the contractor is with the customer. */}
+          <Input
+            label="Phone (optional)"
+            placeholder="555 123 4567"
+            value={phone}
+            onChangeText={(v) => {
+              setPhone(v);
+              if (contactErrors.phone) setContactErrors((e) => ({ ...e, phone: undefined }));
+            }}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            error={contactErrors.phone}
+          />
+          <Input
+            label="Email (optional)"
+            placeholder="name@example.com"
+            value={email}
+            onChangeText={(v) => {
+              setEmail(v);
+              if (contactErrors.email) setContactErrors((e) => ({ ...e, email: undefined }));
+            }}
+            keyboardType="email-address"
+            autoComplete="email"
+            error={contactErrors.email}
           />
 
           <Input

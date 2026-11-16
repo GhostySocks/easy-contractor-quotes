@@ -108,6 +108,19 @@ export function validateCustomerForm(v: CustomerFormValues): CustomerFormErrors 
   return errors;
 }
 
+export type ContactErrors = { phone?: string; email?: string };
+
+/**
+ * New Quote asks for phone and email but never requires them. Blank is fine;
+ * something half-typed is caught before it's saved and later fails to send.
+ */
+export function quoteContactErrors(v: { phone: string; email: string }): ContactErrors {
+  const errors: ContactErrors = {};
+  if (v.phone.trim() && !PHONE_RE.test(v.phone.trim())) errors.phone = 'Looks incomplete';
+  if (v.email.trim() && !EMAIL_RE.test(v.email.trim())) errors.email = 'Looks incomplete';
+  return errors;
+}
+
 function blankToNull(s: string): string | null {
   const t = s.trim();
   return t ? t : null;

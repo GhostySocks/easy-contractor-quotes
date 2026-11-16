@@ -3,6 +3,7 @@ import {
   type CustomerFormValues,
   parseTags,
   patchFromForm,
+  quoteContactErrors,
   validateCustomerForm,
 } from '../customer-form';
 
@@ -147,6 +148,23 @@ describe('contactBackfill', () => {
     expect(contactBackfill(existing, { name: 'Janet' })).toBeNull();
     expect(contactBackfill({ ...existing, name: '' }, { name: 'Janet' })).toEqual({
       name: 'Janet',
+    });
+  });
+});
+
+describe('quoteContactErrors', () => {
+  it('accepts both left blank, since New Quote never requires them', () => {
+    expect(quoteContactErrors({ phone: '', email: '  ' })).toEqual({});
+  });
+
+  it('accepts a normal phone and email', () => {
+    expect(quoteContactErrors({ phone: '(555) 123-4567', email: 'pat@example.com' })).toEqual({});
+  });
+
+  it('flags a half-typed phone or email', () => {
+    expect(quoteContactErrors({ phone: '555', email: 'pat@' })).toEqual({
+      phone: 'Looks incomplete',
+      email: 'Looks incomplete',
     });
   });
 });
