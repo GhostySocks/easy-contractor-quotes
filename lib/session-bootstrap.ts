@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 
+import { afterAuthLock } from './after-auth-lock';
 import { useAuth } from './auth-store';
 import type { SubscriptionRow } from './entitlement';
 import { initRevenueCat } from './revenuecat';
@@ -89,7 +90,9 @@ export function useSessionBootstrap(): void {
 
     void init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Not async, and no Supabase calls awaited in here: Supabase waits for
+    // this listener while holding its login lock (lib/after-auth-lock.ts).
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       // init() handles startup. This event arrives as null when renewal fails
       // on the network, which would undo keeping the saved login.
@@ -103,9 +106,13 @@ export function useSessionBootstrap(): void {
       } else if (session) {
         openedFromSaved = false;
       }
-      if (session?.user.id) {
-        await refreshSubscription(session.user.id, setSubscription);
-        initRevenueCat(session.user.id);
+      const userId = session?.user.id;
+      if (userId) {
+        afterAuthLock(async () => {
+          if (cancelled) return;
+          await refreshSubscription(userId, setSubscription);
+          initRevenueCat(userId);
+        });
       } else {
         setSubscription(null);
       }
