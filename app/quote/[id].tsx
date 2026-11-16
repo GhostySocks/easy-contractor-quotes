@@ -19,7 +19,6 @@ import { LoadFailed } from '@/components/ui/LoadFailed';
 import { LineItemEditor } from '@/components/quote/LineItemEditor';
 import { PriceRangeChips } from '@/components/quote/PriceRangeChips';
 import { Card } from '@/components/ui/Card';
-import { Chip } from '@/components/ui/Chip';
 import { GhostButton } from '@/components/ui/GhostButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { generateContract, type LineItem } from '@/lib/ai';
@@ -53,7 +52,6 @@ export default function QuoteDetail() {
   const [bucket, setBucket] = useState<PriceBucket>('most_likely');
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [generating, setGenerating] = useState(false);
-  const [contractKind, setContractKind] = useState<'work' | 'release'>('work');
   const user = useAuth((s) => s.user);
   // Sales tax from the business profile (percent). Null until loaded so we
   // never autosave a $0 tax over a real rate during the first render.
@@ -148,7 +146,8 @@ export default function QuoteDetail() {
     }
     setGenerating(true);
     try {
-      const contract = await generateContract({ kind: contractKind, quote_id: quote.id });
+      // One document: the work agreement includes the release of liability.
+      const contract = await generateContract({ kind: 'work', quote_id: quote.id });
       router.replace({ pathname: '/contract/[id]', params: { id: contract.id } });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -156,7 +155,7 @@ export default function QuoteDetail() {
     } finally {
       setGenerating(false);
     }
-  }, [quote, saving, contractKind]);
+  }, [quote, saving]);
 
   if (loading) {
     return (
@@ -258,23 +257,10 @@ export default function QuoteDetail() {
           ) : null}
 
           <View>
-            <Text style={styles.sectionLabel}>Contract to send</Text>
-            <View style={styles.kindRow}>
-              <Chip
-                label="Work agreement"
-                selected={contractKind === 'work'}
-                onPress={() => setContractKind('work')}
-              />
-              <Chip
-                label="Release of liability"
-                selected={contractKind === 'release'}
-                onPress={() => setContractKind('release')}
-              />
-            </View>
+            <Text style={styles.sectionLabel}>What your customer signs</Text>
             <Text style={styles.kindHint}>
-              {contractKind === 'work'
-                ? 'Scope, price, timeline, warranty and cancellation terms.'
-                : 'Customer accepts the ordinary risks of the work and releases you from non-negligent claims.'}
+              One work agreement: scope, price, timeline, warranty, cancellation terms and a release
+              of liability. You can read and edit it before it goes out.
             </Text>
           </View>
         </ScrollView>
@@ -433,11 +419,6 @@ const makeStyles = (colors: Colors) =>
       fontSize: typography.sizes.bodySmall,
       color: colors.ink2,
       lineHeight: 22,
-    },
-    kindRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.sm,
     },
     kindHint: {
       fontFamily: typography.fonts.body,

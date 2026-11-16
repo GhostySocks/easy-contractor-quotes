@@ -142,3 +142,37 @@ describe('job site', () => {
     );
   });
 });
+
+describe('work agreement carries the release', () => {
+  const md = renderWorkAgreement(base);
+  const release = renderReleaseOfLiability(base);
+
+  it('has the risks, release and customer responsibilities sections', () => {
+    for (const h of [
+      '## Risks of the Work',
+      '## Release of Liability',
+      '## Customer Responsibilities',
+    ]) {
+      expect(md).toContain(h);
+    }
+  });
+
+  it('uses the same release wording as the standalone release, word for word', () => {
+    const clause = release
+      .split('\n')
+      .find((line) => line.startsWith('In exchange for the Contractor performing this work'));
+    expect(clause).toBeDefined();
+    expect(md).toContain(clause as string);
+  });
+
+  it('never releases negligence, and names the job state', () => {
+    expect(md).toContain('except for loss or damage caused by the Contractor’s negligence');
+    expect(md).toContain('cannot be waived under the laws of the state of TX');
+  });
+
+  it('puts the release before cancellation and the signatures', () => {
+    expect(md.indexOf('## Release of Liability')).toBeGreaterThan(md.indexOf('## Warranty'));
+    expect(md.indexOf('## Release of Liability')).toBeLessThan(md.indexOf('## Cancellation'));
+    expect(md.indexOf('## Cancellation')).toBeLessThan(md.indexOf('## Signatures'));
+  });
+});
