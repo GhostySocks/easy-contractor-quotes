@@ -2,6 +2,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
+import { jobSummary, quoteEmail, startLabel } from '../_shared/customer-emails.ts';
+import { logoUrlFor, sendEmail } from '../_shared/email.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
 
 /**
@@ -28,6 +30,8 @@ type SendInput = {
     email: string | null;
     phone: string | null;
   };
+  /** The contractor's time zone (IANA name), so the start date reads right. */
+  time_zone?: string | null;
 };
 
 type SendResult = {
@@ -38,8 +42,6 @@ type SendResult = {
 };
 
 const JSON_HEADERS = { ...corsHeaders, 'Content-Type': 'application/json' };
-const RESEND_URL = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'Easy Contractor Quotes <no-reply@easycontractorquotes.com>';
 
 // @ts-expect-error — Deno.serve is provided by the runtime
 Deno.serve(async (req: Request) => {
@@ -85,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('business_name')
+      .select('business_name, logo_url, business_phone, business_email')
       .eq('id', userId)
       .maybeSingle();
     const businessName = profile?.business_name ?? 'Your contractor';
@@ -103,12 +105,33 @@ Deno.serve(async (req: Request) => {
     let email_error: string | null = null;
     if (wantsEmail) {
       try {
-        await sendEmailViaResend({
+        const { data: quote } = await supabase
+          .from('quotes')
+          .select(
+            'total_cents, scope_of_work, requested_start_at, ' +
+              'site_address_line1, site_city, site_state_code, site_postal_code',
+          )
+          .eq('id', input.quote_id)
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!quote) throw new Error('quote not found');
+        // The From address is no-reply, so replies go to the contractor.
+        const { data: me } = await supabase.auth.getUser();
+        await sendEmail({
           to: input.recipient.email as string,
           toName: input.recipient.name,
-          businessName,
-          kind: contract.kind === 'release' ? 'release of liability' : 'work agreement',
-          signUrl,
+          replyTo: profile?.business_email || me?.user?.email || null,
+          ...quoteEmail({
+            businessName,
+            logoUrl: await logoUrlFor(supabase, profile?.logo_url),
+            contact: { phone: profile?.business_phone, email: profile?.business_email },
+            customerName: input.recipient.name,
+            totalCents: quote.total_cents,
+            scopeOfWork: quote.scope_of_work,
+            jobSite: siteLine(quote),
+            start: startLabel(quote.requested_start_at, input.time_zone),
+            signUrl,
+          }),
         });
         email_sent = true;
       } catch (err) {
@@ -143,86 +166,21 @@ function buildSmsBody(businessName: string, signUrl: string): string {
   return `${businessName} sent you a quote. Review and sign here: ${signUrl}`;
 }
 
+function siteLine(q: {
+  site_address_line1?: string | null;
+  site_city?: string | null;
+  site_state_code?: string | null;
+  site_postal_code?: string | null;
+}): string | null {
+  if (!q.site_address_line1 && !q.site_city) return null;
+  const stateZip = [q.site_state_code, q.site_postal_code].filter(Boolean).join(' ');
+  return [q.site_address_line1, q.site_city, stateZip].filter(Boolean).join(', ');
+}
+
 function inferSignBase(req: Request): string {
   // Best-effort: replace the function path so the customer-sign URL lives
   // at the same origin as this one. Used when CUSTOMER_SIGN_BASE_URL is
   // not set (dev and single-project deployments).
   const url = new URL(req.url);
   return `${url.origin}${url.pathname.replace('/send-quote', '/customer-sign')}`;
-}
-
-async function sendEmailViaResend(input: {
-  to: string;
-  toName: string | null;
-  businessName: string;
-  kind: string;
-  signUrl: string;
-}): Promise<void> {
-  // @ts-expect-error — Deno env access
-  const apiKey = Deno.env.get('RESEND_API_KEY');
-  // @ts-expect-error — Deno env access
-  const from = Deno.env.get('RESEND_FROM_EMAIL') ?? DEFAULT_FROM;
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not configured');
-  }
-
-  const toHeader = input.toName ? `${input.toName} <${input.to}>` : input.to;
-  const subject = `${input.businessName} sent you a ${input.kind}`;
-  const html = emailBody(input);
-
-  const resp = await fetch(RESEND_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to: toHeader, subject, html }),
-  });
-
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Resend ${resp.status}: ${body.slice(0, 200)}`);
-  }
-}
-
-function emailBody(input: {
-  toName: string | null;
-  businessName: string;
-  kind: string;
-  signUrl: string;
-}): string {
-  const greeting = input.toName ? `Hi ${escapeHtml(input.toName)},` : 'Hi,';
-  return `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1A1A1A; background: #F7F5EF; margin: 0;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 14px; padding: 32px;">
-          <tr><td>
-            <p style="margin: 0 0 16px; font-size: 17px;">${greeting}</p>
-            <p style="margin: 0 0 24px; font-size: 17px; line-height: 1.55;">
-              ${escapeHtml(input.businessName)} has prepared a ${escapeHtml(input.kind)} for you.
-              Please review and sign at your convenience.
-            </p>
-            <p style="margin: 0 0 32px;">
-              <a href="${escapeHtml(input.signUrl)}" style="display: inline-block; background: #D4AF37; color: #1A1A1A; font-weight: 700; padding: 14px 24px; border-radius: 20px; text-decoration: none;">Review and sign</a>
-            </p>
-            <p style="margin: 0; color: #8A8A8A; font-size: 13px;">
-              If the button doesn't work, copy this link:<br/>
-              <span style="word-break: break-all;">${escapeHtml(input.signUrl)}</span>
-            </p>
-          </td></tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

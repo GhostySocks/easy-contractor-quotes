@@ -1,10 +1,11 @@
-import { X } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { Check, X } from 'lucide-react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
 
 import { GhostButton } from '@/components/ui/GhostButton';
+import { Input } from '@/components/ui/Input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { lightColors, radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
@@ -12,8 +13,15 @@ import { useStyles, useTheme } from '@/lib/theme-context';
 type Props = {
   visible: boolean;
   onCancel: () => void;
-  onSubmit: (signatureSvg: string) => Promise<void>;
+  /** Prefills the name field; the customer corrects it if needed. */
+  customerName?: string;
+  onSubmit: (signatureSvg: string, signer: { name: string; consent: boolean }) => Promise<void>;
 };
+
+/** A full name: at least two letters once trimmed. Mirrors the server's check. */
+function nameLooksFull(name: string): boolean {
+  return (name.match(/\p{L}/gu) ?? []).length >= 2;
+}
 
 /**
  * The signature pad is a WebView, so the active palette has to be passed in
@@ -32,7 +40,7 @@ function webStyleFor(colors: Colors): string {
 `;
 }
 
-export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
+export function SignatureModal({ visible, customerName, onCancel, onSubmit }: Props) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -40,6 +48,19 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
   const ref = useRef<SignatureViewRef>(null);
   const [submitting, setSubmitting] = useState(false);
   const [empty, setEmpty] = useState(true);
+  // Signing in person is the customer's own act on the contractor's phone, so
+  // it asks what the signing web page asks: their name, and that they agree
+  // to sign electronically. Both start fresh each time the sheet opens.
+  const [name, setName] = useState('');
+  const [consent, setConsent] = useState(false);
+  useEffect(() => {
+    if (visible) {
+      setName(customerName ?? '');
+      setConsent(false);
+      setEmpty(true);
+    }
+  }, [visible, customerName]);
+  const ready = !empty && consent && nameLooksFull(name);
 
   const handleConfirm = () => {
     // `readSignature` triggers onOK with the SVG string below.
@@ -50,7 +71,7 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
     if (!svg) return;
     setSubmitting(true);
     try {
-      await onSubmit(svg);
+      await onSubmit(svg, { name: name.trim(), consent });
     } finally {
       setSubmitting(false);
     }
@@ -78,6 +99,16 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
             </Pressable>
           </View>
 
+          <Input
+            label="Customer's full name"
+            placeholder="First and last name"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            autoComplete="off"
+            maxLength={120}
+          />
+
           <View style={styles.canvasWrap}>
             <SignatureScreen
               ref={ref}
@@ -92,16 +123,26 @@ export function SignatureModal({ visible, onCancel, onSubmit }: Props) {
             />
           </View>
 
-          <Text style={styles.hint}>
-            Draw your signature above. By signing, you agree to the terms of the contract.
-          </Text>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consent }}
+            onPress={() => setConsent((c) => !c)}
+            style={styles.consentRow}
+          >
+            <View style={[styles.checkbox, consent && styles.checkboxOn]}>
+              {consent ? <Check size={20} color={colors.ink} strokeWidth={2} /> : null}
+            </View>
+            <Text style={styles.consentText}>
+              I agree to sign this agreement electronically. My signature makes it binding.
+            </Text>
+          </Pressable>
 
           <View style={styles.footer}>
             <GhostButton label="Clear" onPress={handleClear} style={styles.footerButton} />
             <PrimaryButton
               label={submitting ? 'Signing…' : 'Confirm & sign'}
               onPress={handleConfirm}
-              disabled={empty}
+              disabled={!ready}
               loading={submitting}
               style={styles.footerButton}
             />
@@ -156,11 +197,32 @@ const makeStyles = (colors: Colors) =>
       overflow: 'hidden',
       backgroundColor: pad.paper,
     },
-    hint: {
+    consentRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 60,
+    },
+    checkbox: {
+      width: 32,
+      height: 32,
+      borderRadius: radii.sm,
+      borderWidth: 2,
+      borderColor: colors.ink3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+    checkboxOn: {
+      backgroundColor: colors.gold,
+      borderColor: colors.gold,
+    },
+    consentText: {
+      flex: 1,
       fontFamily: typography.fonts.body,
       fontSize: typography.sizes.bodySmall,
-      color: colors.ink3,
-      textAlign: 'center',
+      lineHeight: 20,
+      color: colors.ink2,
     },
     footer: {
       flexDirection: 'row',

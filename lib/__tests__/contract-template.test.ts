@@ -120,3 +120,73 @@ describe('amendmentBody', () => {
     expect(v3).toContain('**Amendment 2**');
   });
 });
+
+describe('job site', () => {
+  it('names where the work happens when the quote recorded it', () => {
+    const body = renderWorkAgreement({
+      ...base,
+      job_site: {
+        address_line1: '9 Lake Rd',
+        city: 'Mansfield',
+        state_code: 'oh',
+        postal_code: '44903',
+      },
+    });
+    expect(body).toContain('**Job site:** 9 Lake Rd, Mansfield, OH 44903');
+  });
+
+  it('says nothing about a job site on older quotes without one', () => {
+    expect(renderWorkAgreement(base)).not.toContain('Job site');
+    expect(renderWorkAgreement({ ...base, job_site: { state_code: 'TX' } })).not.toContain(
+      'Job site',
+    );
+  });
+});
+
+describe('work agreement carries the release', () => {
+  const md = renderWorkAgreement(base);
+  const release = renderReleaseOfLiability(base);
+
+  it('has the risks, release and customer responsibilities sections', () => {
+    for (const h of [
+      '## Risks of the Work',
+      '## Release of Liability',
+      '## Customer Responsibilities',
+    ]) {
+      expect(md).toContain(h);
+    }
+  });
+
+  it('uses the same release wording as the standalone release, word for word', () => {
+    const clause = release
+      .split('\n')
+      .find((line) => line.startsWith('In exchange for the Contractor performing this work'));
+    expect(clause).toBeDefined();
+    expect(md).toContain(clause as string);
+  });
+
+  it('never releases negligence, and names the job state', () => {
+    expect(md).toContain('except for loss or damage caused by the Contractor’s negligence');
+    expect(md).toContain('cannot be waived under the laws of the state of TX');
+  });
+
+  it('puts the release before cancellation and the signatures', () => {
+    expect(md.indexOf('## Release of Liability')).toBeGreaterThan(md.indexOf('## Warranty'));
+    expect(md.indexOf('## Release of Liability')).toBeLessThan(md.indexOf('## Cancellation'));
+    expect(md.indexOf('## Cancellation')).toBeLessThan(md.indexOf('## Signatures'));
+  });
+});
+
+describe('signature section', () => {
+  const md = renderWorkAgreement(base);
+
+  it('names both parties and how each one agrees', () => {
+    expect(md).toContain('**Contractor:** Mike’s Handyman Service, by sending this agreement');
+    expect(md).toContain('**Customer:** Jane Doe, by electronic signature.');
+  });
+
+  it('has no blank paper signature lines, since it is signed electronically', () => {
+    expect(md).not.toContain('____');
+    expect(renderReleaseOfLiability(base)).not.toContain('____');
+  });
+});

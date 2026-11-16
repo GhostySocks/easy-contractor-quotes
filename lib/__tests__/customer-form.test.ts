@@ -3,6 +3,7 @@ import {
   type CustomerFormValues,
   parseTags,
   patchFromForm,
+  quoteContactErrors,
   validateCustomerForm,
 } from '../customer-form';
 
@@ -148,5 +149,45 @@ describe('contactBackfill', () => {
     expect(contactBackfill({ ...existing, name: '' }, { name: 'Janet' })).toEqual({
       name: 'Janet',
     });
+  });
+});
+
+describe('quoteContactErrors', () => {
+  it('accepts both left blank, since New Quote never requires them', () => {
+    expect(quoteContactErrors({ phone: '', email: '  ' })).toEqual({});
+  });
+
+  it('accepts a normal phone and email', () => {
+    expect(quoteContactErrors({ phone: '(555) 123-4567', email: 'pat@example.com' })).toEqual({});
+  });
+
+  it('flags a half-typed phone or email', () => {
+    expect(quoteContactErrors({ phone: '555', email: 'pat@' })).toEqual({
+      phone: 'Looks incomplete',
+      email: 'Looks incomplete',
+    });
+  });
+});
+
+describe('contactBackfill state and ZIP', () => {
+  const existing = {
+    name: 'Jane Doe',
+    email: null,
+    phone: null,
+    address_line1: null,
+    city: null,
+    state_code: null,
+    postal_code: null,
+  };
+
+  it('saves a valid state and ZIP used on a quote', () => {
+    expect(contactBackfill(existing, { state_code: 'oh', postal_code: '44805' })).toEqual({
+      state_code: 'OH',
+      postal_code: '44805',
+    });
+  });
+
+  it('ignores a half-typed state or ZIP', () => {
+    expect(contactBackfill(existing, { state_code: 'O', postal_code: '448' })).toBeNull();
   });
 });

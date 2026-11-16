@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomerAutocomplete } from '@/components/quote/CustomerAutocomplete';
 import { DictationButton } from '@/components/quote/DictationButton';
 import { PhotoStrip, type StripPhoto } from '@/components/quote/PhotoStrip';
+import { TravelSection } from '@/components/quote/TravelSection';
 import { Chip } from '@/components/ui/Chip';
 import { DateSheet, isoDay } from '@/components/ui/DateSheet';
 import { Input } from '@/components/ui/Input';
@@ -32,21 +33,33 @@ import {
   saveCustomerForQuote,
   type CustomerRow,
 } from '@/lib/customers';
+import { quoteContactErrors, type ContactErrors } from '@/lib/customer-form';
 import { fetchJob } from '@/lib/jobs';
 import { reportError } from '@/lib/error-reporting';
-import { currentAddress } from '@/lib/location';
+import type { FilledAddress } from '@/lib/geo-address';
+import { currentAddress, geocodeAddress, type Coords } from '@/lib/location';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { MAX_PHOTOS } from '@/lib/photo-math';
 import { deleteJobPhotos, pickPhotos, type PhotoSource, uploadJobPhoto } from '@/lib/photos';
 import { strings } from '@/lib/strings';
 import { supabase } from '@/lib/supabase';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
+import {
+  addressQuery,
+  DEFAULT_TRAVEL_FORM,
+  travelFromForm,
+  type TravelForm,
+} from '@/lib/travel-form';
+import { useTravelPrefs } from '@/lib/travel-prefs';
 import { useStyles, useTheme } from '@/lib/theme-context';
 import { withTimeout } from '@/lib/with-timeout';
+import { roadMiles } from '@/supabase/functions/_shared/travel';
 
 // The customer save runs before the AI call. It limits and retries its own
 // requests; this is only the backstop for one that never settles at all.
 const CUSTOMER_SAVE_TIMEOUT_MS = 45_000;
+
+const ZIP_RE = /^\d{5}(-\d{4})?$/;
 
 const TRADES: TradeCode[] = ['handyman', 'plumber', 'electrician', 'hvac', 'landscaping', 'other'];
 
@@ -66,14 +79,37 @@ export default function NewQuote() {
       ],
     );
   }, [paused]);
-  const [profileState, setProfileState] = useState<string>('');
   const [profileChecked, setProfileChecked] = useState(false);
   const [jobType, setJobType] = useState<string>('handyman');
   const jobTypeTouched = useRef(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [contactErrors, setContactErrors] = useState<ContactErrors>({});
   const [addressLine1, setAddressLine1] = useState('');
   const [city, setCity] = useState('');
+  // The address on this form is the job site: where the work happens. Its
+  // state prices the quote and decides the contract terms. It starts as the
+  // contractor's own state and they change it for a job across the line.
+  const [siteState, setSiteState] = useState('');
+  const siteStateTouched = useRef(false);
+  const [postalCode, setPostalCode] = useState('');
+  // Where the phone was when "use my location" filled the address; saves a
+  // lookup for the travel estimate. Cleared when the address is retyped.
+  const [siteCoords, setSiteCoords] = useState<Coords | null>(null);
+  const [baseCoords, setBaseCoords] = useState<Coords | null>(null);
+  // The customer may live somewhere other than the job (a rental, a parent's
+  // house). Off by default: the job site is saved as their address.
+  const [customerElsewhere, setCustomerElsewhere] = useState(false);
+  const [custLine1, setCustLine1] = useState('');
+  const [custCity, setCustCity] = useState('');
+  const [custState, setCustState] = useState('');
+  const [custZip, setCustZip] = useState('');
+  const [travel, setTravel] = useState<TravelForm>(DEFAULT_TRAVEL_FORM);
+  const [milesNote, setMilesNote] = useState<string | null>(null);
+  const milesTouched = useRef(false);
+  const travelPrefs = useTravelPrefs();
   const [description, setDescription] = useState('');
   const [startAt, setStartAt] = useState<string | null>(null);
   const [dateOpen, setDateOpen] = useState(false);
@@ -103,15 +139,108 @@ export default function NewQuote() {
     if (!user) return;
     void supabase
       .from('profiles')
-      .select('trade, state_code')
+      .select('trade, state_code, base_lat, base_lng')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data?.trade && !jobTypeTouched.current) setJobType(data.trade);
-        if (data?.state_code) setProfileState(data.state_code);
+        if (data?.state_code) {
+          if (!siteStateTouched.current) setSiteState(data.state_code);
+        }
+        if (typeof data?.base_lat === 'number' && typeof data?.base_lng === 'number') {
+          setBaseCoords({ lat: data.base_lat, lng: data.base_lng });
+        }
         setProfileChecked(true);
       });
   }, [user]);
+
+  // Estimate the miles for a per-mile travel charge: straight-line distance
+  // from the business address to the job site, plus a margin for roads. Runs
+  // a moment after the address stops changing, and never over miles the
+  // contractor typed themselves.
+  useEffect(() => {
+    if (!travel.charge || travel.mode !== 'per_mile' || milesTouched.current) return;
+    if (!profileChecked) return;
+    if (!baseCoords) {
+      setMilesNote(
+        'Add your business address in Settings to have the miles estimated. For now, type them in.',
+      );
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      void (async () => {
+        const query = addressQuery({
+          line1: addressLine1,
+          city,
+          state_code: siteState,
+          postal_code: postalCode,
+        });
+        const site = siteCoords ?? (query ? await geocodeAddress(query) : null);
+        if (cancelled || milesTouched.current) return;
+        if (!site) {
+          setMilesNote(
+            query
+              ? "Couldn't estimate the miles for that address. Type them in."
+              : 'Fill in the job address above, or type the miles.',
+          );
+          return;
+        }
+        const miles = roadMiles(baseCoords, site);
+        setTravel((t) => ({ ...t, miles: String(miles) }));
+        setMilesNote(`About ${miles} miles from your business address. Change it if that's off.`);
+      })();
+    }, 900);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [
+    travel.charge,
+    travel.mode,
+    profileChecked,
+    baseCoords,
+    siteCoords,
+    addressLine1,
+    city,
+    siteState,
+    postalCode,
+  ]);
+
+  function changeTravel(patch: Partial<TravelForm>) {
+    if (patch.miles !== undefined) {
+      milesTouched.current = true;
+      setMilesNote(null);
+    }
+    setTravel((prev) => {
+      const next = { ...prev, ...patch };
+      // Turning it on starts from how they charged last time.
+      if (patch.charge && !prev.charge) {
+        next.mode = travelPrefs.mode;
+        next.per = travelPrefs.per;
+        next.rate = travelPrefs.mode === 'flat' ? travelPrefs.flatRate : travelPrefs.mileRate;
+      } else if (patch.mode && patch.mode !== prev.mode) {
+        next.rate = patch.mode === 'flat' ? travelPrefs.flatRate : travelPrefs.mileRate;
+      }
+      return next;
+    });
+  }
+
+  /** Fill the job site from a customer record or a GPS lookup. */
+  function fillSite(a: {
+    line1?: string | null;
+    city?: string | null;
+    state_code?: string | null;
+    postal_code?: string | null;
+  }) {
+    if (a.line1) setAddressLine1(a.line1);
+    if (a.city) setCity(a.city);
+    if (a.state_code) {
+      siteStateTouched.current = true;
+      setSiteState(a.state_code);
+    }
+    if (a.postal_code) setPostalCode(a.postal_code);
+  }
 
   useEffect(
     () => () => {
@@ -130,8 +259,9 @@ export default function NewQuote() {
         if (!c) return;
         setCustomerId(c.id);
         setCustomerName(c.name);
-        if (c.address_line1) setAddressLine1(c.address_line1);
-        if (c.city) setCity(c.city);
+        setPhone(c.phone ?? '');
+        setEmail(c.email ?? '');
+        fillSite({ ...c, line1: c.address_line1 });
       });
     }
     if (params.fromJobId) {
@@ -176,9 +306,12 @@ export default function NewQuote() {
     setLocating(true);
     try {
       const result = await currentAddress();
+      const applyFound = (found: FilledAddress & { coords: Coords }) => {
+        fillSite(found);
+        setSiteCoords(found.coords);
+      };
       if (result.kind === 'ok') {
-        if (result.line1) setAddressLine1(result.line1);
-        if (result.city) setCity(result.city);
+        applyFound(result);
       } else if (result.kind === 'approximate') {
         const guess = [result.line1, result.city].filter(Boolean).join(', ');
         const within = result.accuracyM
@@ -197,10 +330,7 @@ export default function NewQuote() {
               : []),
             {
               text: 'Use it',
-              onPress: () => {
-                if (result.line1) setAddressLine1(result.line1);
-                if (result.city) setCity(result.city);
-              },
+              onPress: () => applyFound(result),
             },
           ],
         );
@@ -239,14 +369,30 @@ export default function NewQuote() {
   }
 
   async function handleGenerate() {
-    if (profileChecked && !profileState) {
+    const jobState = siteState.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(jobState)) {
       Alert.alert(
-        'Which state do you work in?',
-        'Quotes are priced and worded for your state. Add it to your business profile first.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Open business profile', onPress: () => router.push('/settings/business') },
-        ],
+        'Which state is the job in?',
+        'Quotes are priced and worded for the state the work is done in. Fill in State with its 2-letter code, like OH.',
+      );
+      return;
+    }
+    const zip = postalCode.trim();
+    if (zip && !ZIP_RE.test(zip)) {
+      Alert.alert('Check the ZIP code', 'It should be 5 digits. Fix it or clear it.');
+      return;
+    }
+    const travelResult = travelFromForm(travel);
+    if (!travelResult.ok) {
+      Alert.alert('Finish the travel charge', `${travelResult.message} Or set travel to No.`);
+      return;
+    }
+    const errors = quoteContactErrors({ phone, email });
+    setContactErrors(errors);
+    if (errors.phone || errors.email) {
+      Alert.alert(
+        'Check the contact details',
+        'The phone or email looks incomplete. Fix it or clear it, then generate.',
       );
       return;
     }
@@ -260,7 +406,7 @@ export default function NewQuote() {
       let resolvedCustomerId = customerId;
       if (!resolvedCustomerId && customerName.trim()) {
         const created = await withTimeout(
-          saveCustomerForQuote({ name: customerName }),
+          saveCustomerForQuote({ name: customerName, phone, email }),
           CUSTOMER_SAVE_TIMEOUT_MS,
           'Saving the customer',
         );
@@ -268,28 +414,49 @@ export default function NewQuote() {
         setCustomerId(created.id);
       }
 
-      // Save the job address onto the customer so the next quote prefills it.
-      if (resolvedCustomerId && (addressLine1.trim() || city.trim())) {
+      // Save the address and contact details onto the customer so the next
+      // quote and the Send screen prefill them.
+      // The customer's own address is the job site unless they live elsewhere.
+      if (resolvedCustomerId) {
         void rememberCustomerContact(resolvedCustomerId, {
-          address_line1: addressLine1,
-          city,
+          ...(customerElsewhere
+            ? {
+                address_line1: custLine1,
+                city: custCity,
+                state_code: custState,
+                postal_code: custZip,
+              }
+            : {
+                address_line1: addressLine1,
+                city,
+                // Only with an address: the default state alone isn't theirs.
+                state_code: addressLine1.trim() || city.trim() ? jobState : undefined,
+                postal_code: zip,
+              }),
+          phone,
+          email,
         });
       }
 
       const photoPaths = photos.flatMap((p) => (p.path ? [p.path] : []));
       const result = await generateQuote({
         trade: jobType,
-        state_code: profileState,
+        state_code: jobState,
         scope_text: description,
         customer_id: resolvedCustomerId,
         address: {
           line1: addressLine1 || undefined,
           city: city || undefined,
-          state_code: profileState,
+          state_code: jobState,
+          postal_code: zip || undefined,
         },
         photos: photoPaths,
         requested_start_at: startAt,
+        travel: travelResult.travel,
       });
+      if (travelResult.travel) {
+        travelPrefs.remember({ mode: travel.mode, per: travel.per, rate: travel.rate });
+      }
       submitted.current = true;
       router.replace({ pathname: '/quote/[id]', params: { id: result.id } });
     } catch (err) {
@@ -336,8 +503,7 @@ export default function NewQuote() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.block}>
             <Text style={styles.fieldLabel}>
-              Job type{' '}
-              {profileState ? <Text style={styles.fieldMeta}>· {profileState}</Text> : null}
+              Job type {siteState ? <Text style={styles.fieldMeta}>· {siteState}</Text> : null}
             </Text>
             <View style={styles.chips}>
               {TRADES.map((t) => (
@@ -363,16 +529,49 @@ export default function NewQuote() {
             onSelect={(c: CustomerRow) => {
               setCustomerId(c.id);
               setCustomerName(c.name);
-              if (c.address_line1) setAddressLine1(c.address_line1);
-              if (c.city) setCity(c.city);
+              setPhone(c.phone ?? '');
+              setEmail(c.email ?? '');
+              setContactErrors({});
+              fillSite({ ...c, line1: c.address_line1 });
+              setSiteCoords(null);
             }}
           />
 
+          {/* Optional here, but it's what Send Quote needs later, so it's
+              asked while the contractor is with the customer. */}
           <Input
-            label="Address"
+            label="Phone (optional)"
+            placeholder="555 123 4567"
+            value={phone}
+            onChangeText={(v) => {
+              setPhone(v);
+              if (contactErrors.phone) setContactErrors((e) => ({ ...e, phone: undefined }));
+            }}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            error={contactErrors.phone}
+          />
+          <Input
+            label="Email (optional)"
+            placeholder="name@example.com"
+            value={email}
+            onChangeText={(v) => {
+              setEmail(v);
+              if (contactErrors.email) setContactErrors((e) => ({ ...e, email: undefined }));
+            }}
+            keyboardType="email-address"
+            autoComplete="email"
+            error={contactErrors.email}
+          />
+
+          <Input
+            label="Job site address"
             placeholder="123 Main St"
             value={addressLine1}
-            onChangeText={setAddressLine1}
+            onChangeText={(v) => {
+              setAddressLine1(v);
+              setSiteCoords(null);
+            }}
             autoCapitalize="words"
           />
           <Pressable
@@ -393,9 +592,83 @@ export default function NewQuote() {
             label="City"
             placeholder="Austin"
             value={city}
-            onChangeText={setCity}
+            onChangeText={(v) => {
+              setCity(v);
+              setSiteCoords(null);
+            }}
             autoCapitalize="words"
           />
+          <View style={styles.row}>
+            <Input
+              label="State"
+              placeholder="OH"
+              value={siteState}
+              onChangeText={(v) => {
+                siteStateTouched.current = true;
+                setSiteState(v.toUpperCase().slice(0, 2));
+                setSiteCoords(null);
+              }}
+              autoCapitalize="characters"
+              maxLength={2}
+              containerStyle={styles.stateField}
+            />
+            <Input
+              label="ZIP code"
+              placeholder="44805"
+              value={postalCode}
+              onChangeText={(v) => {
+                setPostalCode(v.replace(/[^\d-]/g, '').slice(0, 10));
+                setSiteCoords(null);
+              }}
+              keyboardType="number-pad"
+              containerStyle={styles.flex}
+            />
+          </View>
+
+          <View style={styles.chips}>
+            <Chip
+              label="Customer lives at a different address"
+              selected={customerElsewhere}
+              onPress={() => setCustomerElsewhere((v) => !v)}
+            />
+          </View>
+          {customerElsewhere ? (
+            <>
+              <Input
+                label="Customer's address"
+                placeholder="456 Elm St"
+                value={custLine1}
+                onChangeText={setCustLine1}
+                autoCapitalize="words"
+              />
+              <Input
+                label="Customer's city"
+                placeholder="Columbus"
+                value={custCity}
+                onChangeText={setCustCity}
+                autoCapitalize="words"
+              />
+              <View style={styles.row}>
+                <Input
+                  label="State"
+                  placeholder="OH"
+                  value={custState}
+                  onChangeText={(v) => setCustState(v.toUpperCase().slice(0, 2))}
+                  autoCapitalize="characters"
+                  maxLength={2}
+                  containerStyle={styles.stateField}
+                />
+                <Input
+                  label="ZIP code"
+                  placeholder="43215"
+                  value={custZip}
+                  onChangeText={(v) => setCustZip(v.replace(/[^\d-]/g, '').slice(0, 10))}
+                  keyboardType="number-pad"
+                  containerStyle={styles.flex}
+                />
+              </View>
+            </>
+          ) : null}
 
           <Input
             label="What's the job?"
@@ -439,6 +712,8 @@ export default function NewQuote() {
               </Text>
             </Pressable>
           </View>
+
+          <TravelSection form={travel} onChange={changeTravel} milesNote={milesNote} />
         </ScrollView>
 
         <View style={styles.footer}>
@@ -531,6 +806,13 @@ const makeStyles = (colors: Colors) =>
     fieldMeta: {
       fontFamily: typography.fonts.body,
       color: colors.ink3,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    stateField: {
+      width: 96,
     },
     chips: {
       flexDirection: 'row',

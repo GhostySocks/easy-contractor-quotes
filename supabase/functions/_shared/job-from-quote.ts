@@ -11,6 +11,10 @@ export type QuoteForJob = {
   total_cents: number;
   requested_start_at?: string | null;
   photos?: string[] | null;
+  site_address_line1?: string | null;
+  site_city?: string | null;
+  site_state_code?: string | null;
+  site_postal_code?: string | null;
 };
 
 export type JobInsertFields = {
@@ -20,6 +24,10 @@ export type JobInsertFields = {
   scheduled_at: string | null;
   total_cents: number;
   photos: string[];
+  site_address_line1: string | null;
+  site_city: string | null;
+  site_state_code: string | null;
+  site_postal_code: string | null;
 };
 
 export function jobFieldsFromQuote(quote: QuoteForJob): JobInsertFields {
@@ -31,6 +39,10 @@ export function jobFieldsFromQuote(quote: QuoteForJob): JobInsertFields {
     scheduled_at: start,
     total_cents: quote.total_cents,
     photos: quote.photos ?? [],
+    site_address_line1: quote.site_address_line1 ?? null,
+    site_city: quote.site_city ?? null,
+    site_state_code: quote.site_state_code ?? null,
+    site_postal_code: quote.site_postal_code ?? null,
   };
 }
 

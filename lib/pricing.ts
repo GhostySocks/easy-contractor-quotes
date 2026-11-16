@@ -63,10 +63,12 @@ export type PriceBucket = keyof typeof BUCKET_FACTORS;
  * subtotal, the tax and the total all agree on the price the contractor
  * picked. Pass the *most-likely* items as `base`; selecting a different
  * bucket always derives from those, never from already-scaled items.
+ * A fixed line (travel) is a set charge, not an estimate, and isn't scaled.
  */
 export function scaleLineItems(base: readonly LineItem[], bucket: PriceBucket): LineItem[] {
   const factor = BUCKET_FACTORS[bucket];
   return base.map((item) => {
+    if (item.fixed) return item;
     const unit = Math.round(item.unit_price_cents * factor);
     return { ...item, unit_price_cents: unit, total_cents: unit * item.qty };
   });

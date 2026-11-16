@@ -5,6 +5,16 @@ export type ProfileRow = {
   business_name: string;
   logo_url: string | null;
   state_code: string;
+  /** Where the business is based; the starting point for travel on a quote. */
+  address_line1: string | null;
+  city: string | null;
+  postal_code: string | null;
+  /** The business address on the map, looked up on the phone when it's saved. */
+  base_lat: number | null;
+  base_lng: number | null;
+  /** How customers reach the business; shown on emails and used for replies. */
+  business_phone: string | null;
+  business_email: string | null;
   default_tax_rate: number;
   /** Travel time kept clear around jobs when scheduling: 0, 15, 30 or 60. */
   travel_buffer_minutes: number;
@@ -49,6 +59,13 @@ export async function updateProfile(
       ProfileRow,
       | 'business_name'
       | 'state_code'
+      | 'address_line1'
+      | 'city'
+      | 'postal_code'
+      | 'base_lat'
+      | 'base_lng'
+      | 'business_phone'
+      | 'business_email'
       | 'trade'
       | 'logo_url'
       | 'default_tax_rate'

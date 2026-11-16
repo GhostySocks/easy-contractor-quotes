@@ -17,6 +17,7 @@ export type QuotePromptInput = {
   state_code: string;
   scope_text: string;
   city?: string | null;
+  postal_code?: string | null;
   customer_history?: CustomerHistory | null;
   /** Number of job photos attached as image blocks ahead of this text. */
   photo_count?: number;
@@ -38,7 +39,7 @@ export const QUOTE_TOOL_INPUT_SCHEMA = {
     },
     line_items: {
       type: 'array',
-      description: '2-5 items: labor, materials, travel/disposal.',
+      description: '2-5 items: labor, materials, disposal. Never travel.',
       items: {
         type: 'object',
         properties: {
@@ -92,8 +93,9 @@ export function buildSystemPrompt(input: { trade: string; state_code: string }):
     'Guidance:',
     '- Prices reflect typical solo-contractor rates for this trade and region — not commercial contractors, not DIY big-box.',
     '- Scope of work: 3-5 plain-English sentences describing what will be done.',
-    '- 2-5 line items typical (labor, materials, travel/disposal).',
-    '- Label line items clearly (e.g. "Labor 2h", "Materials (drywall patch kit)", "Travel & disposal").',
+    '- 2-5 line items typical (labor, materials, disposal).',
+    '- Label line items clearly (e.g. "Labor 2h", "Materials (drywall patch kit)", "Haul-away & disposal").',
+    '- Never include a travel, trip, mileage or fuel charge, and do not pad other lines to cover it. The app adds travel separately when the contractor asks for it.',
     '- total_low_cents = round(total_cents * 0.8). total_high_cents = round(total_cents * 1.25).',
     '- All amounts are positive integer cents. No floats, no currency symbols.',
     '- tax_cents: 0 unless the contractor explicitly said otherwise. They collect tax manually for now.',
@@ -113,7 +115,10 @@ export function buildUserMessage(input: QuotePromptInput): string {
     );
   }
   if (input.city) {
-    parts.push(`\nLocation: ${input.city}, ${input.state_code.toUpperCase()}`);
+    const zip = input.postal_code?.trim();
+    parts.push(
+      `\nLocation: ${input.city}, ${input.state_code.toUpperCase()}${zip ? ` ${zip}` : ''}`,
+    );
   }
   if (input.customer_history && input.customer_history.prior_job_count > 0) {
     const h = input.customer_history;
@@ -158,6 +163,13 @@ export type ContractPromptInput = {
     city?: string | null;
     state_code?: string | null;
   };
+  /** Where the work happens, when it was entered on the quote. */
+  job_site?: {
+    address_line1?: string | null;
+    city?: string | null;
+    state_code?: string | null;
+    postal_code?: string | null;
+  } | null;
   quote: {
     scope_of_work: string;
     line_items: ContractLineItem[];

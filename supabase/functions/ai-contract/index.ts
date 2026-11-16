@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
       state_code: context.state_code,
       contractor: context.contractor,
       customer: context.customer,
+      job_site: context.job_site,
       quote: context.quote,
       generated_at: new Date().toISOString(),
     });
@@ -102,6 +103,12 @@ type ContractContext = {
     city?: string | null;
     state_code?: string | null;
   };
+  job_site: {
+    address_line1: string | null;
+    city: string | null;
+    state_code: string | null;
+    postal_code: string | null;
+  } | null;
   quote: {
     scope_of_work: string;
     line_items: ContractLineItem[];
@@ -115,7 +122,10 @@ async function loadContractContext(
 ): Promise<ContractContext> {
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
-    .select('user_id, customer_id, scope_of_work, line_items, total_cents')
+    .select(
+      'user_id, customer_id, scope_of_work, line_items, total_cents, ' +
+        'site_address_line1, site_city, site_state_code, site_postal_code',
+    )
     .eq('id', quoteId)
     .maybeSingle();
   if (quoteError || !quote) {
@@ -159,9 +169,15 @@ async function loadContractContext(
     }
   }
 
-  // The contract follows the contractor's state. If their profile has none
-  // (onboarding never finished), use the customer's; never assume one.
-  const stateCode = (profile?.state_code ?? customerAddress.state_code ?? '')
+  // The contract follows the state the work is done in. Quotes from before
+  // the job site was recorded fall back to the contractor's state, then the
+  // customer's; never assume one.
+  const stateCode = (
+    quote.site_state_code ??
+    profile?.state_code ??
+    customerAddress.state_code ??
+    ''
+  )
     .toString()
     .toUpperCase();
   if (stateCode.length !== 2) {
@@ -181,6 +197,15 @@ async function loadContractContext(
       city: customerAddress.city ?? null,
       state_code: customerAddress.state_code ?? null,
     },
+    job_site:
+      quote.site_address_line1 || quote.site_city
+        ? {
+            address_line1: quote.site_address_line1 ?? null,
+            city: quote.site_city ?? null,
+            state_code: quote.site_state_code ?? stateCode,
+            postal_code: quote.site_postal_code ?? null,
+          }
+        : null,
     quote: {
       scope_of_work: quote.scope_of_work,
       line_items: (quote.line_items ?? []) as ContractLineItem[],

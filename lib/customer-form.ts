@@ -108,6 +108,19 @@ export function validateCustomerForm(v: CustomerFormValues): CustomerFormErrors 
   return errors;
 }
 
+export type ContactErrors = { phone?: string; email?: string };
+
+/**
+ * New Quote asks for phone and email but never requires them. Blank is fine;
+ * something half-typed is caught before it's saved and later fails to send.
+ */
+export function quoteContactErrors(v: { phone: string; email: string }): ContactErrors {
+  const errors: ContactErrors = {};
+  if (v.phone.trim() && !PHONE_RE.test(v.phone.trim())) errors.phone = 'Looks incomplete';
+  if (v.email.trim() && !EMAIL_RE.test(v.email.trim())) errors.email = 'Looks incomplete';
+  return errors;
+}
+
 function blankToNull(s: string): string | null {
   const t = s.trim();
   return t ? t : null;
@@ -129,6 +142,16 @@ export function patchFromForm(v: CustomerFormValues): CustomerPatch {
   };
 }
 
+export type ContactUsed = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address_line1?: string;
+  city?: string;
+  state_code?: string;
+  postal_code?: string;
+};
+
 /**
  * What to write back to a customer after the contractor used new contact
  * details somewhere else (the Send sheet, the New Quote address fields).
@@ -137,8 +160,9 @@ export function patchFromForm(v: CustomerFormValues): CustomerPatch {
  * the fields that actually change, or null when nothing does.
  */
 export function contactBackfill(
-  existing: Pick<CustomerRow, 'name' | 'email' | 'phone' | 'address_line1' | 'city'>,
-  used: { name?: string; email?: string; phone?: string; address_line1?: string; city?: string },
+  existing: Pick<CustomerRow, 'name' | 'email' | 'phone' | 'address_line1' | 'city'> &
+    Partial<Pick<CustomerRow, 'state_code' | 'postal_code'>>,
+  used: ContactUsed,
 ): CustomerPatch | null {
   const patch: CustomerPatch = {};
 
@@ -154,6 +178,14 @@ export function contactBackfill(
   if (line1 && line1 !== (existing.address_line1 ?? '')) patch.address_line1 = line1;
   const city = used.city?.trim();
   if (city && city !== (existing.city ?? '')) patch.city = city;
+  const state = used.state_code?.trim().toUpperCase();
+  if (state && /^[A-Z]{2}$/.test(state) && state !== (existing.state_code ?? '')) {
+    patch.state_code = state;
+  }
+  const zip = used.postal_code?.trim();
+  if (zip && POSTAL_RE.test(zip) && zip !== (existing.postal_code ?? '')) {
+    patch.postal_code = zip;
+  }
 
   // A name typed in passing only fills a blank one; renaming a customer is a
   // deliberate act that belongs on the edit screen.

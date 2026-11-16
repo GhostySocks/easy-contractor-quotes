@@ -85,6 +85,15 @@ function customerLine(input: ContractTemplateInput): string {
   return loc ? `${input.customer.name}, ${loc}` : input.customer.name;
 }
 
+/** A "Job site" line when the quote recorded where the work happens. */
+function jobSiteLines(input: ContractTemplateInput): string[] {
+  const s = input.job_site;
+  if (!s || (!s.address_line1 && !s.city)) return [];
+  const stateZip = [s.state_code?.toUpperCase(), s.postal_code].filter(Boolean).join(' ');
+  const where = [s.address_line1, s.city, stateZip].filter(Boolean).join(', ');
+  return ['', `**Job site:** ${where}`];
+}
+
 function lineItemsTable(input: ContractTemplateInput): string[] {
   const rows = ['| Item | Qty | Unit price | Total |', '| --- | ---: | ---: | ---: |'];
   for (const item of input.quote.line_items) {
@@ -102,15 +111,34 @@ function signatureBlocks(input: ContractTemplateInput): string[] {
     '',
     'By signing, each party agrees to everything in this document.',
     '',
-    `**Contractor:** ${input.contractor.business_name}`,
+    `**Contractor:** ${input.contractor.business_name}, by sending this agreement for signature.`,
     '',
-    'Signature: ____________________________  Date: ______________',
-    '',
-    `**Customer:** ${input.customer.name}`,
-    '',
-    'Signature: ____________________________  Date: ______________',
+    `**Customer:** ${input.customer.name}, by electronic signature. The signature, the date and ` +
+      'time it was made, and its signing record are kept with this agreement.',
   ];
 }
+
+// The release wording. One copy, used by the work agreement (which now
+// carries the release, so one signature covers both) and by the standalone
+// release kept for contracts created before the two were combined.
+const RISKS_CLAUSE =
+  'The Customer understands that this work carries ordinary risks to the property, including ' +
+  'damage to finishes, fixtures, landscaping, or items left in the work area, and that ' +
+  'existing conditions the Contractor did not create may be discovered or made worse by the work.';
+
+function releaseClause(state: string): string {
+  return (
+    'In exchange for the Contractor performing this work, the Customer releases the Contractor ' +
+    'from claims for loss or damage arising from the work, except for loss or damage caused by ' +
+    'the Contractor’s negligence or intentional misconduct. Nothing here waives rights that ' +
+    `cannot be waived under the laws of the state of ${state}.`
+  );
+}
+
+const RESPONSIBILITIES_CLAUSE =
+  'The Customer will clear the work area of personal items, tell the Contractor about known ' +
+  'hazards or hidden lines, and keep children and pets away from the work area while work is ' +
+  'in progress.';
 
 export function renderWorkAgreement(input: ContractTemplateInput): string {
   const state = input.state_code.toUpperCase();
@@ -124,6 +152,7 @@ export function renderWorkAgreement(input: ContractTemplateInput): string {
       `**${input.contractor.business_name}** (the "Contractor") and ` +
       `**${customerLine(input)}** (the "Customer") for work in the state of ${state}.`,
   );
+  out.push(...jobSiteLines(input));
   out.push('');
   out.push('## Scope of Work');
   out.push('');
@@ -161,6 +190,18 @@ export function renderWorkAgreement(input: ContractTemplateInput): string {
       'in its own work at no charge during that time. Materials are covered by the manufacturer’s ' +
       'warranty, if any. This warranty does not cover normal wear, misuse, or work by others.',
   );
+  out.push('');
+  out.push('## Risks of the Work');
+  out.push('');
+  out.push(RISKS_CLAUSE);
+  out.push('');
+  out.push('## Release of Liability');
+  out.push('');
+  out.push(releaseClause(state));
+  out.push('');
+  out.push('## Customer Responsibilities');
+  out.push('');
+  out.push(RESPONSIBILITIES_CLAUSE);
   out.push('');
   out.push('## Cancellation');
   out.push('');
@@ -202,33 +243,21 @@ export function renderReleaseOfLiability(input: ContractTemplateInput): string {
       `**${input.contractor.business_name}** (the "Contractor") to perform the following work ` +
       `in the state of ${state}:`,
   );
+  out.push(...jobSiteLines(input));
   out.push('');
   out.push(input.quote.scope_of_work.trim());
   out.push('');
   out.push('## Acknowledgment');
   out.push('');
-  out.push(
-    'The Customer understands that this work carries ordinary risks to the property, including ' +
-      'damage to finishes, fixtures, landscaping, or items left in the work area, and that ' +
-      'existing conditions the Contractor did not create may be discovered or made worse by the work.',
-  );
+  out.push(RISKS_CLAUSE);
   out.push('');
   out.push('## Release');
   out.push('');
-  out.push(
-    'In exchange for the Contractor performing this work, the Customer releases the Contractor ' +
-      'from claims for loss or damage arising from the work, except for loss or damage caused by ' +
-      'the Contractor’s negligence or intentional misconduct. Nothing here waives rights that ' +
-      `cannot be waived under the laws of the state of ${state}.`,
-  );
+  out.push(releaseClause(state));
   out.push('');
   out.push('## Customer Responsibilities');
   out.push('');
-  out.push(
-    'The Customer will clear the work area of personal items, tell the Contractor about known ' +
-      'hazards or hidden lines, and keep children and pets away from the work area while work is ' +
-      'in progress.',
-  );
+  out.push(RESPONSIBILITIES_CLAUSE);
   out.push('');
   out.push(...signatureBlocks(input));
   return out.join('\n');

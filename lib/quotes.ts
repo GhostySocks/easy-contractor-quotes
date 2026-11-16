@@ -1,5 +1,6 @@
 import type { LineItem } from './ai';
 import { supabase } from './supabase';
+import type { TravelInput } from '../supabase/functions/_shared/travel';
 
 export type SendChannel = 'email' | 'sms';
 
@@ -13,6 +14,15 @@ export type SendQuoteInput = {
   };
 };
 
+/** The phone's time zone, so the start date in the email is the contractor's day. */
+function deviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 export type SendQuoteResult = {
   email_sent: boolean;
   email_error: string | null;
@@ -22,7 +32,7 @@ export type SendQuoteResult = {
 
 export async function sendQuote(input: SendQuoteInput): Promise<SendQuoteResult> {
   const { data, error } = await supabase.functions.invoke<SendQuoteResult>('send-quote', {
-    body: input,
+    body: { ...input, time_zone: deviceTimeZone() },
   });
   if (error) {
     throw new Error(`send-quote failed: ${error.message}`);
@@ -52,6 +62,13 @@ export type QuoteRow = {
   job_type: string | null;
   requested_start_at: string | null;
   photos: string[];
+  /** Where the work happens; its state decides the contract terms. */
+  site_address_line1: string | null;
+  site_city: string | null;
+  site_state_code: string | null;
+  site_postal_code: string | null;
+  /** The travel charge chosen on New Quote, or null (supabase/functions/_shared/travel.ts). */
+  travel: TravelInput | null;
   status: QuoteStatus;
   sent_at: string | null;
   accepted_at: string | null;
