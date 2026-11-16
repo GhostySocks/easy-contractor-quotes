@@ -12,6 +12,8 @@ export type SignatureMethod = 'drawn' | 'typed';
 
 export type SigningRecord = {
   signer_name: string | null;
+  /** When they agreed to sign electronically; absent on older records. */
+  signed_consent_at?: string | null;
   signed_at: string;
   signed_ip: string | null;
   signed_user_agent: string | null;
@@ -156,7 +158,11 @@ export function recordRows(r: SigningRecord): { label: string; value: string }[]
       value: r.signature_method === 'typed' ? 'Typed name' : 'Drawn by hand',
     });
   }
-  if (r.signer_name) {
+  // Callers that load signed_consent_at get the fact itself. Where it isn't
+  // loaded (undefined), a typed name stands in: the signing web page only
+  // accepts a name together with the consent tick.
+  const consented = r.signed_consent_at === undefined ? !!r.signer_name : !!r.signed_consent_at;
+  if (consented) {
     rows.push({ label: 'Consent', value: 'Agreed to sign electronically' });
   }
   if (r.signed_ip) rows.push({ label: 'IP address', value: r.signed_ip });

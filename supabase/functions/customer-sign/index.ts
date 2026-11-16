@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
       .select(
         'id, user_id, customer_id, body_markdown, kind, state_code, ' +
           'signing_token_expires_at, signed_at, signed_ip, signature_svg, ' +
-          'signer_name, signed_user_agent, signature_method, body_sha256',
+          'signer_name, signed_consent_at, signed_user_agent, signature_method, body_sha256',
       )
       .eq('signing_token', token)
       .maybeSingle();
@@ -71,6 +71,7 @@ Deno.serve(async (req: Request) => {
           signatureSvg: contract.signature_svg,
           record: {
             signer_name: contract.signer_name,
+            signed_consent_at: contract.signed_consent_at ?? null,
             signed_at: contract.signed_at,
             signed_ip: contract.signed_ip,
             signed_user_agent: contract.signed_user_agent,

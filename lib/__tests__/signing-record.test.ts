@@ -250,3 +250,16 @@ describe('signed emails', () => {
     expect(email.html).not.toContain('<img src=x');
   });
 });
+
+describe('consent on the signing record', () => {
+  it('is shown when the consent time was recorded', () => {
+    const rows = recordRows({ ...record, signed_consent_at: record.signed_at });
+    expect(rows).toContainEqual({ label: 'Consent', value: 'Agreed to sign electronically' });
+  });
+
+  it('is not claimed for a named signer who never ticked the box', () => {
+    const rows = recordRows({ ...record, signed_consent_at: null });
+    expect(rows.find((r) => r.label === 'Consent')).toBeUndefined();
+    expect(rows).toContainEqual({ label: 'Signed by', value: 'Jane Doe' });
+  });
+});

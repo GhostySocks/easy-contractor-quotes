@@ -95,6 +95,9 @@ export async function updateContractBody(
 export type SignContractInput = {
   contract_id: string;
   signature_svg: string;
+  /** The customer's full name and their agreement to sign electronically. */
+  signer_name: string;
+  consent: boolean;
 };
 
 export async function submitSignature(input: SignContractInput): Promise<ContractRow> {

@@ -7,11 +7,20 @@ import { corsHeaders, handleOptions } from '../_shared/cors.ts';
 import { HttpError, requireActiveSubscription } from '../_shared/entitlement.ts';
 import { onContractSigned } from '../_shared/post-sign.ts';
 import { sendSignedEmails } from '../_shared/signed-notice.ts';
-import { cleanUserAgent, isAcceptableSignatureSvg, sha256Hex } from '../_shared/signing-record.ts';
+import {
+  cleanSignerName,
+  cleanUserAgent,
+  isAcceptableSignatureSvg,
+  sha256Hex,
+} from '../_shared/signing-record.ts';
 
 type SignInput = {
   contract_id: string;
   signature_svg: string;
+  /** The customer's full name, typed on the contractor's phone before signing. */
+  signer_name?: unknown;
+  /** True when the customer ticked "I agree to sign electronically". */
+  consent?: unknown;
 };
 
 // @ts-expect-error — Deno.serve is provided by the runtime
@@ -61,15 +70,22 @@ Deno.serve(async (req: Request) => {
     }
 
     const signedIp = firstForwardedIp(req.headers.get('x-forwarded-for'));
+    // Builds from before the name and consent were asked in person send
+    // neither; their signatures are still accepted, with a thinner record.
+    const signerName = cleanSignerName(input.signer_name);
+    const consented = input.consent === true && signerName !== null;
+    const signedAt = new Date().toISOString();
 
     const { data: updated, error: updateErr } = await admin
       .from('contracts')
       .update({
         signature_svg: input.signature_svg,
-        signed_at: new Date().toISOString(),
+        signed_at: signedAt,
         signed_ip: signedIp,
+        signer_name: signerName,
+        signed_consent_at: consented ? signedAt : null,
         // Signed in person on the contractor's phone: the device and IP are
-        // the contractor's, and there is no typed name or consent tick.
+        // the contractor's.
         signed_user_agent: cleanUserAgent(req.headers.get('user-agent')),
         signature_method: 'drawn',
         body_sha256: await sha256Hex(existing.body_markdown),

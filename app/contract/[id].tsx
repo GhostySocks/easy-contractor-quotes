@@ -217,12 +217,14 @@ export default function ContractDetail() {
   );
 
   const handleSubmitSignature = useCallback(
-    async (signatureSvg: string) => {
+    async (signatureSvg: string, signer: { name: string; consent: boolean }) => {
       if (!contract) return;
       try {
         const updated = await submitSignature({
           contract_id: contract.id,
           signature_svg: signatureSvg,
+          signer_name: signer.name,
+          consent: signer.consent,
         });
         setContract(updated);
         setBody(updated.body_markdown);
@@ -355,6 +357,7 @@ export default function ContractDetail() {
 
       <SignatureModal
         visible={signatureOpen}
+        customerName={recipient.name}
         onCancel={() => setSignatureOpen(false)}
         onSubmit={handleSubmitSignature}
       />
