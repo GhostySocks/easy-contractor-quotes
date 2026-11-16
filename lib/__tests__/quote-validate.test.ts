@@ -110,3 +110,34 @@ describe('normalizeQuote', () => {
     ).toBeNull();
   });
 });
+
+describe('total ceiling', () => {
+  const quoteOf = (totalCents: number) => ({
+    scope_of_work:
+      'Full kitchen remodel including cabinets, counters, flooring, plumbing and electrical work.',
+    line_items: [
+      { label: 'Remodel', qty: 1, unit_price_cents: totalCents, total_cents: totalCents },
+    ],
+    subtotal_cents: totalCents,
+    tax_cents: 0,
+    total_cents: totalCents,
+    total_low_cents: Math.round(totalCents * 0.8),
+    total_high_cents: Math.round(totalCents * 1.25),
+  });
+
+  it('accepts a six-figure job, which used to be refused above $50,000', () => {
+    expect(validateQuote(quoteOf(12_000_000))).toEqual({ ok: true });
+    expect(validateQuote(quoteOf(100_000_000))).toEqual({ ok: true });
+  });
+
+  it('still refuses a total over $1,000,000 as a likely mistake', () => {
+    const result = validateQuote(quoteOf(100_000_100));
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ reasons: ['total implausibly high'] });
+  });
+
+  it('can still normalize a large quote whose arithmetic was off', () => {
+    const q = { ...quoteOf(25_000_000), subtotal_cents: 1 };
+    expect(normalizeQuote(q)?.total_cents).toBe(25_000_000);
+  });
+});

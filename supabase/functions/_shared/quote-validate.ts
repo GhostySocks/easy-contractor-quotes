@@ -29,9 +29,11 @@ const MIN_SCOPE_CHARS = 40;
 const MAX_SCOPE_CHARS = 1500;
 const MAX_LINE_ITEMS = 8;
 // Guard against a model emitting dollars where cents were asked for, or a
-// runaway number. $50 to $50,000 covers residential handyman-to-HVAC jobs.
+// runaway number. $50 to $1,000,000: contractors quote everything from a
+// small repair to a six-figure remodel. (It was $50,000, which made a large
+// job impossible to quote.)
 const MIN_TOTAL_CENTS = 5_000;
-const MAX_TOTAL_CENTS = 5_000_000;
+const MAX_TOTAL_CENTS = 100_000_000;
 
 function isInt(n: unknown): n is number {
   return typeof n === 'number' && Number.isInteger(n);
