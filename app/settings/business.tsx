@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -22,9 +22,11 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth-store';
 import { type TradeCode } from '@/lib/onboarding-store';
 import { deleteJobPhotos, promptForPhotos, signedPhotoUrls, uploadLogo } from '@/lib/photos';
+import { geocodeAddress } from '@/lib/location';
 import { loadProfile, updateProfile } from '@/lib/profile';
 import { TRAVEL_BUFFER_OPTIONS } from '@/lib/schedule-conflicts';
 import { strings } from '@/lib/strings';
+import { addressQuery } from '@/lib/travel-form';
 import { spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
@@ -35,6 +37,15 @@ export default function BusinessSettings() {
   const user = useAuth((s) => s.user);
   const [businessName, setBusinessName] = useState('');
   const [stateCode, setStateCode] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  // The saved address and its map point, so an unchanged address isn't looked up again.
+  const savedBase = useRef<{ query: string | null; lat: number | null; lng: number | null }>({
+    query: null,
+    lat: null,
+    lng: null,
+  });
   const [trade, setTrade] = useState<TradeCode | null>(null);
   const [taxRate, setTaxRate] = useState('');
   const [travelBuffer, setTravelBuffer] = useState<number>(30);
@@ -53,6 +64,19 @@ export default function BusinessSettings() {
         if (profile) {
           setBusinessName(profile.business_name);
           setStateCode(profile.state_code);
+          setAddressLine1(profile.address_line1 ?? '');
+          setCity(profile.city ?? '');
+          setPostalCode(profile.postal_code ?? '');
+          savedBase.current = {
+            query: addressQuery({
+              line1: profile.address_line1 ?? '',
+              city: profile.city ?? '',
+              state_code: profile.state_code,
+              postal_code: profile.postal_code ?? '',
+            }),
+            lat: profile.base_lat,
+            lng: profile.base_lng,
+          };
           setTrade((profile.trade as TradeCode | null) ?? null);
           setTaxRate(
             Number(profile.default_tax_rate ?? 0) > 0 ? String(profile.default_tax_rate) : '',
@@ -131,10 +155,37 @@ export default function BusinessSettings() {
       return;
     }
 
+    const zip = postalCode.trim();
+    if (zip && !/^\d{5}(-\d{4})?$/.test(zip)) {
+      Alert.alert('ZIP code must be 5 digits', 'e.g. 44805');
+      return;
+    }
+
     setSaving(true);
+    // Place the business on the map for travel estimates. If the phone can't
+    // (no signal), the address still saves and miles can be typed on a quote.
+    const query = addressQuery({
+      line1: addressLine1,
+      city,
+      state_code: trimmedState,
+      postal_code: zip,
+    });
+    let base: { lat: number | null; lng: number | null } = { lat: null, lng: null };
+    if (query && query === savedBase.current.query && savedBase.current.lat !== null) {
+      base = { lat: savedBase.current.lat, lng: savedBase.current.lng };
+    } else if (query) {
+      const found = await geocodeAddress(query);
+      if (found) base = found;
+    }
+
     const result = await updateProfile(user.id, {
       business_name: trimmedName,
       state_code: trimmedState,
+      address_line1: addressLine1.trim() || null,
+      city: city.trim() || null,
+      postal_code: zip || null,
+      base_lat: base.lat,
+      base_lng: base.lng,
       trade,
       default_tax_rate: Math.round(parsedTax * 100) / 100,
       travel_buffer_minutes: travelBuffer,
@@ -192,6 +243,37 @@ export default function BusinessSettings() {
                 onChangeText={setBusinessName}
                 placeholder="Smith Handyman"
                 autoCapitalize="words"
+                returnKeyType="next"
+              />
+
+              <Input
+                label="Business address"
+                value={addressLine1}
+                onChangeText={setAddressLine1}
+                placeholder="123 Main St"
+                autoCapitalize="words"
+                autoComplete="street-address"
+                returnKeyType="next"
+              />
+              <Text style={styles.travelHint}>
+                Where you start from. Used to estimate travel miles on a quote.
+              </Text>
+
+              <Input
+                label="City"
+                value={city}
+                onChangeText={setCity}
+                placeholder="Ashland"
+                autoCapitalize="words"
+                returnKeyType="next"
+              />
+
+              <Input
+                label="ZIP code"
+                value={postalCode}
+                onChangeText={(v) => setPostalCode(v.replace(/[^\d-]/g, '').slice(0, 10))}
+                placeholder="44805"
+                keyboardType="number-pad"
                 returnKeyType="next"
               />
 

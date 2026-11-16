@@ -14,6 +14,11 @@ export type JobRow = {
   total_cents: number | null;
   notes: string | null;
   photos: string[];
+  /** Where the work happens, copied from the quote when its contract is signed. */
+  site_address_line1: string | null;
+  site_city: string | null;
+  site_state_code: string | null;
+  site_postal_code: string | null;
   created_at: string;
 };
 

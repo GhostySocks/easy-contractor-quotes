@@ -1,4 +1,4 @@
-import { contactBackfill, type CustomerPatch } from './customer-form';
+import { contactBackfill, type ContactUsed, type CustomerPatch } from './customer-form';
 import { reportError } from './error-reporting';
 import { callWithRetry, type InvokeOutcome, queryOutcome } from './function-call';
 import { ensureLogin } from './login-check';
@@ -76,10 +76,7 @@ export async function updateCustomer(
  * Quote address) onto the customer, so they never have to retype them.
  * Best-effort: failures are logged, never shown, and never block the caller.
  */
-export async function rememberCustomerContact(
-  id: string,
-  used: { name?: string; email?: string; phone?: string; address_line1?: string; city?: string },
-): Promise<void> {
+export async function rememberCustomerContact(id: string, used: ContactUsed): Promise<void> {
   const existing = await fetchCustomer(id);
   if (!existing) return;
   const patch = contactBackfill(existing, used);

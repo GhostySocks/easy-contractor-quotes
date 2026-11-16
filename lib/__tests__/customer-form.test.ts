@@ -168,3 +168,26 @@ describe('quoteContactErrors', () => {
     });
   });
 });
+
+describe('contactBackfill state and ZIP', () => {
+  const existing = {
+    name: 'Jane Doe',
+    email: null,
+    phone: null,
+    address_line1: null,
+    city: null,
+    state_code: null,
+    postal_code: null,
+  };
+
+  it('saves a valid state and ZIP used on a quote', () => {
+    expect(contactBackfill(existing, { state_code: 'oh', postal_code: '44805' })).toEqual({
+      state_code: 'OH',
+      postal_code: '44805',
+    });
+  });
+
+  it('ignores a half-typed state or ZIP', () => {
+    expect(contactBackfill(existing, { state_code: 'O', postal_code: '448' })).toBeNull();
+  });
+});

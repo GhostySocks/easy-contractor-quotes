@@ -1,5 +1,6 @@
 import type { LineItem } from './ai';
 import { supabase } from './supabase';
+import type { TravelInput } from '../supabase/functions/_shared/travel';
 
 export type SendChannel = 'email' | 'sms';
 
@@ -52,6 +53,13 @@ export type QuoteRow = {
   job_type: string | null;
   requested_start_at: string | null;
   photos: string[];
+  /** Where the work happens; its state decides the contract terms. */
+  site_address_line1: string | null;
+  site_city: string | null;
+  site_state_code: string | null;
+  site_postal_code: string | null;
+  /** The travel charge chosen on New Quote, or null (supabase/functions/_shared/travel.ts). */
+  travel: TravelInput | null;
   status: QuoteStatus;
   sent_at: string | null;
   accepted_at: string | null;

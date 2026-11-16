@@ -33,6 +33,7 @@ import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { createInvoiceFromQuote, fetchInvoiceByJob, type InvoiceRow } from '@/lib/invoices';
 import { confirmScheduleSlot } from '@/lib/availability';
 import { addJobToPhoneCalendar } from '@/lib/calendar-export';
+import { siteLine } from '@/lib/geo-address';
 import { buildTimeline } from '@/lib/job-timeline';
 import { syncJobReminders } from '@/lib/notifications';
 import {
@@ -320,11 +321,13 @@ export default function JobDetail() {
                 scheduled_at: job.scheduled_at as string,
                 description: job.description,
                 customerName: customer?.name ?? null,
-                address: customer
-                  ? [customer.address_line1, customer.city, customer.state_code]
-                      .filter(Boolean)
-                      .join(', ') || null
-                  : null,
+                address:
+                  siteLine(job) ??
+                  (customer
+                    ? [customer.address_line1, customer.city, customer.state_code]
+                        .filter(Boolean)
+                        .join(', ') || null
+                    : null),
               }).catch(() =>
                 Alert.alert(
                   "Couldn't open your calendar",
@@ -338,6 +341,13 @@ export default function JobDetail() {
             <CalendarPlus size={18} color={colors.goldDark} strokeWidth={2} />
             <Text style={styles.calendarLabel}>Add to my calendar</Text>
           </Pressable>
+        ) : null}
+
+        {siteLine(job) ? (
+          <Card>
+            <Text style={styles.sectionLabel}>Job site</Text>
+            <Text style={styles.line}>{siteLine(job)}</Text>
+          </Card>
         ) : null}
 
         {customer ? (

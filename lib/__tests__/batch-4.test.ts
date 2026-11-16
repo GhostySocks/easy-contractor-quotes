@@ -1,5 +1,5 @@
 import { shouldLock, RELOCK_AFTER_MS } from '../biometric-lock';
-import { addressFromGeocode, type GeocodedAddress } from '../geo-address';
+import { addressFromGeocode, siteLine, type GeocodedAddress } from '../geo-address';
 import { daysOverdue, groupInvoices, isOverdue, type PaymentInvoice } from '../payments-math';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -69,21 +69,36 @@ describe('addressFromGeocode', () => {
   it('uses street number + street (Android style)', () => {
     expect(
       addressFromGeocode({ ...base, streetNumber: '12', street: 'Oak St', city: 'Austin' }),
-    ).toEqual({ line1: '12 Oak St', city: 'Austin' });
+    ).toEqual({ line1: '12 Oak St', city: 'Austin', state_code: 'TX', postal_code: null });
   });
 
   it('falls back to name when it is a street address (iOS style)', () => {
-    expect(addressFromGeocode({ ...base, name: '12 Oak St', city: 'Austin' })).toEqual({
+    expect(addressFromGeocode({ ...base, name: '12 Oak St', city: 'Austin' })).toMatchObject({
       line1: '12 Oak St',
       city: 'Austin',
     });
   });
 
   it('ignores a place name and uses district when city is missing', () => {
-    expect(addressFromGeocode({ ...base, name: 'Home Depot', district: 'Round Rock' })).toEqual({
+    expect(
+      addressFromGeocode({ ...base, name: 'Home Depot', district: 'Round Rock' }),
+    ).toMatchObject({
       line1: '',
       city: 'Round Rock',
     });
+  });
+
+  it('carries the state as a 2-letter code and the ZIP', () => {
+    expect(
+      addressFromGeocode({
+        ...base,
+        streetNumber: '12',
+        street: 'Oak St',
+        city: 'Ashland',
+        region: 'Ohio',
+        postalCode: '44805',
+      }),
+    ).toEqual({ line1: '12 Oak St', city: 'Ashland', state_code: 'OH', postal_code: '44805' });
   });
 
   it('returns null when nothing useful came back', () => {
@@ -117,5 +132,23 @@ describe('shouldLock', () => {
     expect(shouldLock({ ...base, enabled: false })).toBe(false);
     expect(shouldLock({ ...base, available: false })).toBe(false);
     expect(shouldLock({ ...base, signedIn: false })).toBe(false);
+  });
+});
+
+describe('siteLine', () => {
+  it('writes the job site on one line', () => {
+    expect(
+      siteLine({
+        site_address_line1: '12 Oak St',
+        site_city: 'Ashland',
+        site_state_code: 'OH',
+        site_postal_code: '44805',
+      }),
+    ).toBe('12 Oak St, Ashland, OH 44805');
+  });
+
+  it('is null for a job from before the site was recorded, even with a default state', () => {
+    expect(siteLine({ site_state_code: 'OH' })).toBeNull();
+    expect(siteLine({})).toBeNull();
   });
 });
