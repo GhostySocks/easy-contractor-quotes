@@ -1,11 +1,11 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
-import { callWithRetry, type InvokeOutcome } from './function-call';
+import { callWithRetry, OFFLINE_MESSAGE, OfflineError, type InvokeOutcome } from './function-call';
 import { ensureLogin } from './login-check';
 import { supabase } from './supabase';
 import type { TravelInput } from '../supabase/functions/_shared/travel';
 
-export { OfflineError } from './function-call';
+export { OfflineError };
 
 /**
  * Client for the AI Edge Functions.
@@ -119,6 +119,20 @@ async function invokeOnce<T>(
   }
   // FunctionsFetchError / FunctionsRelayError: it never reached the function.
   return { ok: false, kind: 'network', message: error.message };
+}
+
+/**
+ * Call an edge function once, after checking the login. No retry: use this for
+ * a call that must not run twice (it creates a row, or sends something). A
+ * dropped connection throws OfflineError; anything the function refused
+ * throws its own message.
+ */
+export async function callFunctionOnce<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  await ensureLogin();
+  const outcome = await invokeOnce<T>(name, body);
+  if (outcome.ok) return outcome.data;
+  if (outcome.kind === 'network') throw new OfflineError(OFFLINE_MESSAGE);
+  throw new Error(outcome.message);
 }
 
 /**

@@ -79,12 +79,12 @@ export default function ContractDetail() {
   const handleAmend = useCallback(() => {
     if (!contract) return;
     Alert.alert(
-      'Amend this contract?',
-      'The signed version stays locked. A new version is created from it for you to edit and send for signature.',
+      'Rewrite this contract?',
+      'For a change in scope or price, add a change order from the job instead. Rewriting is for when the terms themselves change. The signed version stays locked, and a new version is created from it for you to edit and send for signature.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Create amendment',
+          text: 'Rewrite contract',
           onPress: async () => {
             setAmending(true);
             try {
@@ -96,7 +96,7 @@ export default function ContractDetail() {
               router.replace({ pathname: '/contract/[id]', params: { id: next.id } });
             } catch (err) {
               Alert.alert(
-                "Couldn't create the amendment",
+                "Couldn't create the new version",
                 err instanceof Error ? err.message : String(err),
               );
             } finally {
@@ -349,10 +349,10 @@ export default function ContractDetail() {
               </Text>
             </View>
             <GhostButton
-              label={amending ? 'Creating amendment…' : 'Amend contract'}
+              label={amending ? 'Creating new version…' : 'Rewrite contract'}
               onPress={handleAmend}
               disabled={amending}
-              accessibilityLabel="Create an amended version of this signed contract"
+              accessibilityLabel="Rewrite this signed contract as a new version"
             />
           </View>
         )}

@@ -147,6 +147,8 @@ app/
     edit/[id].tsx               -> Edit contact, address, notes, tags
   contract/
     [id].tsx                    -> Contract view + e-sign; Amend creates the next version of a signed contract
+  change-order/
+    [id].tsx                    -> Change order for a job: write, save, send or sign in person. id "new" + jobId starts one. Opened from the job page
   invoice/
     [id].tsx                    -> Invoice: edit actuals, send, share PDF, mark paid
   settings/
@@ -226,7 +228,8 @@ Canonical SQL lives in `/supabase/migrations/`. Table list:
 - `jobs` — central entity. `site_address_line1`, `site_city`, `site_state_code`, `site_postal_code` are the job site, copied from the quote when its contract is signed
 - `quotes` — AI-generated, one-to-many with jobs. Also carries `job_type`, `requested_start_at` (the job is created already scheduled for it when the contract is signed) and `photos` (≤ 4 paths in the private `job-photos` storage bucket, `<user_id>/<file>.jpg`, owner-only storage policies). `site_*` (the same four columns as jobs) is where the work happens: its state prices the quote and decides the contract terms, and it can differ from the customer's own address. `travel` (jsonb, null for none) is the travel charge the contractor chose on New Quote; the Travel line item is computed from it in `_shared/travel.ts`, never by the model
 - `contracts` — state-specific, e-signed (write-once after signing). The signing record is written in the same update that sets `signed_at` and frozen with it: `signature_svg`, `signed_ip`, `signer_name` (typed on the signing page), `signed_consent_at` (agreed to sign electronically), `signed_user_agent`, `signature_method` (`drawn` / `typed`) and `body_sha256` (fingerprint of the exact text signed). The customer is emailed a signed copy and the contractor a notice (`_shared/signed-notice.ts`)
-- `invoices` — auto from quote + actuals
+- `change_orders` — a priced, signed change to a job that already has a signed agreement; numbered per job. `line_items` may include credits (negative unit price). `total_cents` is the change, `previous_total_cents` / `new_total_cents` the job total before and after. `status` is draft, sent, signed or declined. Carries the same signing record columns as contracts and is write-once after signing (trigger). Clients can only read and delete-if-unsigned; every write goes through the `change-order` edge function, which computes the money and renders `body_markdown`. Signing moves `jobs.total_cents` to `new_total_cents` and adds the lines to an open invoice (`_shared/change-order-sign.ts`)
+- `invoices` — auto from quote + actuals, plus every signed change order
 - `subscriptions` — mirror of RevenueCat, source of truth for entitlement (service_role writes only)
 - `availability` — calendar blocks (`kind = unavailable` for time the contractor blocks off on the Calendar tab)
 

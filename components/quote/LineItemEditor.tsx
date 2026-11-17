@@ -9,9 +9,17 @@ import { useStyles, useTheme } from '@/lib/theme-context';
 type Props = {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
+  /**
+   * Change orders can take money off. Each line then gets a Charge / Credit
+   * switch; a credit is stored as a negative unit price. The price is always
+   * typed as a plain positive number, since phone number pads have no minus.
+   */
+  allowCredits?: boolean;
+  /** Placeholder for a line's name. */
+  labelPlaceholder?: string;
 };
 
-export function LineItemEditor({ items, onChange }: Props) {
+export function LineItemEditor({ items, onChange, allowCredits, labelPlaceholder }: Props) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   function updateItem(index: number, patch: Partial<LineItem>) {
@@ -41,11 +49,39 @@ export function LineItemEditor({ items, onChange }: Props) {
           <TextInput
             value={item.label}
             onChangeText={(label) => updateItem(index, { label })}
-            placeholder="Labor, materials, travel…"
+            placeholder={labelPlaceholder ?? 'Labor, materials, travel…'}
             placeholderTextColor={colors.ink3}
             style={styles.labelField}
             multiline
           />
+
+          {allowCredits ? (
+            <View style={styles.signRow} accessibilityRole="radiogroup">
+              {(['charge', 'credit'] as const).map((kind) => {
+                const isCredit = isNegative(item.unit_price_cents);
+                const selected = (kind === 'credit') === isCredit;
+                return (
+                  <Pressable
+                    key={kind}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={
+                      kind === 'credit' ? 'Credit: takes money off' : 'Charge: adds to the total'
+                    }
+                    onPress={() => {
+                      if (selected) return;
+                      updateItem(index, { unit_price_cents: -item.unit_price_cents });
+                    }}
+                    style={[styles.signChip, selected && styles.signChipOn]}
+                  >
+                    <Text style={[styles.signLabel, selected && styles.signLabelOn]}>
+                      {kind === 'credit' ? 'Credit' : 'Charge'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
 
           <View style={styles.numberRow}>
             <View style={styles.numberGroup}>
@@ -62,9 +98,12 @@ export function LineItemEditor({ items, onChange }: Props) {
             <View style={styles.numberGroup}>
               <Text style={styles.numberLabel}>Unit</Text>
               <TextInput
-                value={centsToDollarInput(item.unit_price_cents)}
+                value={centsToDollarInput(Math.abs(item.unit_price_cents))}
                 onChangeText={(text) =>
-                  updateItem(index, { unit_price_cents: dollarInputToCents(text) })
+                  updateItem(index, {
+                    unit_price_cents:
+                      dollarInputToCents(text) * (isNegative(item.unit_price_cents) ? -1 : 1),
+                  })
                 }
                 keyboardType="decimal-pad"
                 style={[styles.numberField, styles.priceField]}
@@ -97,6 +136,11 @@ export function LineItemEditor({ items, onChange }: Props) {
   );
 }
 
+/** Negative, counting -0: a line marked Credit before its price is typed. */
+function isNegative(n: number): boolean {
+  return n < 0 || Object.is(n, -0);
+}
+
 function toNumber(text: string, fallback: number): number {
   const parsed = Number(text);
   if (!Number.isFinite(parsed) || parsed < 0) return fallback;
@@ -118,6 +162,31 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     list: {
       gap: spacing.md,
+    },
+    signRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    signChip: {
+      minHeight: 44,
+      paddingHorizontal: spacing.lg,
+      justifyContent: 'center',
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.surface,
+    },
+    signChipOn: {
+      backgroundColor: colors.goldTint,
+      borderColor: colors.gold,
+    },
+    signLabel: {
+      fontFamily: typography.fonts.bodyStrong,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink2,
+    },
+    signLabelOn: {
+      color: colors.goldDark,
     },
     sectionLabel: {
       fontFamily: typography.fonts.bodyStrong,

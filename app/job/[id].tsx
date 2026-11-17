@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoadFailed } from '@/components/ui/LoadFailed';
+import { ChangeOrdersCard } from '@/components/job/ChangeOrdersCard';
 import { JobNotes } from '@/components/job/JobNotes';
 import { JobPhotos } from '@/components/job/JobPhotos';
 import { JobTimeline } from '@/components/job/JobTimeline';
@@ -33,6 +34,7 @@ import { fetchCustomer, type CustomerRow } from '@/lib/customers';
 import { createInvoiceFromQuote, fetchInvoiceByJob, type InvoiceRow } from '@/lib/invoices';
 import { confirmScheduleSlot } from '@/lib/availability';
 import { addJobToPhoneCalendar } from '@/lib/calendar-export';
+import { listSignedChangeOrders } from '@/lib/change-orders';
 import { siteLine } from '@/lib/geo-address';
 import { buildTimeline } from '@/lib/job-timeline';
 import { syncJobReminders } from '@/lib/notifications';
@@ -49,6 +51,7 @@ import { formatCents } from '@/lib/pricing';
 import { fetchQuote, type QuoteRow } from '@/lib/quotes';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
+import { invoiceWithChangeOrders } from '@/supabase/functions/_shared/change-order';
 
 export default function JobDetail() {
   const styles = useStyles(makeStyles);
@@ -209,15 +212,22 @@ export default function JobDetail() {
       }
       setJob(updated);
 
+      // The invoice is the quote plus every change order the customer signed.
+      const billed = invoiceWithChangeOrders(
+        {
+          line_items: (quote.line_items ?? []) as LineItem[],
+          subtotal_cents: quote.subtotal_cents,
+          tax_cents: quote.tax_cents,
+          total_cents: quote.total_cents,
+        },
+        await listSignedChangeOrders(updated.id),
+      );
       const invoice = await createInvoiceFromQuote({
         user_id: updated.user_id,
         job_id: updated.id,
         customer_id: updated.customer_id,
         quote_id: quote.id,
-        line_items: (quote.line_items ?? []) as LineItem[],
-        subtotal_cents: quote.subtotal_cents,
-        tax_cents: quote.tax_cents,
-        total_cents: quote.total_cents,
+        ...billed,
       });
       if (!invoice) {
         Alert.alert(
@@ -422,6 +432,11 @@ export default function JobDetail() {
             <Text style={styles.totalAmount}>{formatCents(job.total_cents ?? 0)}</Text>
           </Card>
         )}
+
+        <ChangeOrdersCard
+          jobId={job.id}
+          canAdd={!cancelled && job.status !== 'paid' && invoice?.status !== 'paid'}
+        />
 
         <JobPhotos paths={job.photos ?? []} onChange={handlePhotosChange} />
         <JobNotes initial={job.notes} onSave={handleNotesSave} />
