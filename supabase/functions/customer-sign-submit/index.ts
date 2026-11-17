@@ -4,6 +4,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { corsHeaders, handleOptions } from '../_shared/cors.ts';
+import { declineChangeOrder, signChangeOrder } from '../_shared/change-order-sign.ts';
 import { onContractSigned } from '../_shared/post-sign.ts';
 import { sendSignedEmails } from '../_shared/signed-notice.ts';
 import {
@@ -33,6 +34,8 @@ type SubmitInput = {
   /** 'drawn' sends signature_svg; 'typed' has the server draw the name. */
   method?: unknown;
   signature_svg?: unknown;
+  /** 'decline' turns down a change order instead of signing it. */
+  action?: unknown;
 };
 
 const JSON_HEADERS = { ...corsHeaders, 'Content-Type': 'application/json' };
@@ -50,6 +53,18 @@ Deno.serve(async (req: Request) => {
     if (!input.token || typeof input.token !== 'string') {
       return new Response('token is required', { status: 400, headers: corsHeaders });
     }
+    if (input.action === 'decline') {
+      const admin = serviceClient();
+      if (!admin) return notConfigured();
+      const co = await findChangeOrder(admin, input.token);
+      if (!co) return new Response('invalid token', { status: 404, headers: corsHeaders });
+      const result = await declineChangeOrder(admin, co.id, viewUrlFor(req, input.token));
+      if (!result.ok) {
+        return new Response(result.message, { status: result.status, headers: corsHeaders });
+      }
+      return new Response(JSON.stringify({ declined: true }), { headers: JSON_HEADERS });
+    }
+
     const signerName = cleanSignerName(input.signer_name);
     if (!signerName) {
       return new Response('Type your full name to sign.', { status: 400, headers: corsHeaders });
@@ -70,27 +85,50 @@ Deno.serve(async (req: Request) => {
     const signatureSvg =
       method === 'typed' ? typedSignatureSvg(signerName) : (input.signature_svg as string);
 
-    // @ts-expect-error — Deno env access
-    const serviceUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    // @ts-expect-error — Deno env access
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    if (!serviceUrl || !serviceKey) {
-      return new Response('service credentials are not configured', {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-    const admin = createClient(serviceUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const admin = serviceClient();
+    if (!admin) return notConfigured();
 
     const { data: existing, error: fetchErr } = await admin
       .from('contracts')
       .select('id, signed_at, signing_token_expires_at, body_markdown')
       .eq('signing_token', input.token)
       .maybeSingle();
-    if (fetchErr || !existing) {
+    if (fetchErr) {
       return new Response('invalid token', { status: 404, headers: corsHeaders });
+    }
+    if (!existing) {
+      // Not a contract: the token may belong to a change order.
+      const co = await findChangeOrder(admin, input.token);
+      if (!co) return new Response('invalid token', { status: 404, headers: corsHeaders });
+      if (
+        co.signing_token_expires_at &&
+        new Date(co.signing_token_expires_at).getTime() < Date.now()
+      ) {
+        return new Response('This signing link has expired.', {
+          status: 410,
+          headers: corsHeaders,
+        });
+      }
+      const result = await signChangeOrder(
+        admin,
+        co.id,
+        {
+          signature_svg: signatureSvg,
+          signer_name: signerName,
+          consent: true,
+          method,
+          ip: firstForwardedIp(req.headers.get('x-forwarded-for')),
+          user_agent: req.headers.get('user-agent'),
+        },
+        viewUrlFor(req, input.token),
+      );
+      if (!result.ok) {
+        return new Response(result.message, { status: result.status, headers: corsHeaders });
+      }
+      return new Response(
+        JSON.stringify({ signed: true, customer_emailed: result.customer_emailed }),
+        { headers: JSON_HEADERS },
+      );
     }
     if (existing.signed_at) {
       return new Response('contract is already signed', { status: 409, headers: corsHeaders });
@@ -141,12 +179,7 @@ Deno.serve(async (req: Request) => {
     await onContractSigned(admin, existing.id);
 
     // The same link now shows the signed copy.
-    const url = new URL(req.url);
-    const signBase: string =
-      // @ts-expect-error — Deno env access
-      Deno.env.get('CUSTOMER_SIGN_BASE_URL') ??
-      `${url.origin}${url.pathname.replace('/customer-sign-submit', '/customer-sign')}`;
-    const viewUrl = `${signBase}?token=${encodeURIComponent(input.token)}`;
+    const viewUrl = viewUrlFor(req, input.token);
     const emailed = await sendSignedEmails(admin, existing.id, viewUrl);
 
     return new Response(
@@ -158,6 +191,44 @@ Deno.serve(async (req: Request) => {
     return new Response(message, { status: 500, headers: corsHeaders });
   }
 });
+
+function serviceClient() {
+  // @ts-expect-error — Deno env access
+  const serviceUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  // @ts-expect-error — Deno env access
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!serviceUrl || !serviceKey) return null;
+  return createClient(serviceUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+function notConfigured(): Response {
+  return new Response('service credentials are not configured', {
+    status: 500,
+    headers: corsHeaders,
+  });
+}
+
+/** The page for this token, which shows the signed copy once signed. */
+function viewUrlFor(req: Request, token: string): string {
+  const url = new URL(req.url);
+  const signBase: string =
+    // @ts-expect-error — Deno env access
+    Deno.env.get('CUSTOMER_SIGN_BASE_URL') ??
+    `${url.origin}${url.pathname.replace('/customer-sign-submit', '/customer-sign')}`;
+  return `${signBase}?token=${encodeURIComponent(token)}`;
+}
+
+// deno-lint-ignore no-explicit-any
+async function findChangeOrder(admin: any, token: string) {
+  const { data } = await admin
+    .from('change_orders')
+    .select('id, signing_token_expires_at')
+    .eq('signing_token', token)
+    .maybeSingle();
+  return data as { id: string; signing_token_expires_at: string | null } | null;
+}
 
 function firstForwardedIp(header: string | null): string | null {
   if (!header) return null;

@@ -45,9 +45,10 @@ Deno.serve(async (req: Request) => {
       .eq('signing_token', token)
       .maybeSingle();
 
-    if (fetchErr || !contract) {
+    if (fetchErr) {
       return htmlResponse(renderError('This signing link is invalid or has been revoked.'), 404);
     }
+    if (!contract) return await changeOrderPage(admin, url, token);
 
     const [{ data: profile }, { data: customer }] = await Promise.all([
       admin.from('profiles').select('business_name').eq('id', contract.user_id).maybeSingle(),
@@ -111,6 +112,99 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+/** The same page for a change order: sign it, decline it, or view the signed copy. */
+// deno-lint-ignore no-explicit-any
+async function changeOrderPage(admin: any, url: URL, token: string): Promise<Response> {
+  const { data: co } = await admin
+    .from('change_orders')
+    .select(
+      'id, user_id, customer_id, number, body_markdown, status, ' +
+        'signing_token_expires_at, signed_at, signed_ip, signature_svg, ' +
+        'signer_name, signed_consent_at, signed_user_agent, signature_method, body_sha256',
+    )
+    .eq('signing_token', token)
+    .maybeSingle();
+  if (!co) {
+    return htmlResponse(renderError('This signing link is invalid or has been revoked.'), 404);
+  }
+
+  const [{ data: profile }, { data: customer }] = await Promise.all([
+    admin.from('profiles').select('business_name').eq('id', co.user_id).maybeSingle(),
+    co.customer_id
+      ? admin.from('customers').select('name').eq('id', co.customer_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const businessName = profile?.business_name ?? 'Your contractor';
+  const kindTitle = `Change order ${co.number}`;
+  const bodyHtml = markdownToHtml(co.body_markdown);
+
+  if (co.signed_at) {
+    return htmlResponse(
+      renderSignedCopy({
+        businessName,
+        customerName: co.signer_name ?? customer?.name ?? 'Customer',
+        kindTitle,
+        noun: 'change order',
+        bodyHtml,
+        signatureSvg: co.signature_svg,
+        record: {
+          signer_name: co.signer_name,
+          signed_consent_at: co.signed_consent_at ?? null,
+          signed_at: co.signed_at,
+          signed_ip: co.signed_ip,
+          signed_user_agent: co.signed_user_agent,
+          signature_method: co.signature_method,
+          body_sha256: co.body_sha256,
+        },
+      }),
+      200,
+    );
+  }
+  if (co.status === 'declined') {
+    return htmlResponse(
+      renderMessage(
+        'Change order declined',
+        'You declined this change order',
+        `Nothing about your job has changed. If you change your mind, ask ${businessName} to send it again.`,
+      ),
+      200,
+    );
+  }
+  if (co.signing_token_expires_at && new Date(co.signing_token_expires_at).getTime() < Date.now()) {
+    return htmlResponse(
+      renderError('This signing link has expired. Contact the contractor for a new one.'),
+      410,
+    );
+  }
+
+  const submitUrl = `${url.origin}${url.pathname.replace('/customer-sign', '/customer-sign-submit')}`;
+  return htmlResponse(
+    renderSigningPage({
+      token,
+      submitUrl,
+      businessName,
+      customerName: customer?.name ?? 'Customer',
+      kindTitle,
+      noun: 'change order',
+      canDecline: true,
+      bodyHtml,
+    }),
+    200,
+  );
+}
+
+function renderMessage(title: string, headline: string, message: string): string {
+  return baseHtml(
+    title,
+    `
+      <main class="error">
+        <h1>${escapeHtml(headline)}</h1>
+        <p>${escapeHtml(message)}</p>
+      </main>
+    `,
+  );
+}
+
 function createServiceClient() {
   // @ts-expect-error — Deno env access
   const serviceUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -162,6 +256,8 @@ type SignedCopyInput = {
   businessName: string;
   customerName: string;
   kindTitle: string;
+  /** What the document is called in a sentence. Defaults to "agreement". */
+  noun?: 'agreement' | 'change order';
   bodyHtml: string;
   signatureSvg: string | null;
   record: SigningRecord;
@@ -184,7 +280,7 @@ function renderSignedCopy(input: SignedCopyInput): string {
       <p class="eyebrow signed-eyebrow">Signed ${escapeHtml(input.kindTitle.toLowerCase())}</p>
       <h1>For ${escapeHtml(input.customerName)}</h1>
       <p class="notice">
-        This agreement is signed and locked. ${escapeHtml(BINDING_NOTE)}
+        This ${input.noun ?? 'agreement'} is signed and locked. ${escapeHtml(BINDING_NOTE)}
         ${escapeHtml(invoiceNote(input.businessName))}
       </p>
       <article class="body">${input.bodyHtml}</article>
@@ -206,10 +302,20 @@ type SigningPageInput = {
   businessName: string;
   customerName: string;
   kindTitle: string;
+  /** What the document is called in a sentence. Defaults to "agreement". */
+  noun?: 'agreement' | 'change order';
+  /** A change order can be turned down; the original agreement cannot be "declined" here. */
+  canDecline?: boolean;
   bodyHtml: string;
 };
 
 function renderSigningPage(input: SigningPageInput): string {
+  const noun = input.noun ?? 'agreement';
+  const decline = input.canDecline
+    ? `<div class="decline-row">
+        <button type="button" id="decline" class="link-button">I don't agree. Decline this ${noun}</button>
+      </div>`
+    : '';
   const inner = `
     ${siteHeader(input.businessName)}
 
@@ -241,7 +347,7 @@ function renderSigningPage(input: SigningPageInput): string {
 
       <label class="consent">
         <input type="checkbox" id="consent" />
-        <span>I agree to sign this agreement electronically, and that my electronic
+        <span>I agree to sign this ${noun} electronically, and that my electronic
           signature counts the same as signing on paper.</span>
       </label>
 
@@ -255,9 +361,10 @@ function renderSigningPage(input: SigningPageInput): string {
         By tapping "Agree &amp; sign" you agree to the terms above.
         ${escapeHtml(BINDING_NOTE)} ${escapeHtml(invoiceNote(input.businessName))}
         Your name, signature, the time, your IP address and your device are recorded
-        with the agreement.
+        with the ${noun}.
       </p>
       <div id="status" class="status" aria-live="polite"></div>
+      ${decline}
     </section>
 
     <script>
@@ -424,12 +531,44 @@ function renderSigningPage(input: SigningPageInput): string {
           document.getElementById('sign-panel').innerHTML =
             '<div class="done"><h2>Signed ✓</h2><p>' + copy +
             '</p><p>Your contractor has been told, and will send an invoice when the work is complete.</p>' +
-            '<p><a href="">View signed agreement</a></p></div>';
+            '<p><a href="">View signed ${noun}</a></p></div>';
         } catch (err) {
-          status.textContent = 'Something went wrong. Please try again.';
+          status.textContent = friendly(err);
           refresh();
         }
       });
+
+      // Our own server's short refusals ("already signed", "the total has
+      // changed") say what to do; anything else gets a plain retry message.
+      function friendly(err) {
+        const text = String((err && err.message) || '');
+        return text && text.length < 200 && !text.includes('<')
+          ? text
+          : 'Something went wrong. Please try again.';
+      }
+
+      const declineBtn = document.getElementById('decline');
+      if (declineBtn) {
+        declineBtn.addEventListener('click', async () => {
+          if (!window.confirm('Decline this ${noun}? Your job stays as it is.')) return;
+          declineBtn.disabled = true;
+          status.textContent = 'Declining…';
+          try {
+            const resp = await fetch(${JSON.stringify(input.submitUrl)}, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: ${JSON.stringify(input.token)}, action: 'decline' }),
+            });
+            if (!resp.ok) throw new Error((await resp.text()) || resp.statusText);
+            document.getElementById('sign-panel').innerHTML =
+              '<div class="done"><h2 class="declined">Declined</h2>' +
+              '<p>Nothing about your job has changed. Your contractor has been told.</p></div>';
+          } catch (err) {
+            status.textContent = friendly(err);
+            declineBtn.disabled = false;
+          }
+        });
+      }
     </script>
   `;
   return baseHtml(`Sign — ${input.kindTitle}`, inner);
@@ -611,6 +750,19 @@ function baseHtml(title: string, inner: string): string {
       }
       .btn-primary { background: var(--gold); color: var(--ink); }
       .btn-primary:disabled { background: var(--divider); color: var(--ink-3); cursor: not-allowed; }
+      .decline-row { margin-top: 20px; text-align: center; }
+      .link-button {
+        min-height: 60px;
+        padding: 0 16px;
+        background: none;
+        border: none;
+        color: var(--ink-2);
+        font-size: 16px;
+        font-family: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .done h2.declined { color: var(--ink); }
       .btn-ghost { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--divider); }
       .legal { color: var(--ink-3); font-size: 14px; margin-top: 12px; text-align: center; }
       .status { margin-top: 10px; text-align: center; color: var(--ink-2); }
