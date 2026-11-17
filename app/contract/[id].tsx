@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Pencil, ShieldCheck } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoadFailed } from '@/components/ui/LoadFailed';
+import { ContractBody } from '@/components/contract/ContractBody';
 import { SendRecipientSheet, type Recipient } from '@/components/contract/SendRecipientSheet';
 import { SignatureModal } from '@/components/contract/SignatureModal';
 import { Card } from '@/components/ui/Card';
@@ -31,7 +32,6 @@ import {
   type ContractRow,
 } from '@/lib/contracts';
 import { sendQuote } from '@/lib/quotes';
-import { strings } from '@/lib/strings';
 import { radii, spacing, typography, type Colors } from '@/lib/theme';
 import { useStyles, useTheme } from '@/lib/theme-context';
 
@@ -304,7 +304,7 @@ export default function ContractDetail() {
               />
             </View>
           ) : (
-            <RenderedMarkdown body={body} />
+            <ContractBody body={body} />
           )}
         </ScrollView>
 
@@ -326,15 +326,18 @@ export default function ContractDetail() {
                 accessibilityLabel="Send to customer"
               />
             </View>
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>or</Text>
+              <View style={styles.orLine} />
+            </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Sign in person instead"
+              accessibilityLabel="Customer signs now in person, on this phone"
               onPress={openSignature}
               style={styles.inlineLink}
             >
-              <Text style={styles.inlineLinkText}>
-                {strings.locked.ctaSignNow} in person instead
-              </Text>
+              <Text style={styles.inlineLinkText}>Customer signs now in person</Text>
             </Pressable>
           </View>
         ) : (
@@ -400,112 +403,6 @@ function signedBannerText(customerName: string | undefined, signedAt: string | n
  * and paragraphs. Good enough for the AI-generated contract body. A full
  * markdown dep would add weight we don't need yet.
  */
-function RenderedMarkdown({ body }: { body: string }) {
-  const styles = useStyles(makeStyles);
-  const blocks = useMemo(() => tokenize(body), [body]);
-  return (
-    <View style={styles.mdRoot}>
-      {blocks.map((block, i) => {
-        if (block.type === 'h1') {
-          return (
-            <Text key={i} style={styles.mdH1}>
-              {block.text}
-            </Text>
-          );
-        }
-        if (block.type === 'h2') {
-          return (
-            <Text key={i} style={styles.mdH2}>
-              {block.text}
-            </Text>
-          );
-        }
-        if (block.type === 'h3') {
-          return (
-            <Text key={i} style={styles.mdH3}>
-              {block.text}
-            </Text>
-          );
-        }
-        if (block.type === 'ul') {
-          return (
-            <View key={i} style={styles.mdList}>
-              {block.items.map((item, j) => (
-                <View key={j} style={styles.mdListItem}>
-                  <Text style={styles.mdListBullet}>•</Text>
-                  <Text style={styles.mdListText}>{item}</Text>
-                </View>
-              ))}
-            </View>
-          );
-        }
-        return (
-          <Text key={i} style={styles.mdParagraph}>
-            {block.text}
-          </Text>
-        );
-      })}
-    </View>
-  );
-}
-
-type Block = { type: 'h1' | 'h2' | 'h3' | 'p'; text: string } | { type: 'ul'; items: string[] };
-
-function tokenize(body: string): Block[] {
-  const lines = body.split(/\r?\n/);
-  const blocks: Block[] = [];
-  let paragraph: string[] = [];
-  let list: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraph.length) {
-      blocks.push({ type: 'p', text: paragraph.join(' ') });
-      paragraph = [];
-    }
-  };
-  const flushList = () => {
-    if (list.length) {
-      blocks.push({ type: 'ul', items: list });
-      list = [];
-    }
-  };
-
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) {
-      flushParagraph();
-      flushList();
-      continue;
-    }
-    const h1 = line.match(/^#\s+(.*)$/);
-    const h2 = line.match(/^##\s+(.*)$/);
-    const h3 = line.match(/^###\s+(.*)$/);
-    const bullet = line.match(/^[-*]\s+(.*)$/);
-    if (h3) {
-      flushParagraph();
-      flushList();
-      blocks.push({ type: 'h3', text: h3[1] });
-    } else if (h2) {
-      flushParagraph();
-      flushList();
-      blocks.push({ type: 'h2', text: h2[1] });
-    } else if (h1) {
-      flushParagraph();
-      flushList();
-      blocks.push({ type: 'h1', text: h1[1] });
-    } else if (bullet) {
-      flushParagraph();
-      list.push(bullet[1]);
-    } else {
-      flushList();
-      paragraph.push(line);
-    }
-  }
-  flushParagraph();
-  flushList();
-  return blocks;
-}
-
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.surface2 },
@@ -575,44 +472,6 @@ const makeStyles = (colors: Colors) =>
       color: colors.ink,
       lineHeight: 22,
     },
-    mdRoot: { gap: spacing.md },
-    mdH1: {
-      fontFamily: typography.fonts.displayHeavy,
-      fontSize: typography.sizes.h2,
-      color: colors.ink,
-      marginTop: spacing.md,
-    },
-    mdH2: {
-      fontFamily: typography.fonts.displayHeavy,
-      fontSize: typography.sizes.h3,
-      color: colors.ink,
-      marginTop: spacing.sm,
-    },
-    mdH3: {
-      fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.bodySmall,
-      color: colors.ink2,
-    },
-    mdParagraph: {
-      fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.bodySmall,
-      color: colors.ink,
-      lineHeight: 22,
-    },
-    mdList: { gap: spacing.xs },
-    mdListItem: { flexDirection: 'row', gap: spacing.sm },
-    mdListBullet: {
-      fontFamily: typography.fonts.body,
-      fontSize: typography.sizes.bodySmall,
-      color: colors.ink2,
-    },
-    mdListText: {
-      fontFamily: typography.fonts.body,
-      flex: 1,
-      fontSize: typography.sizes.bodySmall,
-      color: colors.ink,
-      lineHeight: 22,
-    },
     signedInline: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -634,6 +493,22 @@ const makeStyles = (colors: Colors) =>
       gap: spacing.md,
     },
     footerButton: { flex: 1 },
+    orRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.xs,
+    },
+    orLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.divider,
+    },
+    orText: {
+      fontFamily: typography.fonts.body,
+      fontSize: typography.sizes.bodySmall,
+      color: colors.ink3,
+    },
     inlineLink: {
       alignSelf: 'center',
       paddingVertical: spacing.sm,
@@ -643,8 +518,8 @@ const makeStyles = (colors: Colors) =>
     },
     inlineLinkText: {
       fontFamily: typography.fonts.bodyStrong,
-      fontSize: typography.sizes.bodySmall,
-      color: colors.ink3,
+      fontSize: typography.sizes.body,
+      color: colors.goldDark,
       textDecorationLine: 'underline',
     },
     editIconButton: {
